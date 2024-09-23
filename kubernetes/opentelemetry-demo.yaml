@@ -273,7 +273,7 @@ data:
             insecure: true
         logs_index: otel
       otlp:
-        endpoint: jaeger-collector:4317
+        endpoint: 'opentelemetry-demo-jaeger-collector:4317'
         tls:
           insecure: true
       otlphttp/prometheus:

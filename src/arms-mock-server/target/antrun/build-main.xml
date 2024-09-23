@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="maven-antrun-" default="main"  >
+<target name="main">
+  <echo message="uncompress"/>
+  <untar src="/Users/urwoods/lab/alibaba_cloud_opentelemetry_demo/opentelemetry-demo/src/arms-mock-server/target/sanmu-aiops-demo-server.tar.gz" compression="gzip" dest="/Users/urwoods/lab/alibaba_cloud_opentelemetry_demo/opentelemetry-demo/src/arms-mock-server/target"/>
+  <chmod file="/Users/urwoods/lab/alibaba_cloud_opentelemetry_demo/opentelemetry-demo/src/arms-mock-server/target/sanmu-aiops-demo-server/bin/app.sh" perm="755" type="file" verbose="true"/>
+</target>
+</project>
