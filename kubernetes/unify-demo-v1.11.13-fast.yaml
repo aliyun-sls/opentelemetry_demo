@@ -9822,7 +9822,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: accountingservice
-          image: 'ghcr.nju.edu.cn/open-telemetry/demo:1.11.0-accountingservice'
+          image: 'arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/accountingservice:latest'
           imagePullPolicy: IfNotPresent
           env:
           - name: OTEL_SERVICE_NAME
@@ -9842,6 +9842,8 @@ spec:
             value: service.name=$(OTEL_SERVICE_NAME),service.namespace=opentelemetry-demo,service.version=1.11.0
           - name: OTEL_PROPAGATORS
             value: tracecontext,baggage,jaeger,b3,b3multi
+          - name: VALKEY_ADDR
+            value: 'opentelemetry-demo-valkey:6379'
           resources:
             limits:
               memory: 300Mi
@@ -9853,7 +9855,7 @@ spec:
           - -c
           - until nc -w30 opentelemetry-demo-kafka 9092; do echo waiting
             for kafka; sleep 2; done;
-          image: gcr.nju.edu.cn/google-containers/busybox:latest
+          image: arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/busybox:latest
           name: wait-for-kafka
 ---
 # Source: opentelemetry-demo/templates/component.yaml
@@ -9961,7 +9963,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: cartservice
-          image: 'ghcr.nju.edu.cn/open-telemetry/demo:1.11.0-cartservice'
+          image: 'arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/cartservice:latest'
           imagePullPolicy: IfNotPresent
           ports:
           
@@ -10004,7 +10006,7 @@ spec:
           - -c
           - until nc -w30 opentelemetry-demo-valkey 6379; do echo waiting
             for valkey; sleep 2; done;
-          image: gcr.nju.edu.cn/google-containers/busybox:latest
+          image: arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/busybox:latest
           name: wait-for-valkey
 ---
 # Source: opentelemetry-demo/templates/component.yaml
@@ -10038,7 +10040,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: checkoutservice
-          image: 'ghcr.nju.edu.cn/open-telemetry/demo:1.11.0-checkoutservice'
+          image: 'arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/checkoutservice:latest'
           imagePullPolicy: IfNotPresent
           ports:
           
@@ -10091,7 +10093,7 @@ spec:
           - -c
           - until nc -w30 opentelemetry-demo-kafka 9092; do echo waiting
             for kafka; sleep 2; done;
-          image: gcr.nju.edu.cn/google-containers/busybox:latest
+          image: arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/busybox:latest
           name: wait-for-kafka
 ---
 # Source: opentelemetry-demo/templates/component.yaml
@@ -10125,7 +10127,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: currencyservice
-          image: 'ghcr.nju.edu.cn/open-telemetry/demo:1.11.0-currencyservice'
+          image: 'arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/currencyservice:latest'
           imagePullPolicy: IfNotPresent
           ports:
           
@@ -10362,7 +10364,7 @@ spec:
           - -c
           - until nc -w30 opentelemetry-demo-kafka 9092; do echo waiting
             for kafka; sleep 2; done;
-          image: gcr.nju.edu.cn/google-containers/busybox:latest
+          image: arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/busybox:latest
           name: wait-for-kafka
 ---
 # Source: opentelemetry-demo/templates/component.yaml
@@ -11128,7 +11130,7 @@ spec:
       serviceAccountName: opentelemetry-demo
       containers:
         - name: valkey
-          image: 'cr-sync-registry.cn-hangzhou.cr.aliyuncs.com/test/valkey:7.2-alpine'
+          image: 'arms-deploy-registry.cn-hangzhou.cr.aliyuncs.com/unify-demo/valkey:7.2-alpine'
           imagePullPolicy: IfNotPresent
           ports:
           
