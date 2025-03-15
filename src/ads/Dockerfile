@@ -1,4 +1,4 @@
-FROM maven:3.6.3-jdk-11-openj9 AS demo_java
+FROM maven:3.9.0-openjdk-21 AS demo_java
 
 WORKDIR /app
 COPY pom.xml .
@@ -6,7 +6,7 @@ COPY src .
 
 RUN mvn package -DskipTests
 
-FROM openjdk:11-jdk
+FROM openjdk:21-jdk
 ARG module
 ARG port
 WORKDIR /app
