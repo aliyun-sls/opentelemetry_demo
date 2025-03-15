@@ -1,9 +1,8 @@
-FROM maven:3.6.3-jdk-11-openj9 AS mall_java
-ARG module
-ARG port
+FROM maven:3.6.3-jdk-11-openj9 AS demo_java
+
 WORKDIR /app
-COPY src/${module}/pom.xml ad/
-COPY src/${module}/src ad/
+COPY pom.xml ad/
+COPY src ad/
 
 RUN mvn package -DskipTests
 
@@ -12,7 +11,7 @@ ARG module
 ARG port
 WORKDIR /app
 
-COPY --from=mall_java /app/${module}/target/*.jar ${module}.jar
+COPY --from=demo_java /app/${module}/target/*.jar ${module}.jar
 EXPOSE ${port}
 ENV SERVICE_NAME ${module}
 CMD java -jar ${SERVICE_NAME}.jar
