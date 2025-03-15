@@ -1,4 +1,4 @@
-FROM maven:3.9.0-openjdk-21 AS demo_java
+FROM maven:3.9-eclipse-temurin-21-alpine AS demo_java
 
 WORKDIR /app
 COPY pom.xml .
