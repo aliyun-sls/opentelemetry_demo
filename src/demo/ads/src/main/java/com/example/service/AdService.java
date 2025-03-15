@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface AdService {
     List<AdEntity> listAds();
+
+    AdEntity getAdById(Long id);
 }

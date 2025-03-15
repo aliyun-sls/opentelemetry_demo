@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: notification
+  name: notification
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification
+  template:
+    metadata:
+      labels:
+        app: notification
+    spec:
+      containers:
+        - env:
+            - name: JAVA_HOME
+              value: /usr/local/openjdk-11
+            - name: MYSQL_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: 011y-demo
+                  key: MYSQL_ENDPOINT
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: 011y-demo
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: 011y-demo
+                  key: MYSQL_PASSWORD
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: CONTAINER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/notification:1.0'
+          imagePullPolicy: Always
+          name: notification
+          ports:
+            - containerPort: 8080
+              name: notification
+              protocol: TCP
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification
+spec:
+  ports:
+    - name: notification
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: notification
+  type: ClusterIP

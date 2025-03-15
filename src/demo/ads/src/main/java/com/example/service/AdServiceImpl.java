@@ -15,4 +15,9 @@ public class AdServiceImpl implements AdService{
     public List<AdEntity> listAds() {
         return adRepository.findAll();
     }
+
+    @Override
+    public AdEntity getAdById(Long id) {
+        return adRepository.getOne(String.valueOf(id));
+    }
 }
