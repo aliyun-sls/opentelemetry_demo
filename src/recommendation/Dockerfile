@@ -17,6 +17,7 @@ COPY ./src/recommendation/requirements.txt ./
 
 RUN pip install --upgrade pip
 RUN pip install --prefix="/reqs" -r requirements.txt
+RUN pip install aliyun-bootstrap && ARMS_REGION_ID=cn-heyuan aliyun-bootstrap -a install 
 
 #
 # Runtime
@@ -29,4 +30,4 @@ COPY ./src/recommendation/ ./
 RUN opentelemetry-bootstrap -a install
 
 EXPOSE ${RECOMMENDATION_PORT}
-ENTRYPOINT [ "opentelemetry-instrument", "python", "recommendation_server.py" ]
+ENTRYPOINT [ "aliyun-instrument", "python", "recommendation_server.py" ]
