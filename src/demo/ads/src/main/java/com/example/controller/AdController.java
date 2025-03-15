@@ -13,7 +13,7 @@ import java.util.List;
 public class AdController {
 
     @Autowired
-    AdService adService;
+    private AdService adService;
     @GetMapping("/listAds")
     public ResponseEntity<List<AdEntity>> listAds() {
         List<AdEntity> ads = adService.listAds();
