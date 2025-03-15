@@ -1,9 +1,9 @@
 package com.example.controller;
 
 import com.example.entity.AdEntity;
-import com.example.entity.RecommendationEntity;
+import com.example.entity.MarketingEntity;
 import com.example.service.AdsService;
-import com.example.service.RecommendationService;
+import com.example.service.MarketingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -13,10 +13,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 
 @Controller
-public class RecommendationController {
+public class MarketingController {
 
     @Autowired
-    private RecommendationService recommendationService;
+    private MarketingService marketingService;
     @Autowired
     private AdsService adsService;
 
@@ -28,8 +28,8 @@ public class RecommendationController {
     }
 
     @GetMapping("/recommendation/{id}")
-    public ResponseEntity<RecommendationEntity> getRecommendationById(@PathVariable Long id) {
-        RecommendationEntity ad = recommendationService.getAdById(id);
+    public ResponseEntity<MarketingEntity> getRecommendationById(@PathVariable Long id) {
+        MarketingEntity ad = marketingService.getAdById(id);
         return ad != null ? ResponseEntity.ok(ad) : ResponseEntity.notFound().build();
     }
 }

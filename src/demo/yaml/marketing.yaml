@@ -2,17 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: recommendation
-  name: recommendation
+    app: marketing
+  name: marketing
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: recommendation
+      app: marketing
   template:
     metadata:
       labels:
-        app: recommendation
+        app: marketing
     spec:
       containers:
         - env:
@@ -56,12 +56,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/recommendation:1.0'
+          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/marketing:1.0'
           imagePullPolicy: Always
-          name: recommendation
+          name: marketing
           ports:
             - containerPort: 8080
-              name: recommendation
+              name: marketing
               protocol: TCP
       dnsPolicy: ClusterFirst
       restartPolicy: Always
@@ -69,13 +69,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: recommendation
+  name: marketing
 spec:
   ports:
-    - name: recommendation
+    - name: marketing
       port: 8080
       protocol: TCP
       targetPort: 8080
   selector:
-    app: recommendation
+    app: marketing
   type: ClusterIP
