@@ -1,7 +1,7 @@
-package com.example.ad.service;
+package com.example.ads.service;
 
-import com.example.ad.entity.Ads;
-import com.example.ad.repository.AdRepository;
+import com.example.ads.entity.AdEntity;
+import com.example.ads.repository.AdRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -10,7 +10,7 @@ public class AdServiceImpl implements AdService{
     @Autowired
     private AdRepository adRepository;
     @Override
-    public List<Ads> listAds() {
+    public List<AdEntity> listAds() {
         return adRepository.findAll();
     }
 }

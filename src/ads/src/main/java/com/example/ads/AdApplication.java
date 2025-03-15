@@ -1,4 +1,4 @@
-package com.example.ad;
+package com.example.ads;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

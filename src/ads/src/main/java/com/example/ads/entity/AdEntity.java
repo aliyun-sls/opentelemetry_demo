@@ -1,4 +1,4 @@
-package com.example.ad.entity;
+package com.example.ads.entity;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +11,7 @@ import javax.persistence.Table;
 @Getter
 @Setter
 @Table(name = "ads")
-public class Ads {
+public class AdEntity {
     @Id
     private String id;
     

@@ -56,9 +56,6 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<version>2.3.0.RELEASE</version>
-<!--				<configuration>-->
-<!--					<mainClass>com.example.ad.AdApplication</mainClass>-->
-<!--				</configuration>-->
 			</plugin>
 		</plugins>
 	</build>

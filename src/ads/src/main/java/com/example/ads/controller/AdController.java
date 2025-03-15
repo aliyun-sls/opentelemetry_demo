@@ -1,7 +1,7 @@
-package com.example.ad.controller;
+package com.example.ads.controller;
 
-import com.example.ad.entity.Ads;
-import com.example.ad.service.AdService;
+import com.example.ads.entity.AdEntity;
+import com.example.ads.service.AdService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -15,8 +15,8 @@ public class AdController {
     @Autowired
     AdService adService;
     @GetMapping("/listAds")
-    public ResponseEntity<List<Ads>> listAds() {
-        List<Ads> ads = adService.listAds();
+    public ResponseEntity<List<AdEntity>> listAds() {
+        List<AdEntity> ads = adService.listAds();
         return ResponseEntity.ok(ads);
     }
 }
