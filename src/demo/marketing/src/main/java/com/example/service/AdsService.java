@@ -20,7 +20,7 @@ public class AdsService {
 
     public Mono<List> listAds() {
         return webClient.get()
-                .uri("/ads/listAds")
+                .uri("/listAds")
                 .retrieve()
                 .bodyToMono(List.class);
     }
