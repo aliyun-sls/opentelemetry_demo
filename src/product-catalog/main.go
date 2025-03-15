@@ -112,6 +112,7 @@ func initMeterProvider() *sdkmetric.MeterProvider {
 }
 
 func main() {
+	pb.Mysql()
 	tp := initTracerProvider()
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
