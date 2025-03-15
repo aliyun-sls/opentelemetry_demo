@@ -41,6 +41,6 @@ func Mysql() {
 			continue
 		}
 		log.Printf("查询结果: %s", result)
-		fmt.Println("查询成功")
+		log.Infof("查询成功")
 	}
 }
