@@ -16,10 +16,10 @@ COPY promotion/pom.xml promotion/
 COPY promotion/src promotion/src/
 
 RUN mvn package -DskipTests
-
+ARG module
 FROM openjdk:11-jdk
 WORKDIR /app
 
-COPY --from=demo_java /app/ads/target/*.jar demo.jar
+COPY --from=demo_java /app/${module}/target/*.jar demo.jar
 EXPOSE 8080
 CMD java -jar demo.jar
