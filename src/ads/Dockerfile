@@ -1,8 +1,8 @@
 FROM maven:3.6.3-jdk-11-openj9 AS demo_java
 
 WORKDIR /app
-COPY pom.xml ad/
-COPY src ad/
+COPY pom.xml .
+COPY src .
 
 RUN mvn package -DskipTests
 
