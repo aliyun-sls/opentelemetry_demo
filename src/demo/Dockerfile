@@ -6,6 +6,15 @@ COPY pom.xml .
 COPY ads/pom.xml ads/
 COPY ads/src ads/src/
 
+COPY marketing/pom.xml marketing/
+COPY marketing/src marketing/src/
+
+COPY notification/pom.xml notification/
+COPY notification/src notification/src/
+
+COPY promotion/pom.xml promotion/
+COPY promotion/src promotion/src/
+
 RUN mvn package -DskipTests
 
 FROM openjdk:11-jdk
