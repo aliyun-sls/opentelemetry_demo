@@ -13,5 +13,5 @@ WORKDIR /app
 
 COPY --from=demo_java /app/${module}/target/*.jar ${module}.jar
 EXPOSE ${port}
-ENV SERVICE_NAME ${module}
+ENV SERVICE_NAME=${module}
 CMD java -jar ${SERVICE_NAME}.jar
