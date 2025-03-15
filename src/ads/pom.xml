@@ -56,6 +56,9 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<version>2.3.0.RELEASE</version>
+				<configuration>
+					<mainClass>com.example.ads.AdsApplication</mainClass> <!-- 替换为您的主类的完整路径 -->
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

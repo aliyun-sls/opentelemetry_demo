@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AdApplication {
+public class AdsApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AdApplication.class, args);
+		SpringApplication.run(AdsApplication.class, args);
 	}
 
 }
