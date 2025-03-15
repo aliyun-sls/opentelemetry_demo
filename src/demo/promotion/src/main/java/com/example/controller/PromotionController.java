@@ -1,6 +1,8 @@
 package com.example.controller;
 
+import com.example.entity.AdEntity;
 import com.example.entity.PromotionEntity;
+import com.example.service.AdsService;
 import com.example.service.PromotionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,16 +17,18 @@ public class PromotionController {
 
     @Autowired
     private PromotionService promotionService;
+    @Autowired
+    private AdsService adsService;
 
-    @GetMapping("/listAds")
-    public ResponseEntity<List<PromotionEntity>> listAds() {
-        List<PromotionEntity> ads = promotionService.listAds();
+    @GetMapping("/listPromotion")
+    public ResponseEntity<List> listPromotion() {
+//        List<PromotionEntity> ads = promotionService.listAds();
+        List<AdEntity> ads = adsService.listAds().block();
         return ResponseEntity.ok(ads);
     }
 
-    // 新增: 根据广告ID查询广告详情
-    @GetMapping("/ad/{id}")
-    public ResponseEntity<PromotionEntity> getAdById(@PathVariable Long id) {
+    @GetMapping("/promotion/{id}")
+    public ResponseEntity<PromotionEntity> getPromotionById(@PathVariable Long id) {
         PromotionEntity ad = promotionService.getAdById(id);
         return ad != null ? ResponseEntity.ok(ad) : ResponseEntity.notFound().build();
     }

@@ -1,6 +1,8 @@
 package com.example.controller;
 
+import com.example.entity.AdEntity;
 import com.example.entity.RecommendationEntity;
+import com.example.service.AdsService;
 import com.example.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,16 +17,18 @@ public class RecommendationController {
 
     @Autowired
     private RecommendationService recommendationService;
+    @Autowired
+    private AdsService adsService;
 
-    @GetMapping("/listAds")
-    public ResponseEntity<List<RecommendationEntity>> listAds() {
-        List<RecommendationEntity> ads = recommendationService.listAds();
+    @GetMapping("/listRecommendation")
+    public ResponseEntity<List<AdEntity>> listRecommendation() {
+//        List<RecommendationEntity> ads = recommendationService.listAds();
+        List<AdEntity> ads = adsService.listAds().block();
         return ResponseEntity.ok(ads);
     }
 
-    // 新增: 根据广告ID查询广告详情
-    @GetMapping("/ad/{id}")
-    public ResponseEntity<RecommendationEntity> getAdById(@PathVariable Long id) {
+    @GetMapping("/recommendation/{id}")
+    public ResponseEntity<RecommendationEntity> getRecommendationById(@PathVariable Long id) {
         RecommendationEntity ad = recommendationService.getAdById(id);
         return ad != null ? ResponseEntity.ok(ad) : ResponseEntity.notFound().build();
     }
