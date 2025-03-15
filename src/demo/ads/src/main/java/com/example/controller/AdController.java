@@ -1,7 +1,7 @@
 package com.example.controller;
 
-import com.example.ads.entity.AdEntity;
-import com.example.ads.service.AdService;
+import com.example.entity.AdEntity;
+import com.example.service.AdService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;

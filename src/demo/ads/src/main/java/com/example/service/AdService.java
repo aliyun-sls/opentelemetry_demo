@@ -1,6 +1,6 @@
 package com.example.service;
 
-import com.example.ads.entity.AdEntity;
+import com.example.entity.AdEntity;
 
 import java.util.List;
 

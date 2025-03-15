@@ -1,7 +1,7 @@
 package com.example.service;
 
-import com.example.ads.entity.AdEntity;
-import com.example.ads.repository.AdRepository;
+import com.example.entity.AdEntity;
+import com.example.repository.AdRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
