@@ -16,8 +16,9 @@ COPY promotion/pom.xml promotion/
 COPY promotion/src promotion/src/
 
 RUN mvn package -DskipTests
-ARG module
+
 FROM openjdk:11-jdk
+ARG module
 WORKDIR /app
 
 COPY --from=demo_java /app/${module}/target/*.jar demo.jar
