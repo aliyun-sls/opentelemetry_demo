@@ -1,4 +1,4 @@
-package com.example.ads.controller;
+package com.example.controller;
 
 import com.example.ads.entity.AdEntity;
 import com.example.ads.service.AdService;

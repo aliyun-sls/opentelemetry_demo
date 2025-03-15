@@ -1,4 +1,4 @@
-package com.example.ads.service;
+package com.example.service;
 
 import com.example.ads.entity.AdEntity;
 import com.example.ads.repository.AdRepository;
