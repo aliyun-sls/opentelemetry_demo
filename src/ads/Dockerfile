@@ -7,11 +7,8 @@ COPY src .
 RUN mvn package -DskipTests
 
 FROM openjdk:11-jdk
-ARG module
-ARG port
 WORKDIR /app
 
-COPY --from=demo_java /app/${module}/target/*.jar ${module}.jar
-EXPOSE ${port}
-ENV SERVICE_NAME=${module}
-CMD java -jar ${SERVICE_NAME}.jar
+COPY --from=demo_java /app/target/*.jar demo.jar
+EXPOSE 8080
+CMD java -jar demo.jar
