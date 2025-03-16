@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: ads
+        armsPilotAutoEnable: "on"
+        armsPilotCreateAppName: "ads"
+        armsSecAutoEnable: "on"
+        acs.cms.workspace: "o11y-demo-cn-heyuan"
     spec:
       containers:
         - env:

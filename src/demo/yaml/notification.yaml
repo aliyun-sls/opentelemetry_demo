@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: notification
+        armsPilotAutoEnable: "on"
+        armsPilotCreateAppName: "notification"
+        armsSecAutoEnable: "on"
+        acs.cms.workspace: "o11y-demo-cn-heyuan"
     spec:
       containers:
         - env:
