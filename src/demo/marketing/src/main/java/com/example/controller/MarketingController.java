@@ -20,15 +20,15 @@ public class MarketingController {
     @Autowired
     private AdsService adsService;
 
-    @GetMapping("/listRecommendation")
-    public ResponseEntity<List<AdEntity>> listRecommendation() {
+    @GetMapping("/listMarketing")
+    public ResponseEntity<List<AdEntity>> listMarketing() {
 //        List<RecommendationEntity> ads = recommendationService.listAds();
         List<AdEntity> ads = adsService.listAds().block();
         return ResponseEntity.ok(ads);
     }
 
-    @GetMapping("/recommendation/{id}")
-    public ResponseEntity<MarketingEntity> getRecommendationById(@PathVariable Long id) {
+    @GetMapping("/marketing/{id}")
+    public ResponseEntity<MarketingEntity> getMarketingById(@PathVariable Long id) {
         MarketingEntity ad = marketingService.getAdById(id);
         return ad != null ? ResponseEntity.ok(ad) : ResponseEntity.notFound().build();
     }
