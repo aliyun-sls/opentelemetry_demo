@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -126,6 +127,10 @@ type checkout struct {
 	shippingSvcAddr       string
 	emailSvcAddr          string
 	paymentSvcAddr        string
+	adsSvcAddr            string
+	marketingSvcAddr      string
+	notificationSvcAddr   string
+	promotionSvcAddr      string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
 	KafkaProducerClient     sarama.AsyncProducer
@@ -197,6 +202,11 @@ func main() {
 	svc.paymentSvcClient = pb.NewPaymentServiceClient(c)
 	defer c.Close()
 
+	mustMapEnv(&svc.adsSvcAddr, "ADS_ADDR")
+	mustMapEnv(&svc.marketingSvcAddr, "MARKETING_ADDR")
+	mustMapEnv(&svc.notificationSvcAddr, "NOTIFICATION_ADDR")
+	mustMapEnv(&svc.promotionSvcAddr, "PROMOTION_ADDR")
+
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
 	if svc.kafkaBrokerSvcAddr != "" {
@@ -223,6 +233,22 @@ func main() {
 	log.Fatal(err)
 }
 
+func httpCall(addr, path string) {
+	resp, err := http.Get("http://" + addr + path)
+	if err != nil {
+		log.Fatalf("Error %q %q", err, addr+path)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error %q %q", err, addr+path)
+		return
+	}
+	log.Infof("Response: %q", string(body))
+}
+
 func mustMapEnv(target *string, envKey string) {
 	v := os.Getenv(envKey)
 	if v == "" {
@@ -240,6 +266,9 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	httpCall(cs.marketingSvcAddr, "/listMarketing")
+	httpCall(cs.promotionSvcAddr, "/listPromotion")
+	httpCall(cs.notificationSvcAddr, "/listNotification")
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
