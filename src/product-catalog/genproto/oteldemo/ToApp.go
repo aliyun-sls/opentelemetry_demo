@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func callBPodEndpoint() {
+func ToApp01() {
 	// 定义B Pod的URL
 	service := os.Getenv("SERVICE_NAME")
 	url := "http://" + service + "/getapp01"
