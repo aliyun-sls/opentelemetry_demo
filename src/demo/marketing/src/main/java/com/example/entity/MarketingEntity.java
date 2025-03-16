@@ -9,7 +9,7 @@
    @Entity
    @Getter
    @Setter
-   @Table(name = "recommendation")
+   @Table(name = "marketing")
    public class MarketingEntity {
        @Id
        private String id;
