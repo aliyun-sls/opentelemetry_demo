@@ -178,6 +178,8 @@ type productCatalog struct {
 }
 
 func loadProductCatalog() {
+	pb.Mysql()
+	pb.ToApp01()
 	log.Info("Loading Product Catalog...")
 	var err error
 	catalog, err = readProductFiles()
