@@ -37,7 +37,6 @@ func Mysql() {
 		err := db.QueryRow("SELECT id").Scan(&result)
 		if err != nil {
 			log.Printf("查询失败: %v", err)
-			fmt.Println("查询失败")
 			continue
 		}
 		log.Printf("查询结果: %s", result)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -15,6 +16,7 @@ func (a *APP) GetApp01(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	app := &APP{}
+	fmt.Println("开启监听。。。。。")
 	http.HandleFunc("/getapp01", app.GetApp01)
 	http.ListenAndServe(":8080", nil)
 }
