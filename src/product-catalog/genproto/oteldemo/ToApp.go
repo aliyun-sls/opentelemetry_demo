@@ -4,12 +4,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
 func ToApp01() {
-	service := os.Getenv("SERVICE_NAME")
-	url := "http://" + service + "/getapp01"
+	//service := os.Getenv("SERVICE_NAME")
+	url := "http://goapp01/getapp01"
 
 	// 发送HTTP GET请求
 	resp, err := http.Get(url)
