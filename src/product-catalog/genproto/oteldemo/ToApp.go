@@ -8,7 +8,7 @@ import (
 
 func ToApp01() {
 	//service := os.Getenv("SERVICE_NAME")
-	url := "http://goapp01/getapp01"
+	url := "http://goapp01:8080/getapp01"
 
 	// 发送HTTP GET请求
 	resp, err := http.Get(url)
