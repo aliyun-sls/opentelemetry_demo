@@ -60,7 +60,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'ghcr.io/aliyun-sls/demo/notification:1.0'
+          image: 'ghcr.io/aliyun-sls/demo:1.0-notification-eks'
           imagePullPolicy: Always
           name: notification
           ports:

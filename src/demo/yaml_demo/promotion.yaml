@@ -60,7 +60,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'ghcr.io/aliyun-sls/demo/promotion:1.0'
+          image: 'ghcr.io/aliyun-sls/demo:1.0-promotion-eks'
           imagePullPolicy: Always
           name: promotion
           ports:
