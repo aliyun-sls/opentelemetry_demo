@@ -14,7 +14,7 @@ spec:
       labels:
         app: marketing
         armsPilotAutoEnable: "on"
-        armsPilotCreateAppName: "marketing"
+        armsPilotCreateAppName: "marketing-eks"
         armsSecAutoEnable: "on"
         acs.cms.workspace: "o11y-demo-cn-heyuan"
     spec:
@@ -60,7 +60,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/marketing:1.0'
+          image: 'ghcr.io/aliyun-sls/demo/marketing:1.0'
           imagePullPolicy: Always
           name: marketing
           ports:

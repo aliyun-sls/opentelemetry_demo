@@ -2,19 +2,19 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: marketing
-  name: marketing
+    app: notification
+  name: notification
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: marketing
+      app: notification
   template:
     metadata:
       labels:
-        app: marketing
+        app: notification
         armsPilotAutoEnable: "on"
-        armsPilotCreateAppName: "marketing"
+        armsPilotCreateAppName: "notification-eks"
         armsSecAutoEnable: "on"
         acs.cms.workspace: "o11y-demo-cn-heyuan"
     spec:
@@ -60,12 +60,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/marketing:1.0'
+          image: 'ghcr.io/aliyun-sls/demo/notification:1.0'
           imagePullPolicy: Always
-          name: marketing
+          name: notification
           ports:
             - containerPort: 8080
-              name: marketing
+              name: notification
               protocol: TCP
       dnsPolicy: ClusterFirst
       restartPolicy: Always
@@ -73,13 +73,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: marketing
+  name: notification
 spec:
   ports:
-    - name: marketing
+    - name: notification
       port: 8080
       protocol: TCP
       targetPort: 8080
   selector:
-    app: marketing
+    app: notification
   type: ClusterIP
