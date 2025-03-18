@@ -1,8 +1,6 @@
 module github.com/open-telemetry/opentelemetry-demo/src/user
 
-go 1.21
-
-toolchain go1.21.4
+go 1.18
 
 require (
 	github.com/gin-gonic/gin v1.10.0
