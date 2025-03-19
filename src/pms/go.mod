@@ -3,13 +3,16 @@ module github.com/open-telemetry/opentelemetry-demo/src/pms
 go 1.24.1
 
 require (
-	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
+	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.1
+	github.com/aliyun/credentials-go v1.4.5
 	github.com/gin-gonic/gin v1.10.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/gorm v1.25.12
 )
 
 require (
+	github.com/alibabacloud-go/debug v1.0.1 // indirect
+	github.com/alibabacloud-go/tea v1.2.2 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
@@ -39,5 +42,6 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

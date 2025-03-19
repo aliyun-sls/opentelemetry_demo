@@ -1,7 +1,10 @@
 package main
 
 import (
-	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"context"
+	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
+	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
+	openapicred "github.com/aliyun/credentials-go/credentials"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
@@ -9,7 +12,6 @@ import (
 
 var DB *gorm.DB
 var OSSClient *oss.Client
-var Bucket *oss.Bucket
 
 func InitDB() error {
 	user := os.Getenv("MYSQL_USER")
@@ -31,19 +33,37 @@ var OSSEndpoint string
 var OSSBucketName = "o11y-demo"
 
 func InitOSS() error {
-	var err error
-	OSSEndpoint = os.Getenv("OSS_Endpoint")
-	ossAk := os.Getenv("OSS_AccessKeyId")
-	ossAs := os.Getenv("OSS_AccessKeySecret")
-	OSSClient, err = oss.New(OSSEndpoint, ossAk, ossAs)
-	if err != nil {
-		return err
-	}
+	region := "cn-heyuan"
 
-	Bucket, err = OSSClient.Bucket(OSSBucketName)
-	if err != nil {
-		return err
-	}
+	config := new(openapicred.Config).
+		// 指定Credential类型，固定值为ecs_ram_role
+		SetType("ecs_ram_role").
+		// （可选项）指定角色名称。如果不指定，OSS会自动获取角色。强烈建议指定角色名称，以降低请求次数
+		SetRoleName("RoleName")
 
+	arnCredential, gerr := openapicred.NewCredential(config)
+	provider := credentials.CredentialsProviderFunc(func(ctx context.Context) (credentials.Credentials, error) {
+		if gerr != nil {
+			return credentials.Credentials{}, gerr
+		}
+		cred, err := arnCredential.GetCredential()
+		if err != nil {
+			return credentials.Credentials{}, err
+		}
+		return credentials.Credentials{
+			AccessKeyID:     *cred.AccessKeyId,
+			AccessKeySecret: *cred.AccessKeySecret,
+			SecurityToken:   *cred.SecurityToken,
+		}, nil
+	})
+
+	// 加载默认配置并设置凭证提供者和region
+	cfg := oss.LoadDefaultConfig().
+		WithCredentialsProvider(provider).
+		WithRegion(region)
+
+	// 创建OSS客户端
+	OSSClient = oss.NewClient(cfg)
+	//log.Printf("ossclient: %v", client)
 	return nil
 }

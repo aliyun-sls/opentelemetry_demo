@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -85,11 +86,19 @@ func uploadImage(c *gin.Context) {
 	}
 	defer src.Close()
 
-	err = Bucket.PutObject(file.Filename, src)
+	request := &oss.PutObjectRequest{
+		Bucket: oss.Ptr(OSSBucketName), // 存储空间名称
+		Key:    oss.Ptr(file.Filename), // 对象名称
+		Body:   src,                    // 要上传的网络流内容
+	}
+	result, err := OSSClient.PutObject(c, request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"url": "http://" + OSSBucketName + "." + OSSEndpoint + "/" + file.Filename})
+	c.JSON(http.StatusOK, gin.H{
+		"url": "http://" + OSSBucketName + "." + OSSEndpoint + "/" + file.Filename,
+		"res": result.Status,
+	})
 }
