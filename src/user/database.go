@@ -19,7 +19,7 @@ func InitDB() *gorm.DB {
 		user := os.Getenv("MYSQL_USER")
 		password := os.Getenv("MYSQL_PASSWORD")
 		host := os.Getenv("MYSQL_ENDPOINT")
-		dsn := user + ":" + password + "@tcp(" + host + ")/dbname?charset=utf8mb4&parseTime=True&loc=Local"
+		dsn := user + ":" + password + "@tcp(" + host + ")/demo?charset=utf8mb4&parseTime=True&loc=Local"
 		sqlDB, err := sql.Open("mysql", dsn)
 		if err != nil {
 			panic("failed to connect database")
