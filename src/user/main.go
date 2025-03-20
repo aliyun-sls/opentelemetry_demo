@@ -13,10 +13,7 @@ type User struct {
 
 func main() {
 	// 初始化数据库
-	err := InitDB()
-	if err != nil {
-		return
-	}
+	InitDB()
 
 	// 初始化 Gin
 	r := gin.Default()

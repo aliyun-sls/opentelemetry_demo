@@ -15,7 +15,7 @@ var (
 	once sync.Once
 )
 
-func InitDB() *gorm.DB {
+func InitDB() {
 	once.Do(func() {
 		user := os.Getenv("MYSQL_USER")
 		password := os.Getenv("MYSQL_PASSWORD")
@@ -44,5 +44,4 @@ func InitDB() *gorm.DB {
 			return
 		}
 	})
-	return db
 }
