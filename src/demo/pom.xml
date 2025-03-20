@@ -13,6 +13,7 @@
         <module>marketing</module>
         <module>notification</module>
         <module>promotion</module>
+        <module>gateway</module>
     </modules>
 
     <parent>

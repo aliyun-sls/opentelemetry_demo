@@ -19,3 +19,7 @@ sudo docker push ${DOCKER_REPO}/${module}:${DOCKER_TAG}
 module=marketing
 sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}/${module}:${DOCKER_TAG} .
 sudo docker push ${DOCKER_REPO}/${module}:${DOCKER_TAG}
+
+module=gateway
+sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}/${module}:${DOCKER_TAG} .
+sudo docker push ${DOCKER_REPO}/${module}:${DOCKER_TAG}
