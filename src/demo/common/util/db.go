@@ -57,13 +57,12 @@ func (l *MyDBLog) Trace(ctx context.Context, begin time.Time, fc func() (sql str
 }
 
 func InitMDB() {
-
 	loc, _ := time.LoadLocation("Asia/Shanghai")
 	//+url.QueryEscape(loc.String())
 	//fmt.Println(url.QueryEscape(loc.String()))
 	// "root:12345@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=True&loc=",
-		config.MysqlUser, config.MysqlPass, config.MysqlHost, config.MysqlDB)
+		config.MysqlUser, config.MysqlPass, config.MysqlHost, "demo")
 	//dsn := "root:root@tcp(127.0.0.1:3306)/my_victore?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
 	//fmt.Println(dsn)
 	dsn = dsn + url.QueryEscape(loc.String())
@@ -88,6 +87,6 @@ func InitRDB() {
 }
 
 func InitDB() {
-	InitRDB()
+	//InitRDB()
 	InitMDB()
 }
