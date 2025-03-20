@@ -5,13 +5,13 @@ FROM golang:1.22
 WORKDIR /app
 
 # 复制 go.mod 和 go.sum 文件
-COPY product/go.mod .
-COPY product/go.sum .
+COPY go.mod .
+COPY go.sum .
 # 下载依赖
 RUN go mod download
 
 # 复制 common 目录到容器内
-COPY common /app/common
+COPY ../common common
 
 
 
