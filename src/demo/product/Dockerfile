@@ -9,7 +9,6 @@ COPY go.mod .
 COPY go.sum .
 
 # 确保 common 目录存在并复制
-RUN mkdir common
 COPY ../common common
 
 # 下载依赖
