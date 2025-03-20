@@ -1,8 +1,8 @@
 package v1
 
 import (
-	"/product/api/v1/handlers"
 	"github.com/gin-gonic/gin"
+	"sls-mall-go/product/api/v1/handlers"
 )
 
 func Routers(r *gin.Engine) {
