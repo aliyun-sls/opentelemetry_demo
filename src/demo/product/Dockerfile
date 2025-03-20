@@ -9,7 +9,7 @@ COPY go.mod .
 COPY go.sum .
 
 # 确保 common 目录存在并复制
-COPY ../../common/ ./common/
+COPY ../common/ ./common/
 
 # 下载依赖
 RUN go mod download
