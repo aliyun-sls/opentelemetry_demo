@@ -5,7 +5,8 @@ FROM golang:1.22
 WORKDIR /app
 
 # 复制 go.mod 和 go.sum 文件
-COPY go.mod go.sum ./
+COPY go.mod .
+COPY go.sum .
 
 # 下载依赖
 RUN go mod download
