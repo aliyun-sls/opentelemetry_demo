@@ -2,14 +2,16 @@
 FROM golang:1.22
 
 # 设置工作目录
+COPY ../common /app
 WORKDIR /app
 
 # 复制 go.mod 和 go.sum 文件
 COPY go.mod .
 COPY go.sum .
 
+
 # 确保 common 目录存在并复制
-COPY ../common .
+
 
 # 下载依赖
 RUN go mod download
