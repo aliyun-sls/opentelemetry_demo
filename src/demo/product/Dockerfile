@@ -8,6 +8,9 @@ WORKDIR /app
 COPY go.mod .
 COPY go.sum .
 
+# 复制 common 目录
+COPY common/ ./common/
+
 # 下载依赖
 RUN go mod download
 
