@@ -8,9 +8,8 @@ WORKDIR /app
 COPY product/go.mod .
 COPY product/go.sum .
 
-
-# 确保 common 目录存在并复制
-COPY common .
+# 复制 common 目录到容器内
+COPY common /app/common
 
 # 下载依赖
 RUN go mod download
