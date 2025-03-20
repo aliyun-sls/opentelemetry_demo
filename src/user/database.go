@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
@@ -39,6 +40,7 @@ func InitDB() *gorm.DB {
 
 		err = db.AutoMigrate(&User{})
 		if err != nil {
+			fmt.Println(err)
 			return
 		}
 	})
