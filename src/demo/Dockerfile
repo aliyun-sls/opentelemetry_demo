@@ -15,6 +15,9 @@ COPY notification/src notification/src/
 COPY promotion/pom.xml promotion/
 COPY promotion/src promotion/src/
 
+COPY gateway/pom.xml gateway/
+COPY gateway/src gateway/src/
+
 RUN mvn package -DskipTests
 
 FROM openjdk:11-jdk
