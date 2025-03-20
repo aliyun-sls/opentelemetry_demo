@@ -22,6 +22,12 @@ public class AdController {
         return ResponseEntity.ok(ads);
     }
 
+    @GetMapping("/ads/listAds")
+    public ResponseEntity<List<AdEntity>> listAdsAll() {
+        List<AdEntity> ads = adService.listAds();
+        return ResponseEntity.ok(ads);
+    }
+
     // 新增: 根据广告ID查询广告详情
     @GetMapping("/ad/{id}")
     public ResponseEntity<AdEntity> getAdById(@PathVariable Long id) {
