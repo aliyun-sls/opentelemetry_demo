@@ -16,7 +16,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o product .
 
 # 阶段2：运行环境
-FROM alpine:3.19 as product
+FROM alpine:3.19 AS product
 
 WORKDIR /app
 
