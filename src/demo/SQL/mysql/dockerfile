@@ -1,7 +1,7 @@
 FROM mysql:5.7
 
 # 直接使用官方镜像
-ENV MYSQL_ROOT_PASSWORD=Sls123123 \
+ENV MYSQL_ROOT_PASSWORD="" \
     MYSQL_DATABASE=demo \
 
 
