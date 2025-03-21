@@ -1,5 +1,5 @@
 # 使用国内镜像的基础系统
-FROM registry.cn-hangzhou.aliyuncs.com/library/debian:bullseye-slim
+FROM debian:bullseye-slim
 
 # 设置中文时区
 ENV TZ=Asia/Shanghai
