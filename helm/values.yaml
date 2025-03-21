@@ -74,7 +74,7 @@ components:
 secret:
   enabled: true
   data:
-    KAFKA_SERVICE_ADDR: ""
+    #KAFKA_SERVICE_ADDR: ""
     MYSQL_ENDPOINT: ""
     MYSQL_PASSWORD: ""
     MYSQL_USER: ""
