@@ -1,0 +1,27 @@
+# 使用多阶段构建优化镜像大小
+# 阶段1：构建环境
+FROM golang:1.22-alpine AS builder
+
+# 设置容器内工作目录
+WORKDIR /build
+
+# 复制依赖声明文件（利用构建缓存）
+WORKDIR /build/common
+COPY common .
+RUN go mod tidy
+
+WORKDIR /build/product
+COPY product .
+RUN go mod tidy
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o product .
+
+# 阶段2：运行环境
+FROM alpine:3.19 as product
+
+WORKDIR /app
+
+COPY --from=builder /build/product/product /app/
+EXPOSE 8080
+#ENV SERVICE_NAME product
+#ENV SERVICE_PORT 8080
+ENTRYPOINT ["/app/product"]
