@@ -2,7 +2,7 @@
 
 
 DOCKER_REPO=ghcr.io/aliyun-sls/demo
-DOCKER_TAG=1.0
+DOCKER_TAG=latest
 
 module=ads
 sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module}-eks .

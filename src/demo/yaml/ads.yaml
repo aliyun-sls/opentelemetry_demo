@@ -60,7 +60,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/ads:1.0'
+          image: 'o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/demo:latest-ads'
           imagePullPolicy: Always
           name: ads
           ports:
