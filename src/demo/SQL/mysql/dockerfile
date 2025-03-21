@@ -1,0 +1,40 @@
+# 使用国内镜像的基础系统
+FROM registry.cn-hangzhou.aliyuncs.com/library/debian:bullseye-slim
+
+# 设置中文时区
+ENV TZ=Asia/Shanghai
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
+
+# 替换软件源
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+
+# 安装必要组件
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    wget \
+    gnupg && \
+    rm -rf /var/lib/apt/lists/*
+
+# 添加 MySQL 官方源（使用国内镜像）
+RUN wget https://mirrors.aliyun.com/mysql/apt/mysql-apt-config_0.8.24-1_all.deb && \
+    DEBIAN_FRONTEND=noninteractive dpkg -i mysql-apt-config_0.8.24-1_all.deb && \
+    rm mysql-apt-config_0.8.24-1_all.deb
+
+# 安装 MySQL
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server && \
+    rm -rf /var/lib/apt/lists/*
+
+# 配置文件
+COPY my.cnf /etc/mysql/my.cnf
+
+# 初始化脚本
+COPY init.sql /docker-entrypoint-initdb.d/
+
+# 暴露端口
+EXPOSE 3306
+
+# 启动命令
+CMD ["mysqld"]
