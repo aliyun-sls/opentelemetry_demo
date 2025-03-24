@@ -3,6 +3,9 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /usr/src/app/
 
 COPY ./tools/instgo /tmp/instgo
+COPY ./src/demo/common common
+RUN go mod tidy
+RUN go mod download
 RUN chmod +x /tmp/instgo
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
