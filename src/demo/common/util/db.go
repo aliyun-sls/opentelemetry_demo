@@ -61,7 +61,7 @@ func InitMDB() {
 	//+url.QueryEscape(loc.String())
 	//fmt.Println(url.QueryEscape(loc.String()))
 	// "root:12345@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?charset=utf8mb4&parseTime=True&loc=",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=",
 		config.MysqlUser, config.MysqlPass, config.MysqlHost, "demo")
 	//dsn := "root:root@tcp(127.0.0.1:3306)/my_victore?charset=utf8mb4&parseTime=True&loc=Asia%2FShanghai"
 	//fmt.Println(dsn)
