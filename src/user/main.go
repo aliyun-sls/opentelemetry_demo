@@ -23,11 +23,12 @@ func main() {
 	// 初始化 Gin
 	r := gin.Default()
 
-	redisAddr := os.Getenv("REDIS_ADDR")
+	redisAddr := os.Getenv("REDIS_ENDPOINT")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisClient = redis.NewClient(&redis.Options{
-		Addr:     redisAddr, // Redis 服务器地址
-		Password: "",        // 密码，如果没有设置密码则为空
-		DB:       0,         // 默认数据库
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       0,
 	})
 
 	// 注册路由
