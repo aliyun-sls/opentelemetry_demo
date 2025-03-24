@@ -1,5 +1,7 @@
 package com.example.demo.gateway.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -9,8 +11,11 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-//@Component
+@Component
 public class AuthFilter implements WebFilter {
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -23,20 +28,24 @@ public class AuthFilter implements WebFilter {
         }
 
         return isAuthenticated(exchange)
-                .flatMap(isAuthenticated -> {
-                    if (!isAuthenticated) {
+                .flatMap(userId -> {
+                    if (userId == null || userId.isEmpty()) {
                         ServerHttpResponse response = exchange.getResponse();
                         response.setStatusCode(HttpStatus.FOUND);
                         response.getHeaders().add("Location", "/login");
                         return response.setComplete();
                     }
+                    // 将 userId 添加到 exchange 的属性中
+                    exchange.getAttributes().put("userId", userId);
                     return chain.filter(exchange);
                 });
     }
 
-    private Mono<Boolean> isAuthenticated(ServerWebExchange exchange) {
+    private Mono<String> isAuthenticated(ServerWebExchange exchange) {
         return exchange.getSession()
-                .map(session -> session.getAttribute("user") != null)
-                .defaultIfEmpty(false);
+                .flatMap(session -> {
+                    String sessionId = session.getId();
+                    return Mono.justOrEmpty(redisTemplate.opsForValue().get(sessionId));
+                });
     }
 }
