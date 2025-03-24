@@ -13,7 +13,10 @@ func register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	if err := db.Where("username = ?", user.Username).First(&user).Error; err == nil {
+		c.JSON(http.StatusConflict, gin.H{"error": "username already registered"})
+		return
+	}
 	if err := db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
 		return
