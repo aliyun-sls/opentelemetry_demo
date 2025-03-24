@@ -23,7 +23,9 @@ public class AuthFilter implements WebFilter {
         String path = request.getPath().value();
 
         // 排除前端路由的认证检查
-        if (path.startsWith("/login") || path.startsWith("/register")) {
+        if (path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/api/products")
+                || path.startsWith("/_next") || path.startsWith("/images") || path.startsWith("/icons")
+                || path.isEmpty() || path.equals("/")) {
             return chain.filter(exchange);
         }
 
