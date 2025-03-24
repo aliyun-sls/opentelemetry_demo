@@ -26,7 +26,7 @@ func Shelve(c *gin.Context) {
 		util.Status400(c, err)
 		return
 	}
-	err = util.MDB.WithContext(ctx).Model(&products).Update("products_status", model.Shelve).Error
+	err = util.MDB.WithContext(ctx).Model(&products).Where("id = ?", products.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
 		util.Status500(c, err)
 		return

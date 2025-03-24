@@ -36,7 +36,7 @@ func main() {
 	}()
 
 	urlLogin := "http://user.default.svc.cluster.local:8080/login"
-	urlShelve := "http://product.default.svc.cluster.local:8080/shelve"
+	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
 
 	// 创建一个每10秒触发一次的定时器
 	ticker := time.NewTicker(10 * time.Second)

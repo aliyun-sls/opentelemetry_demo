@@ -1,6 +1,6 @@
 module sls-mall-go/common
 
-go 1.17
+go 1.22
 
 require (
 	github.com/aliyun-sls/opentelemetry-go-provider-sls v0.9.0
@@ -37,7 +37,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/grafana/pyroscope-go/godeltaprof v0.1.4 // indirect
+	github.com/grafana/pyroscope-go/godeltaprof v0.1.5 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
