@@ -91,6 +91,6 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error reading login response body: %v", err)
 		}
-		log.Printf("Login Response: %s", bodyGateway)
+		log.Printf("Gateway Response: %s", bodyGateway)
 	}
 }
