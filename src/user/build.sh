@@ -9,7 +9,7 @@ sudo docker build -f src/user/Dockerfile --build-arg module=${module} --tag ${DO
 sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
 
 DOCKER_REPO=ghcr.io/aliyun-sls/demo
-DOCKER_TAG=1.0
+DOCKER_TAG=latest
 
 module=user
 sudo docker build -f src/user/Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module}-eks .
