@@ -6,8 +6,8 @@ COPY ./tools/instgo /tmp/instgo
 RUN chmod +x /tmp/instgo
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
-    --mount=type=bind,source=src/user/go.sum,target=go.sum \
-    --mount=type=bind,source=src/user/go.mod,target=go.mod \
+    --mount=type=bind,source=./src/user/go.sum,target=go.sum \
+    --mount=type=bind,source=./src/user/go.mod,target=go.mod \
     go mod download
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
