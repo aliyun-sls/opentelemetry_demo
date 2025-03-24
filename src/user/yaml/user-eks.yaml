@@ -58,7 +58,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.uid
-          image: 'ghcr.io/aliyun-sls/demo:1.0-user-eks'
+          image: 'ghcr.io/aliyun-sls/demo:latest-user-eks'
           imagePullPolicy: Always
           name: user
           ports:
