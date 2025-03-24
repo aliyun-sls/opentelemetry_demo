@@ -1,24 +1,25 @@
-# 使用官方的Go镜像作为基础镜像
-FROM golang:1.22-alpine
+FROM golang:1.22-alpine AS builder
 
-# 设置工作目录
-WORKDIR /app
+WORKDIR /usr/src/app/
 
-# 将Go模块文件复制到工作目录
-COPY go.mod .
-COPY go.sum .
+COPY ./tools/instgo /tmp/instgo
+RUN chmod +x /tmp/instgo
 
-# 下载依赖
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=./src/demo/goApp/go.sum,target=go.sum \
+    --mount=type=bind,source=./src/demo/goApp/go.mod,target=go.mod \
+    go mod download
 
-# 将源代码复制到工作目录
-COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=bind,rw,source=./src/demo/goApp,target=. \
+    /tmp/instgo go build -ldflags "-s -w" -o /go/bin/goApp/ ./
 
-# 构建应用程序
-RUN go build -o main .
+FROM alpine
 
-# 暴露端口
+WORKDIR /usr/src/app/
+
+COPY --from=builder /go/bin/goApp/ ./
+
 EXPOSE 8080
-
-# 运行应用程序
-CMD ["./main"]
+ENTRYPOINT [ "./goApp" ]
