@@ -37,6 +37,7 @@ func main() {
 
 	urlLogin := "http://user.default.svc.cluster.local:8080/login"
 	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
+	urlGateway := "http://gateway:8080"
 
 	// 创建一个每10秒触发一次的定时器
 	ticker := time.NewTicker(10 * time.Second)
@@ -79,5 +80,17 @@ func main() {
 			log.Fatalf("Error reading shelve response body: %v", err)
 		}
 		log.Printf("Shelve Response: %s", bodyShelve)
+
+		respGateway, err := http.Get(urlGateway)
+		if err != nil {
+			log.Fatalf("Error calling login endpoint: %v", err)
+		}
+		defer respGateway.Body.Close()
+
+		bodyGateway, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("Error reading login response body: %v", err)
+		}
+		log.Printf("Login Response: %s", bodyGateway)
 	}
 }
