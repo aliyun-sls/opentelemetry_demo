@@ -2,7 +2,9 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
+	"os"
 )
 
 type User struct {
@@ -11,12 +13,23 @@ type User struct {
 	Password string `json:"password"`
 }
 
+// 初始化 Redis 客户端
+var redisClient *redis.Client
+
 func main() {
 	// 初始化数据库
 	InitDB()
 
 	// 初始化 Gin
 	r := gin.Default()
+
+	redisAddr := os.Getenv("REDIS_ENDPOINT")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisClient = redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       0,
+	})
 
 	// 注册路由
 	r.POST("/register", register)

@@ -1,16 +1,25 @@
-FROM golang:1.23-alpine3.20 AS builder
+FROM golang:1.22-alpine AS builder
 
-WORKDIR /demo
-ENV GOPROXY https://goproxy.cn
+WORKDIR /usr/src/app/
 
-COPY . .
-RUN go mod tidy
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o demo .
+COPY ./tools/instgo /tmp/instgo
+RUN chmod +x /tmp/instgo
 
-FROM alpine:3.20 AS product
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=src/user/go.sum,target=go.sum \
+    --mount=type=bind,source=src/user/go.mod,target=go.mod \
+    go mod download
 
-WORKDIR /app
-COPY --from=builder /demo/demo /app/
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=bind,rw,source=./src/user,target=. \
+    /tmp/instgo go build -ldflags "-s -w" -o /go/bin/user/ ./
+
+FROM alpine
+
+WORKDIR /usr/src/app/
+
+COPY --from=builder /go/bin/user/ ./
+
 EXPOSE 8080
-
-ENTRYPOINT ["/app/demo"]
+ENTRYPOINT [ "./user" ]
