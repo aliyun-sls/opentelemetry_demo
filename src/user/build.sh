@@ -12,5 +12,5 @@ DOCKER_REPO=ghcr.io/aliyun-sls/demo
 DOCKER_TAG=1.0
 
 module=user
-sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
-sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
+sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module}-eks .
+sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}-eks
