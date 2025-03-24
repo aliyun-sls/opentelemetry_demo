@@ -19,6 +19,7 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
+	ToApp()
 	ctx := c.Request.Context()
 	var products model.Product
 	err := c.BindQuery(&products)
