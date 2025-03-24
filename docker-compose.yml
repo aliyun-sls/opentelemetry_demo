@@ -290,6 +290,8 @@ services:
       - OTEL_COLLECTOR_HOST
       - FLAGD_HOST
       - FLAGD_PORT
+      - ALIBABA_CLOUD_RUM_PID
+      - ALIBABA_CLOUD_RUM_ENDPOINT
     depends_on:
       ad:
         condition: service_started

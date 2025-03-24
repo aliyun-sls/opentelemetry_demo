@@ -5,7 +5,14 @@ import Document, { DocumentContext, Html, Head, Main, NextScript } from 'next/do
 import { ServerStyleSheet } from 'styled-components';
 import {context, propagation} from "@opentelemetry/api";
 
-const { ENV_PLATFORM, WEB_OTEL_SERVICE_NAME, PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, OTEL_COLLECTOR_HOST} = process.env;
+const {
+  ENV_PLATFORM,
+  WEB_OTEL_SERVICE_NAME,
+  PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+  OTEL_COLLECTOR_HOST,
+  ALIBABA_CLOUD_RUM_PID,
+  ALIBABA_CLOUD_RUM_ENDPOINT
+} = process.env;
 
 export default class MyDocument extends Document<{ envString: string }> {
   static async getInitialProps(ctx: DocumentContext) {
@@ -33,10 +40,18 @@ export default class MyDocument extends Document<{ envString: string }> {
           NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: '${otlpTracesEndpoint}',
           IS_SYNTHETIC_REQUEST: '${isSyntheticRequest}',
         };`;
+
+      const rumString = `
+        window.ENV = {
+          "pid": "${ALIBABA_CLOUD_RUM_PID}",
+          "endpoint": "${ALIBABA_CLOUD_RUM_ENDPOINT}",
+          "tracing": true
+        };`;
       return {
         ...initialProps,
         styles: [initialProps.styles, sheet.getStyleElement()],
         envString,
+        rumString
       };
     } finally {
       sheet.seal();
@@ -55,6 +70,8 @@ export default class MyDocument extends Document<{ envString: string }> {
           />
         </Head>
         <body>
+          <script dangerouslySetInnerHTML={{ __html: this.props.rumString }}></script>
+          <script type="text/javascript" src="https://sdk.rum.aliyuncs.com/v2/browser-sdk.js" crossOrigin='anonymous'/>
           <Main />
           <script dangerouslySetInnerHTML={{ __html: this.props.envString }}></script>
           <NextScript />
