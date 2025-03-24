@@ -17,6 +17,7 @@ func register(c *gin.Context) {
 		c.JSON(http.StatusConflict, gin.H{"error": "username already registered"})
 		return
 	}
+	user.Role = ROLE_USRR
 	if err := db.Create(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
 		return
@@ -46,5 +47,5 @@ func login(c *gin.Context) {
 
 	c.SetCookie("sessionid", uid, 3600*24, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "sessionid": uid})
+	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "sessionid": uid, "role": foundUser.Role}) // 返回角色信息
 }

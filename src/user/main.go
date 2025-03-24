@@ -11,7 +11,13 @@ type User struct {
 	gorm.Model
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Role     int    `json:"role"` // 添加角色字段
 }
+
+const (
+	ROLE_ADMIN = iota
+	ROLE_USRR
+)
 
 // 初始化 Redis 客户端
 var redisClient *redis.Client
