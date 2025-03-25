@@ -3,6 +3,7 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /usr/src/app/
 
 COPY ./tools/instgo /tmp/instgo
+COPY ./src/demo/goApp/tupian ./tupian
 RUN chmod +x /tmp/instgo
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
