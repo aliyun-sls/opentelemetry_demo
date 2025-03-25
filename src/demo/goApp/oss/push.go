@@ -48,7 +48,8 @@ func PushOSS() {
 
 func push(client *oss.Client) {
 	// 获取指定目录下的所有文件
-	files, err := os.ReadDir("src/demo/goApp/tupian")
+	path, _ := os.Getwd()
+	files, err := os.ReadDir(path + "/tupian/")
 	if err != nil {
 		log.Fatalf("failed to read directory: %v", err)
 	}
@@ -56,7 +57,7 @@ func push(client *oss.Client) {
 	// 遍历目录中的文件
 	for _, file := range files {
 		if !file.IsDir() {
-			filePath := "src/demo/goApp/tupian/" + file.Name()
+			filePath := path + "/tupian/" + file.Name()
 			file, err := os.Open(filePath)
 			if err != nil {
 				log.Fatalf("failed to open file: %v", err)
