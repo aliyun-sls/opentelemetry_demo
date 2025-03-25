@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 FROM envoyproxy/envoy:v1.32-latest
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-
 RUN apt-get update && apt-get install -y gettext-base && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 
