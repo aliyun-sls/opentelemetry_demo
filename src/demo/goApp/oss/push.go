@@ -66,9 +66,9 @@ func push(client *oss.Client) {
 
 			// 创建上传对象的请求
 			request := &oss.PutObjectRequest{
-				Bucket: oss.Ptr("o11y-demo-cn-heyuan/test"), // 存储空间名称
-				Key:    oss.Ptr(filePath),                   // 对象名称，使用文件名作为对象名称
-				Body:   file,                                // 要上传的文件内容
+				Bucket: oss.Ptr("o11y-demo-cn-heyuan"), // 存储空间名称
+				Key:    oss.Ptr("test/" + filePath),    // 对象名称，使用文件名作为对象名称
+				Body:   file,                           // 要上传的文件内容
 			}
 
 			// 发送上传对象的请求
