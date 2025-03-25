@@ -57,7 +57,7 @@ func push(client *oss.Client) {
 	// 遍历目录中的文件
 	for _, file := range files {
 		if !file.IsDir() {
-			filePath := path + "/tupian/" + file.Name()
+			filePath := path + "/goApp/tupian/" + file.Name()
 			file, err := os.Open(filePath)
 			if err != nil {
 				log.Fatalf("failed to open file: %v", err)
