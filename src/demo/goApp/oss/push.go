@@ -12,7 +12,7 @@ import (
 
 func PushOSS() {
 	// 请根据实际要求设置region，以实例华东1（杭州）为例，regionID为cn-hangzhou
-	region := "cn-wulanchabu"
+	region := "cn-heyuan"
 
 	config := new(openapicred.Config).
 		// 指定Credential类型，固定值为ecs_ram_role
@@ -52,9 +52,9 @@ func push(client *oss.Client) {
 
 	// 创建上传对象的请求
 	request := &oss.PutObjectRequest{
-		Bucket: oss.Ptr("wulan-demo"), // 存储空间名称
-		Key:    oss.Ptr("test"),       // 对象名称
-		Body:   body,                  // 要上传的字符串内容
+		Bucket: oss.Ptr("o11y-demo-cn-heyuan"), // 存储空间名称
+		Key:    oss.Ptr("test"),                // 对象名称
+		Body:   body,                           // 要上传的字符串内容
 	}
 
 	// 发送上传对象的请求

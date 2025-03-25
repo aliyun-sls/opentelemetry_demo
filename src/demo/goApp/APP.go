@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	OSS "goapp/oss"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -33,11 +35,7 @@ func main() {
 		}
 	}()
 
-	for {
-		OSS.PushOSS()
-		time.Sleep(10 * time.Second)
-	}
-	/*urlLogin := "http://user.default.svc.cluster.local:8080/login"
+	urlLogin := "http://user.default.svc.cluster.local:8080/login"
 	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
 	urlGateway := "http://gateway:8080"
 
@@ -94,5 +92,5 @@ func main() {
 			log.Fatalf("Error reading login response body: %v", err)
 		}
 		log.Printf("Gateway Response: %s", bodyGateway)
-	}*/
+	}
 }
