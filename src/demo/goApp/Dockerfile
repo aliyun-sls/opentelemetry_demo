@@ -21,7 +21,7 @@ FROM alpine
 WORKDIR /usr/src/app/
 
 COPY --from=builder /go/bin/goapp/ ./
-COPY --from=builder /usr/src/app/tupian ./tupian  // 确保tupian文件夹在最终镜像中存在
+COPY --from=builder /usr/src/app/tupian ./tupian
 
 EXPOSE 8080
 ENTRYPOINT [ "./goapp" ]
