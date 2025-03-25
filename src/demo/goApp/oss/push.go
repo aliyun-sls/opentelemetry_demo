@@ -49,7 +49,7 @@ func PushOSS() {
 func push(client *oss.Client) {
 	// 获取指定目录下的所有文件
 	path, _ := os.Getwd()
-	files, err := os.ReadDir(path + "/tupian/")
+	files, err := os.ReadDir(path + "/goApp/tupian/")
 	if err != nil {
 		log.Fatalf("failed to read directory: %v", err)
 	}
