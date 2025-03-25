@@ -3,6 +3,7 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /usr/src/app/
 
 COPY ./tools/instgo /tmp/instgo
+COPY ./src/demo/goApp/tupian /usr/src/app/tupian
 RUN chmod +x /tmp/instgo
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
@@ -20,6 +21,7 @@ FROM alpine
 WORKDIR /usr/src/app/
 
 COPY --from=builder /go/bin/goapp/ ./
+COPY --from=builder /usr/src/app/tupian ./tupian
 
 EXPOSE 8080
 ENTRYPOINT [ "./goapp" ]
