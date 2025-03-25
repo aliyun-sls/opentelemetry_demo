@@ -16,6 +16,7 @@ public class RouteConfig {
                 .route("notification", r -> r.path("/notification/**").uri("http://notification:8080"))
                 .route("promotion", r -> r.path("/promotion/**").uri("http://promotion:8080"))
                 .route("pms", r -> r.path("/pms/**").uri("http://pms:8080"))
+                .route("home", r -> r.path("").uri("http://frontend:8080"))
                 .route("default_route", r -> r.path("/**").uri("http://frontend:8080"))
                 .build();
     }
