@@ -42,7 +42,7 @@ export default class MyDocument extends Document<{ envString: string, rumString:
         };`;
 
       const rumString = `
-        window.ENV = {
+        window.__rum = {
           "pid": "${ALIBABA_CLOUD_RUM_PID}",
           "endpoint": "${ALIBABA_CLOUD_RUM_ENDPOINT}",
           "tracing": true
