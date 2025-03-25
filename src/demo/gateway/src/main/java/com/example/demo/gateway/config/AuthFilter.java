@@ -22,36 +22,37 @@ public class AuthFilter implements WebFilter {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
+        return chain.filter(exchange);
         // 排除前端路由的认证检查
-        if (path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/api/products")
-                || path.startsWith("/_next") || path.startsWith("/images") || path.startsWith("/icons")
-                || path.isEmpty() || path.equals("/")) {
-            return chain.filter(exchange);
-        }
-
-        return isAuthenticated(exchange)
-                .flatMap(userId -> {
-                    if (userId == null || userId.isEmpty()) {
-                        ServerHttpResponse response = exchange.getResponse();
-                        response.setStatusCode(HttpStatus.FOUND);
-                        response.getHeaders().add("Location", "/login");
-                        return response.setComplete();
-                    }
-                    // 获取用户权限
-                    return getUserRole(userId)
-                            .flatMap(role -> {
-                                // 检查权限是否允许访问路径
-                                if (!isAccessAllowed(path, role)) {
-                                    ServerHttpResponse response = exchange.getResponse();
-                                    response.setStatusCode(HttpStatus.FORBIDDEN);
-                                    return response.setComplete();
-                                }
-                                // 将 userId 和 role 添加到 exchange 的属性中
-                                exchange.getAttributes().put("userId", userId);
-                                exchange.getAttributes().put("role", role);
-                                return chain.filter(exchange);
-                            });
-                });
+//        if (path.startsWith("/login") || path.startsWith("/register") || path.startsWith("/api/products")
+//                || path.startsWith("/_next") || path.startsWith("/images") || path.startsWith("/icons")
+//                || path.isEmpty() || path.equals("/")) {
+//            return chain.filter(exchange);
+//        }
+//
+//        return isAuthenticated(exchange)
+//                .flatMap(userId -> {
+//                    if (userId == null || userId.isEmpty()) {
+//                        ServerHttpResponse response = exchange.getResponse();
+//                        response.setStatusCode(HttpStatus.FOUND);
+//                        response.getHeaders().add("Location", "/login");
+//                        return response.setComplete();
+//                    }
+//                    // 获取用户权限
+//                    return getUserRole(userId)
+//                            .flatMap(role -> {
+//                                // 检查权限是否允许访问路径
+//                                if (!isAccessAllowed(path, role)) {
+//                                    ServerHttpResponse response = exchange.getResponse();
+//                                    response.setStatusCode(HttpStatus.FORBIDDEN);
+//                                    return response.setComplete();
+//                                }
+//                                // 将 userId 和 role 添加到 exchange 的属性中
+//                                exchange.getAttributes().put("userId", userId);
+//                                exchange.getAttributes().put("role", role);
+//                                return chain.filter(exchange);
+//                            });
+//                });
     }
 
     private Mono<String> isAuthenticated(ServerWebExchange exchange) {
