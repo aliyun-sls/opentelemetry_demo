@@ -170,8 +170,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      address: ${GATEWAY_HOST}
-                      port_value: ${GATEWAY_PORT}
+                      address: ${GATEWAY1_HOST}
+                      port_value: ${GATEWAY1_PORT}
     - name: image-provider
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
