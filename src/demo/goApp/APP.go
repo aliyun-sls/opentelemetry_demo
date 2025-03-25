@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	OSS "goapp/oss"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -67,7 +66,7 @@ func main() {
 			log.Fatalf("Error reading login response body: %v", err)
 		}
 		log.Printf("Login Response: %s", body)
-		OSS.PushOSS()
+		//OSS.PushOSS()
 		// GET 请求到 shelve 接口，添加查询参数
 		queryParams := "?products_cate=1&products_name=electronics&unit_price=100&products_unit=1&brand_id=123&seller_id=456"
 		respShelve, err := http.Get(urlShelve + queryParams)
