@@ -3,7 +3,7 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /usr/src/app/
 
 COPY ./tools/instgo /tmp/instgo
-COPY ./src/demo/goApp/tupian /usr/src/app/tupian  // 修改路径，确保tupian文件夹被复制到工作目录
+COPY ./src/demo/goApp/tupian /usr/src/app/tupian
 RUN chmod +x /tmp/instgo
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
