@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sls-mall-go/common/model"
 	"time"
@@ -87,8 +88,34 @@ func main() {
 				break // 只取第一张图片
 			}
 		}
+		product = model.Product{
+			ProductBasicType: model.ProductBasicType{
+				ProductsName: "yichen",
+				ProductsPic:  picPath,
+				UnitPrice:    100,
+				ProductsUnit: 1,
+			},
+			BrandId:        123,
+			SellerId:       456,
+			ProductsCate:   1,
+			ProductsDesc:   "electronics",
+			ProductsStatus: model.Shelve,
+		}
 
-		queryParams := fmt.Sprintf("?products_name=\"yichen\"&products_cate=1&products_name=electronics&unit_price=100&products_unit=1&brand_id=123&seller_id=456&products_pic=%s", picPath)
+		// 将product结构体转换为url.Values
+		res := url.Values{}
+		res.Add("products_name", product.ProductBasicType.ProductsName)
+		res.Add("products_pic", string(product.ProductBasicType.ProductsPic))
+		res.Add("unit_price", fmt.Sprintf("%d", product.ProductBasicType.UnitPrice))
+		res.Add("products_unit", fmt.Sprintf("%d", product.ProductBasicType.ProductsUnit))
+		res.Add("brand_id", fmt.Sprintf("%d", product.BrandId))
+		res.Add("SellerId", fmt.Sprintf("%d", product.SellerId))
+		res.Add("ProductsCate", fmt.Sprintf("%d", product.ProductsCate))
+		res.Add("ProductsDesc", product.ProductsDesc)
+		res.Add("products_status", string(product.ProductsStatus))
+
+		queryParams := res.Encode()
+
 		respShelve, err := http.Get(urlShelve + queryParams)
 		if err != nil {
 			log.Fatalf("Error calling shelve endpoint: %v", err)
