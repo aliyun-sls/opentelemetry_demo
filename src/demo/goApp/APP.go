@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	OSS "goapp/oss"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"sls-mall-go/common/model"
 	"time"
 )
 
@@ -37,7 +39,7 @@ func main() {
 	}()
 
 	urlLogin := "http://user.default.svc.cluster.local:8080/login"
-	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
+	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve/?"
 	urlGateway := "http://gateway:8080"
 
 	// 创建一个每10秒触发一次的定时器
@@ -67,9 +69,53 @@ func main() {
 			log.Fatalf("Error reading login response body: %v", err)
 		}
 		log.Printf("Login Response: %s", body)
-		OSS.PushOSS()
+		//OSS.PushOSS()
 		// GET 请求到 shelve 接口，添加查询参数
-		queryParams := "?products_cate=1&products_name=electronics&unit_price=100&products_unit=1&brand_id=123&seller_id=456"
+		path, _ := os.Getwd()
+		files, err := os.ReadDir(path + "/tupian/")
+		if err != nil {
+			log.Fatalf("failed to read directory: %v", err)
+		}
+
+		var product model.Product
+		var picPath []byte
+		//var filePath = ""
+		for _, file := range files {
+			if !file.IsDir() {
+				//filePath = file.Name()
+				data, _ := product.ProductBasicType.ProductsPic.Value()
+				picPath = data.([]byte)
+				break // 只取第一张图片
+			}
+		}
+		product = model.Product{
+			ProductBasicType: model.ProductBasicType{
+				ProductsName: "yichen",
+				ProductsPic:  picPath,
+				UnitPrice:    100,
+				ProductsUnit: 1,
+			},
+			BrandId:        123,
+			SellerId:       456,
+			ProductsCate:   1,
+			ProductsDesc:   "electronics",
+			ProductsStatus: model.Shelve,
+		}
+
+		// 将product结构体转换为url.Values
+		res := url.Values{}
+		res.Add("products_name", product.ProductBasicType.ProductsName)
+		res.Add("products_pic", string(product.ProductBasicType.ProductsPic))
+		res.Add("unit_price", fmt.Sprintf("%d", product.ProductBasicType.UnitPrice))
+		res.Add("products_unit", fmt.Sprintf("%d", product.ProductBasicType.ProductsUnit))
+		res.Add("brand_id", fmt.Sprintf("%d", product.BrandId))
+		res.Add("seller_id", fmt.Sprintf("%d", product.SellerId))
+		res.Add("products_cate", fmt.Sprintf("%d", product.ProductsCate))
+		res.Add("products_desc", product.ProductsDesc)
+		res.Add("products_status", string(product.ProductsStatus))
+
+		queryParams := res.Encode()
+		fmt.Println(urlShelve + queryParams)
 		respShelve, err := http.Get(urlShelve + queryParams)
 		if err != nil {
 			log.Fatalf("Error calling shelve endpoint: %v", err)
@@ -88,7 +134,7 @@ func main() {
 		}
 		defer respGateway.Body.Close()
 
-		bodyGateway, err := ioutil.ReadAll(resp.Body)
+		bodyGateway, err := ioutil.ReadAll(respGateway.Body)
 		if err != nil {
 			log.Fatalf("Error reading login response body: %v", err)
 		}

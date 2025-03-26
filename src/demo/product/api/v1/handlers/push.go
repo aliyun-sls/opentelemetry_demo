@@ -1,16 +1,18 @@
-package OSS
+package handlers
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"log"
-	"os"
+	"sls-mall-go/common/model"
 
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	openapicred "github.com/aliyun/credentials-go/credentials"
 )
 
-func PushOSS() {
+func PushOSS(products model.Product) {
 	// 请根据实际要求设置region，以实例华东1（杭州）为例，regionID为cn-hangzhou
 	region := "cn-heyuan"
 
@@ -42,43 +44,33 @@ func PushOSS() {
 
 	// 创建OSS客户端
 	client := oss.NewClient(cfg)
-	push(client)
 	log.Printf("ossclient: %v", client)
-}
 
-func push(client *oss.Client) {
-	// 获取指定目录下的所有文件
-	path, _ := os.Getwd()
-	files, err := os.ReadDir(path + "/tupian/")
+	// 检查 products 结构体的内容
+	log.Printf("products: %+v", products)
+	if products.ProductsName == "" {
+		log.Printf("products.ProductsName is empty")
+	}
+	if products.ProductBasicType.ProductsPic == nil {
+		log.Printf("products.ProductBasicType.ProductsPic is nil")
+	}
+
+	// 获取图片数据
+	imageData := products.ProductBasicType.ProductsPic
+	fmt.Println("imageData: ", imageData, "products.ProductsName: ", products.ProductsName)
+	// 创建上传对象的请求
+	request := &oss.PutObjectRequest{
+		Bucket: oss.Ptr("o11y-demo-cn-heyuan"),           // 存储空间名称
+		Key:    oss.Ptr("test/" + products.ProductsName), // 对象名称，使用文件名作为对象名称
+		Body:   bytes.NewReader(imageData),               // 要上传的图片数据
+	}
+
+	// 发送上传对象的请求
+	result, err := client.PutObject(context.TODO(), request)
 	if err != nil {
-		log.Fatalf("failed to read directory: %v", err)
+		log.Fatalf("failed to put object %v", err)
 	}
 
-	// 遍历目录中的文件
-	for _, file := range files {
-		if !file.IsDir() {
-			filePath := path + "/tupian/" + file.Name()
-			file, err := os.Open(filePath)
-			if err != nil {
-				log.Fatalf("failed to open file: %v", err)
-			}
-			defer file.Close()
-
-			// 创建上传对象的请求
-			request := &oss.PutObjectRequest{
-				Bucket: oss.Ptr("o11y-demo-cn-heyuan"), // 存储空间名称
-				Key:    oss.Ptr("test/" + file.Name()), // 对象名称，使用文件名作为对象名称
-				Body:   file,                           // 要上传的文件内容
-			}
-
-			// 发送上传对象的请求
-			result, err := client.PutObject(context.TODO(), request)
-			if err != nil {
-				log.Fatalf("failed to put object %v", err)
-			}
-
-			// 打印上传对象的结果
-			log.Printf("put object result:%#v\n", result)
-		}
-	}
+	// 打印上传对象的结果
+	log.Printf("put object result:%#v\n", result)
 }

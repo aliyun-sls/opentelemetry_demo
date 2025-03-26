@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 )
 
-type PicPath []string
+type PicPath []byte
 
 func (t *PicPath) Scan(value interface{}) error {
 	if value == nil {
