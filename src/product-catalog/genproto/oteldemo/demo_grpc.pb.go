@@ -22,9 +22,12 @@ package oteldemo
 
 import (
 	context "context"
+	"errors"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	"math/rand"
+	"time"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -134,6 +137,11 @@ func RegisterCartServiceServer(s grpc.ServiceRegistrar, srv CartServiceServer) {
 
 func _CartService_AddItem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AddItemRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -152,6 +160,12 @@ func _CartService_AddItem_Handler(srv interface{}, ctx context.Context, dec func
 
 func _CartService_GetCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCartRequest)
+	//注入延时错误
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -170,6 +184,11 @@ func _CartService_GetCart_Handler(srv interface{}, ctx context.Context, dec func
 
 func _CartService_EmptyCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyCartRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -280,6 +299,11 @@ func RegisterRecommendationServiceServer(s grpc.ServiceRegistrar, srv Recommenda
 
 func _RecommendationService_ListRecommendations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListRecommendationsRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -414,6 +438,11 @@ func RegisterProductCatalogServiceServer(s grpc.ServiceRegistrar, srv ProductCat
 
 func _ProductCatalogService_ListProducts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -432,6 +461,11 @@ func _ProductCatalogService_ListProducts_Handler(srv interface{}, ctx context.Co
 
 func _ProductCatalogService_GetProduct_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProductRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -450,6 +484,11 @@ func _ProductCatalogService_GetProduct_Handler(srv interface{}, ctx context.Cont
 
 func _ProductCatalogService_SearchProducts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchProductsRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -576,6 +615,11 @@ func RegisterShippingServiceServer(s grpc.ServiceRegistrar, srv ShippingServiceS
 
 func _ShippingService_GetQuote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetQuoteRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -594,6 +638,11 @@ func _ShippingService_GetQuote_Handler(srv interface{}, ctx context.Context, dec
 
 func _ShippingService_ShipOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ShipOrderRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -716,6 +765,11 @@ func RegisterCurrencyServiceServer(s grpc.ServiceRegistrar, srv CurrencyServiceS
 
 func _CurrencyService_GetSupportedCurrencies_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -734,6 +788,11 @@ func _CurrencyService_GetSupportedCurrencies_Handler(srv interface{}, ctx contex
 
 func _CurrencyService_Convert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CurrencyConversionRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -840,6 +899,11 @@ func RegisterPaymentServiceServer(s grpc.ServiceRegistrar, srv PaymentServiceSer
 
 func _PaymentService_Charge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ChargeRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -942,6 +1006,11 @@ func RegisterEmailServiceServer(s grpc.ServiceRegistrar, srv EmailServiceServer)
 
 func _EmailService_SendOrderConfirmation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SendOrderConfirmationRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1044,6 +1113,11 @@ func RegisterCheckoutServiceServer(s grpc.ServiceRegistrar, srv CheckoutServiceS
 
 func _CheckoutService_PlaceOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PlaceOrderRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1146,6 +1220,11 @@ func RegisterAdServiceServer(s grpc.ServiceRegistrar, srv AdServiceServer) {
 
 func _AdService_GetAds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AdRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1312,6 +1391,11 @@ func RegisterFeatureFlagServiceServer(s grpc.ServiceRegistrar, srv FeatureFlagSe
 
 func _FeatureFlagService_GetFlag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetFlagRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1330,6 +1414,11 @@ func _FeatureFlagService_GetFlag_Handler(srv interface{}, ctx context.Context, d
 
 func _FeatureFlagService_CreateFlag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateFlagRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1348,6 +1437,11 @@ func _FeatureFlagService_CreateFlag_Handler(srv interface{}, ctx context.Context
 
 func _FeatureFlagService_UpdateFlag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateFlagRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1366,6 +1460,11 @@ func _FeatureFlagService_UpdateFlag_Handler(srv interface{}, ctx context.Context
 
 func _FeatureFlagService_ListFlags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListFlagsRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -1384,6 +1483,11 @@ func _FeatureFlagService_ListFlags_Handler(srv interface{}, ctx context.Context,
 
 func _FeatureFlagService_DeleteFlag_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteFlagRequest)
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	if err := dec(in); err != nil {
 		return nil, err
 	}
