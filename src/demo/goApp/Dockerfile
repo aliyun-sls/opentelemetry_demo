@@ -9,11 +9,13 @@ RUN chmod +x /tmp/instgo
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,source=./src/demo/goApp/go.sum,target=go.sum \
     --mount=type=bind,source=./src/demo/goApp/go.mod,target=go.mod \
+    --mount=type=bind,source=./src/demo/common,target=./common \
     go mod download
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=bind,rw,source=./src/demo/goApp,target=. \
+    --mount=type=bind,rw,source=./src/demo/goApp,target=goApp \
+    cd goApp && \
     /tmp/instgo go build -ldflags "-s -w" -o /go/bin/goapp/ ./
 
 FROM alpine
