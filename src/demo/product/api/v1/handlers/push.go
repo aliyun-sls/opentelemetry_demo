@@ -46,6 +46,15 @@ func PushOSS(products model.Product) {
 	client := oss.NewClient(cfg)
 	log.Printf("ossclient: %v", client)
 
+	// 检查 products 结构体的内容
+	log.Printf("products: %+v", products)
+	if products.ProductsName == "" {
+		log.Printf("products.ProductsName is empty")
+	}
+	if products.ProductBasicType.ProductsPic == nil {
+		log.Printf("products.ProductBasicType.ProductsPic is nil")
+	}
+
 	// 获取图片数据
 	imageData := products.ProductBasicType.ProductsPic
 	fmt.Println("imageData: ", imageData, "products.ProductsName: ", products.ProductsName)
