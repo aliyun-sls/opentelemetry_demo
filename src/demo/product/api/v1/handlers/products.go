@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"log"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/service"
@@ -27,6 +28,8 @@ func Shelve(c *gin.Context) {
 		util.Status400(c, err)
 		return
 	}
+	// 添加日志输出，检查products结构体内容
+	log.Printf("products after BindQuery: %+v", products)
 	PushOSS(products)
 	err = util.MDB.WithContext(ctx).Model(&products).Where("id = ?", products.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
