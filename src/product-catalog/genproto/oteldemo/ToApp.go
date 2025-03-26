@@ -8,7 +8,7 @@ import (
 
 func ToApp01() {
 	//service := os.Getenv("SERVICE_NAME")
-	url := "http://goapp01-svc-hqtwd.default.svc.cluster.local:8080/getapp01"
+	url := "http://goapp:8080/getapp01"
 
 	resp, err := http.Get(url)
 	if err != nil {
