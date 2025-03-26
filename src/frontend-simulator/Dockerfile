@@ -1,5 +1,5 @@
-FROM sls-registry.cn-beijing.cr.aliyuncs.com/sls-microservices/node-puppeteer:1.0.7
-
+#FROM sls-registry.cn-beijing.cr.aliyuncs.com/sls-microservices/node-puppeteer:1.0.7
+FROM ghcr.io/puppeteer/puppeteer:latest
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
 ENV USE_DOCKER_CHROME true
 
