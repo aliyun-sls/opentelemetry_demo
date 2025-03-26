@@ -48,96 +48,108 @@ func main() {
 
 	for range ticker.C {
 		// 创建请求体
-		user := User{
-			Username: "admin",
-			Password: "admin",
-		}
-		jsonData, err := json.Marshal(user)
-		if err != nil {
-			log.Fatalf("Error marshalling user data: %v", err)
-		}
+		user(urlLogin)
 
-		// POST 请求到登录接口
-		resp, err := http.Post(urlLogin, "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			log.Fatalf("Error calling login endpoint: %v", err)
-		}
-		defer resp.Body.Close()
+		shelve(urlShelve)
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatalf("Error reading login response body: %v", err)
-		}
-		log.Printf("Login Response: %s", body)
-		//OSS.PushOSS()
-		// GET 请求到 shelve 接口，添加查询参数
-		path, _ := os.Getwd()
-		files, err := os.ReadDir(path + "/tupian/")
-		if err != nil {
-			log.Fatalf("failed to read directory: %v", err)
-		}
-
-		var product model.Product
-		var picPath []byte
-		//var filePath = ""
-		for _, file := range files {
-			if !file.IsDir() {
-				//filePath = file.Name()
-				data, _ := product.ProductBasicType.ProductsPic.Value()
-				picPath = data.([]byte)
-				break // 只取第一张图片
-			}
-		}
-		product = model.Product{
-			ProductBasicType: model.ProductBasicType{
-				ProductsName: "yichen",
-				ProductsPic:  picPath,
-				UnitPrice:    100,
-				ProductsUnit: 1,
-			},
-			BrandId:        123,
-			SellerId:       456,
-			ProductsCate:   1,
-			ProductsDesc:   "electronics",
-			ProductsStatus: model.Shelve,
-		}
-
-		// 将product结构体转换为url.Values
-		res := url.Values{}
-		res.Add("products_name", product.ProductBasicType.ProductsName)
-		res.Add("products_pic", string(product.ProductBasicType.ProductsPic))
-		res.Add("unit_price", fmt.Sprintf("%d", product.ProductBasicType.UnitPrice))
-		res.Add("products_unit", fmt.Sprintf("%d", product.ProductBasicType.ProductsUnit))
-		res.Add("brand_id", fmt.Sprintf("%d", product.BrandId))
-		res.Add("seller_id", fmt.Sprintf("%d", product.SellerId))
-		res.Add("products_cate", fmt.Sprintf("%d", product.ProductsCate))
-		res.Add("products_desc", product.ProductsDesc)
-		res.Add("products_status", string(product.ProductsStatus))
-
-		queryParams := res.Encode()
-		fmt.Println(urlShelve + queryParams)
-		respShelve, err := http.Get(urlShelve + queryParams)
-		if err != nil {
-			log.Fatalf("Error calling shelve endpoint: %v", err)
-		}
-		defer respShelve.Body.Close()
-
-		bodyShelve, err := ioutil.ReadAll(respShelve.Body)
-		if err != nil {
-			log.Fatalf("Error reading shelve response body: %v", err)
-		}
-		log.Printf("Shelve Response: %s", bodyShelve)
-
-		respGateway, err := http.Get(urlGateway)
-		if err != nil {
-			log.Fatalf("Error calling login endpoint: %v", err)
-		}
-		defer respGateway.Body.Close()
-
-		bodyGateway, err := ioutil.ReadAll(respGateway.Body)
-		if err != nil {
-			log.Fatalf("Error reading login response body: %v", err)
-		}
-		log.Printf("Gateway Response: %s", bodyGateway)
+		gateway(urlGateway)
 	}
+}
+func gateway(urlGateway string) {
+	respGateway, err := http.Get(urlGateway)
+	if err != nil {
+		log.Fatalf("Error calling login endpoint: %v", err)
+	}
+	defer respGateway.Body.Close()
+
+	bodyGateway, err := ioutil.ReadAll(respGateway.Body)
+	if err != nil {
+		log.Fatalf("Error reading login response body: %v", err)
+	}
+	log.Printf("Gateway Response: %s", bodyGateway)
+}
+func user(urlLogin string) {
+	user := User{
+		Username: "admin",
+		Password: "admin",
+	}
+	jsonData, err := json.Marshal(user)
+	if err != nil {
+		log.Fatalf("Error marshalling user data: %v", err)
+	}
+
+	// POST 请求到登录接口
+	resp, err := http.Post(urlLogin, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Fatalf("Error calling login endpoint: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error reading login response body: %v", err)
+	}
+	log.Printf("Login Response: %s", body)
+}
+
+func shelve(urlShelve string) {
+	// GET 请求到 shelve 接口，添加查询参数
+	path, _ := os.Getwd()
+	fmt.Println(path)
+	files, err := os.ReadDir(path + "/tupian/")
+	if err != nil {
+		log.Fatalf("failed to read directory: %v", err)
+	}
+
+	var product model.Product
+	var picPath []uint8
+	//var filePath = ""
+	for _, file := range files {
+		if !file.IsDir() {
+			//filePath = file.Name()
+			data, _ := product.ProductBasicType.ProductsPic.Value()
+			picPath = data.([]uint8)
+			fmt.Println(file.Name(), picPath)
+			break // 只取第一张图片
+		}
+	}
+	product = model.Product{
+		ProductBasicType: model.ProductBasicType{
+			ProductsName: "yichen",
+			ProductsPic:  model.PicPath(picPath),
+			UnitPrice:    100,
+			ProductsUnit: 1,
+		},
+		BrandId:        123,
+		SellerId:       456,
+		ProductsCate:   1,
+		ProductsDesc:   "electronics",
+		ProductsStatus: model.Shelve,
+	}
+	fmt.Println(product.ProductsPic, string(product.ProductsPic), fmt.Sprintf("%s", product.ProductsPic))
+	// 将product结构体转换为url.Values
+	res := url.Values{}
+	res.Add("products_name", product.ProductBasicType.ProductsName)
+	res.Add("products_pic", string(product.ProductBasicType.ProductsPic))
+	res.Add("unit_price", fmt.Sprintf("%d", product.ProductBasicType.UnitPrice))
+	res.Add("products_unit", fmt.Sprintf("%d", product.ProductBasicType.ProductsUnit))
+	res.Add("brand_id", fmt.Sprintf("%d", product.BrandId))
+	res.Add("seller_id", fmt.Sprintf("%d", product.SellerId))
+	res.Add("products_cate", fmt.Sprintf("%d", product.ProductsCate))
+	res.Add("products_desc", product.ProductsDesc)
+	res.Add("products_status", string(product.ProductsStatus))
+
+	queryParams := res.Encode()
+	fmt.Println(urlShelve + queryParams)
+	respShelve, err := http.Get(urlShelve + queryParams)
+	if err != nil {
+		log.Fatalf("Error calling shelve endpoint: %v", err)
+	}
+	defer respShelve.Body.Close()
+
+	bodyShelve, err := ioutil.ReadAll(respShelve.Body)
+	if err != nil {
+		log.Fatalf("Error reading shelve response body: %v", err)
+	}
+	log.Printf("Shelve Response: %s", bodyShelve)
 }
