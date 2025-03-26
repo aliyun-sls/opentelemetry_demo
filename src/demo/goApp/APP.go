@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	OSS "goapp/oss"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"sls-mall-go/common/model"
 	"time"
 )
 
@@ -67,9 +68,27 @@ func main() {
 			log.Fatalf("Error reading login response body: %v", err)
 		}
 		log.Printf("Login Response: %s", body)
-		OSS.PushOSS()
+		//OSS.PushOSS()
 		// GET 请求到 shelve 接口，添加查询参数
-		queryParams := "?products_cate=1&products_name=electronics&unit_price=100&products_unit=1&brand_id=123&seller_id=456"
+		path, _ := os.Getwd()
+		files, err := os.ReadDir(path + "/tupian/")
+		if err != nil {
+			log.Fatalf("failed to read directory: %v", err)
+		}
+
+		var product model.Product
+		var picPath []byte
+		//var filePath = ""
+		for _, file := range files {
+			if !file.IsDir() {
+				//filePath = file.Name()
+				data, _ := product.ProductBasicType.ProductsPic.Value()
+				picPath = data.([]byte)
+				break // 只取第一张图片
+			}
+		}
+
+		queryParams := fmt.Sprintf("?products_name=\"yichen\"&products_cate=1&products_name=electronics&unit_price=100&products_unit=1&brand_id=123&seller_id=456&products_pic=%s", picPath)
 		respShelve, err := http.Get(urlShelve + queryParams)
 		if err != nil {
 			log.Fatalf("Error calling shelve endpoint: %v", err)
