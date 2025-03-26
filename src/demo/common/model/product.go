@@ -25,10 +25,10 @@ type ProductsIdType struct {
 }
 
 type ProductBasicType struct {
-	ProductsName string  `json:"products_name" gorm:"size:200;not null;default:'';index:ProductsNameIndex;comment:'商品名称'"`
+	ProductsName string  `json:"products_name" from:"products_name" gorm:"size:200;not null;default:'';index:ProductsNameIndex;comment:'商品名称'"`
 	ProductsUnit int     `json:"products_unit" gorm:"size:10;not null;default:0;comment:'商品单位'"`
 	UnitPrice    float64 `json:"unit_price" gorm:"decimal(10,2);not null;default:0;comment:'商品单价'"`
-	ProductsPic  PicPath `json:"products_pic" gorm:"size:1000;not null;default:'';comment:'商品图'"`
+	ProductsPic  PicPath `json:"products_pic" from:"products_pic" gorm:"size:1000;not null;default:'';comment:'商品图'"`
 }
 
 // GetProductsDetailRequest 浏览请求
