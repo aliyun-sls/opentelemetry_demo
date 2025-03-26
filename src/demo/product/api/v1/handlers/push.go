@@ -51,9 +51,6 @@ func PushOSS(products model.Product) {
 	if products.ProductsName == "" {
 		log.Printf("products.ProductsName is empty")
 	}
-	if products.ProductBasicType.ProductsPic == nil {
-		log.Printf("products.ProductBasicType.ProductsPic is nil")
-	}
 
 	// 获取图片数据
 	imageData := products.ProductBasicType.ProductsPic
@@ -62,7 +59,7 @@ func PushOSS(products model.Product) {
 	request := &oss.PutObjectRequest{
 		Bucket: oss.Ptr("o11y-demo-cn-heyuan"),           // 存储空间名称
 		Key:    oss.Ptr("test/" + products.ProductsName), // 对象名称，使用文件名作为对象名称
-		Body:   bytes.NewReader(imageData),               // 要上传的图片数据
+		Body:   bytes.NewReader([]byte(imageData)),       // 要上传的图片数据
 	}
 
 	// 发送上传对象的请求
