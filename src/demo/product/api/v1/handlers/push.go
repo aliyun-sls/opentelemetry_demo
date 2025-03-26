@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"sls-mall-go/common/model"
 
@@ -47,7 +48,7 @@ func PushOSS(products model.Product) {
 
 	// 获取图片数据
 	imageData := products.ProductBasicType.ProductsPic
-
+	fmt.Println("imageData: ", imageData, "products.ProductsName: ", products.ProductsName)
 	// 创建上传对象的请求
 	request := &oss.PutObjectRequest{
 		Bucket: oss.Ptr("o11y-demo-cn-heyuan"),           // 存储空间名称
