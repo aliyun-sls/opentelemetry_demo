@@ -39,7 +39,7 @@ func main() {
 	}()
 
 	urlLogin := "http://user.default.svc.cluster.local:8080/login"
-	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
+	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve/?"
 	urlGateway := "http://gateway:8080"
 
 	// 创建一个每10秒触发一次的定时器
@@ -109,13 +109,13 @@ func main() {
 		res.Add("unit_price", fmt.Sprintf("%d", product.ProductBasicType.UnitPrice))
 		res.Add("products_unit", fmt.Sprintf("%d", product.ProductBasicType.ProductsUnit))
 		res.Add("brand_id", fmt.Sprintf("%d", product.BrandId))
-		res.Add("SellerId", fmt.Sprintf("%d", product.SellerId))
-		res.Add("ProductsCate", fmt.Sprintf("%d", product.ProductsCate))
-		res.Add("ProductsDesc", product.ProductsDesc)
+		res.Add("seller_id", fmt.Sprintf("%d", product.SellerId))
+		res.Add("products_cate", fmt.Sprintf("%d", product.ProductsCate))
+		res.Add("products_desc", product.ProductsDesc)
 		res.Add("products_status", string(product.ProductsStatus))
 
 		queryParams := res.Encode()
-
+		fmt.Println(urlShelve + queryParams)
 		respShelve, err := http.Get(urlShelve + queryParams)
 		if err != nil {
 			log.Fatalf("Error calling shelve endpoint: %v", err)
@@ -134,7 +134,7 @@ func main() {
 		}
 		defer respGateway.Body.Close()
 
-		bodyGateway, err := ioutil.ReadAll(resp.Body)
+		bodyGateway, err := ioutil.ReadAll(respGateway.Body)
 		if err != nil {
 			log.Fatalf("Error reading login response body: %v", err)
 		}
