@@ -14,7 +14,7 @@ const {
   ALIBABA_CLOUD_RUM_ENDPOINT
 } = process.env;
 
-export default class MyDocument extends Document<{ envString: string }> {
+export default class MyDocument extends Document<{ envString: string, rumString: string }> {
   static async getInitialProps(ctx: DocumentContext) {
     const sheet = new ServerStyleSheet();
     const originalRenderPage = ctx.renderPage;
@@ -42,7 +42,7 @@ export default class MyDocument extends Document<{ envString: string }> {
         };`;
 
       const rumString = `
-        window.ENV = {
+        window.__rum = {
           "pid": "${ALIBABA_CLOUD_RUM_PID}",
           "endpoint": "${ALIBABA_CLOUD_RUM_ENDPOINT}",
           "tracing": true
@@ -71,7 +71,8 @@ export default class MyDocument extends Document<{ envString: string }> {
         </Head>
         <body>
           <script dangerouslySetInnerHTML={{ __html: this.props.rumString }}></script>
-          <script type="text/javascript" src="https://sdk.rum.aliyuncs.com/v2/browser-sdk.js" crossOrigin='anonymous'/>
+          <script async type="text/javascript" src="https://sdk.rum.aliyuncs.com/v2/browser-sdk.js" crossOrigin='anonymous'>
+          </script>
           <Main />
           <script dangerouslySetInnerHTML={{ __html: this.props.envString }}></script>
           <NextScript />

@@ -52,7 +52,7 @@ static_resources:
                         - match: { prefix: "/feature" }
                           route: { cluster: flagd-ui }
                         - match: { prefix: "/" }
-                          route: { cluster: frontend }
+                          route: { cluster: gateway }
                 http_filters:
                   - name: envoy.filters.http.fault
                     typed_config:
@@ -160,6 +160,18 @@ static_resources:
                     socket_address:
                       address: ${FRONTEND_HOST}
                       port_value: ${FRONTEND_PORT}
+    - name: gateway
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: gateway
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ${GATEWAY1_HOST}
+                      port_value: ${GATEWAY1_PORT}
     - name: image-provider
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
