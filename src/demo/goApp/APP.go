@@ -40,9 +40,8 @@ func main() {
 		}
 	}()
 
-	urlLogin := "http://user.default.svc.cluster.local:8080/login"
+	//urlLogin := "http://user.default.svc.cluster.local:8080/login"
 	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
-	//urlGateway := "http://gateway:8080"
 
 	// 创建一个每10秒触发一次的定时器
 	ticker := time.NewTicker(10 * time.Second)
@@ -50,31 +49,13 @@ func main() {
 
 	for range ticker.C {
 		// 创建请求体
-		user(urlLogin)
+		//user(urlLogin)
 
 		shelve(urlShelve)
 
-		//gateway(urlGateway)
 	}
 }
-func gateway(urlGateway string) {
-	if rand.Int()%5 == 0 {
-		time.Sleep(5 * time.Second)
-	} else if rand.Int()%3 == 0 {
-		time.Sleep(2 * time.Second)
-	}
-	respGateway, err := http.Get(urlGateway)
-	if err != nil {
-		log.Fatalf("Error calling login endpoint: %v", err)
-	}
-	defer respGateway.Body.Close()
 
-	bodyGateway, err := ioutil.ReadAll(respGateway.Body)
-	if err != nil {
-		log.Fatalf("Error reading login response body: %v", err)
-	}
-	log.Printf("Gateway Response: %s", bodyGateway)
-}
 func user(urlLogin string) {
 	if rand.Int()%5 == 0 {
 		time.Sleep(5 * time.Second)
@@ -87,19 +68,19 @@ func user(urlLogin string) {
 	}
 	jsonData, err := json.Marshal(user)
 	if err != nil {
-		log.Fatalf("Error marshalling user data: %v", err)
+		log.Printf("Error marshalling user data: %v", err)
 	}
 
 	// POST 请求到登录接口
 	resp, err := http.Post(urlLogin, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatalf("Error calling login endpoint: %v", err)
+		log.Printf("Error calling login endpoint: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error reading login response body: %v", err)
+		log.Printf("Error reading login response body: %v", err)
 	}
 	log.Printf("Login Response: %s", body)
 }
@@ -115,57 +96,54 @@ func shelve(urlShelve string) {
 	path = path + "/tupian/"
 	files, err := os.ReadDir(path)
 	if err != nil {
-		log.Fatalf("failed to read directory: %v", err)
+		log.Printf("failed to read directory: %v", err)
 	}
 	var data *os.File
 
 	for _, file := range files {
 		if !file.IsDir() {
 			filePath := file.Name()
-			data, err = os.Open(filePath)
+			data, err = os.Open(path + filePath)
 			if err != nil {
-				fmt.Println("打开文件失败:", err)
-				return
+				log.Printf("打开文件失败: %v", err)
 			}
 			break // 只取第一张图片
 		}
 	}
+
+	defer data.Close()
 	//创建multipart writer
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
 	//创建文件表单字段
-	part, err := writer.CreateFormFile("image", filepath.Base(path))
+	writer.WriteField("products_name", "Test Product")
+	part, err := writer.CreateFormFile("products_pic", filepath.Base(data.Name()))
 	if err != nil {
-		fmt.Println("创建表单字段失败:", err)
-		return
+		fmt.Println(err)
 	}
 
 	//将文件内容拷贝到表单
 	_, err = io.Copy(part, data)
 	if err != nil {
-		fmt.Println("拷贝文件内容失败:", err)
-		return
+		log.Printf("拷贝文件内容失败: %v", err)
 	}
-	writer.WriteField("brand_id", "123")
-	writer.WriteField("product_name", "测试产品")
 
 	//关闭writer完成表单构建
 	err = writer.Close()
 	if err != nil {
-		fmt.Println("关闭writer失败:", err)
-		return
+		log.Printf("关闭writer失败: %v", err)
 	}
 
-	respShelve, err := http.Post(urlShelve, "Content-Type", body)
+	respShelve, err := http.Post(urlShelve, writer.FormDataContentType(), body)
 	if err != nil {
-		log.Fatalf("Error calling shelve endpoint: %v", err)
+		log.Printf("Error calling shelve endpoint: %v", err)
 	}
 	defer respShelve.Body.Close()
 
 	bodyShelve, err := ioutil.ReadAll(respShelve.Body)
 	if err != nil {
-		log.Fatalf("Error reading shelve response body: %v", err)
+		log.Printf("Error reading shelve response body: %v", err)
 	}
 	log.Printf("Shelve Response: %s", bodyShelve)
 }

@@ -1,16 +1,17 @@
-package handlers
+package main
 
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
+
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	openapicred "github.com/aliyun/credentials-go/credentials"
-	"log"
-	"mime/multipart"
 )
 
-func PushOSS(file *multipart.FileHeader, fileName string) error {
+func PushOSS01(file io.Reader, fileName string) {
 	// 请根据实际要求设置region，以实例华东1（杭州）为例，regionID为cn-hangzhou
 	region := "cn-heyuan"
 
@@ -44,28 +45,20 @@ func PushOSS(file *multipart.FileHeader, fileName string) error {
 	client := oss.NewClient(cfg)
 	log.Printf("ossclient: %v", client)
 
-	// 打开文件
-	fileReader, err := file.Open()
-	if err != nil {
-		return fmt.Errorf("failed to open file: %v", err)
-	}
-	defer fileReader.Close()
-
 	fmt.Println("imageData: ", file, "products.ProductsName: ", fileName)
 	// 创建上传对象的请求
 	request := &oss.PutObjectRequest{
 		Bucket: oss.Ptr("o11y-demo-cn-heyuan"), // 存储空间名称
 		Key:    oss.Ptr("test/" + fileName),    // 对象名称，使用文件名作为对象名称
-		Body:   fileReader,                     // 要上传的图片数据
+		Body:   file,                           // 要上传的图片数据
 	}
 
 	// 发送上传对象的请求
 	result, err := client.PutObject(context.TODO(), request)
 	if err != nil {
-		return fmt.Errorf("failed to put object: %v", err)
+		log.Fatalf("failed to put object %v", err)
 	}
 
 	// 打印上传对象的结果
 	log.Printf("put object result:%#v\n", result)
-	return nil
 }

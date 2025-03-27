@@ -21,69 +21,45 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
-	if c.Request.Method != http.MethodPost {
-		http.Error(c.Writer, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// 解析上传的文件
-	file, header, err := c.Request.FormFile("image")
-	if err != nil {
-		http.Error(c.Writer, "Failed to get file from request", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// 解析JSON数据
 	var product model.Product
-	err = json.NewDecoder(c.Request.Body).Decode(&product)
-	if err != nil {
-		http.Error(c.Writer, "Failed to decode JSON", http.StatusBadRequest)
-		return
+	image, err := c.FormFile("products_pic")
+	if image != nil {
+		err = PushOSS(image, image.Filename)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image file"})
+			return
+		}
 	}
-
-	// 上传图片到OSS
-	err = uploadToOSS(file, header.Filename)
-	if err != nil {
-		http.Error(c.Writer, "Failed to upload image to OSS", http.StatusInternalServerError)
-		return
+	PushOSS(image, image.Filename)
+	product = model.Product{
+		ID:           0,
+		ProductsName: c.PostForm("products_name"),
+		Price:        0,
+		ProductsCate: 0,
+		ProductBasicType: model.ProductBasicType{
+			ProductsName: c.PostForm("products_name"),
+			ProductsUnit: 0,
+			UnitPrice:    0,
+			ProductsPic:  image,
+		},
+		ProductsDesc:    "",
+		BrandId:         0,
+		SellerId:        0,
+		ProductsStatus:  0,
+		Inventory:       nil,
+		ProductCategory: nil,
 	}
-
-	// 更新商品状态为上架
 	err = util.MDB.WithContext(c.Request.Context()).Model(&product).Where("id = ?", product.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
 		util.Status500(c, err)
 		return
 	}
-
 	err = esIndex(c.Request.Context(), product)
 	if err != nil {
 		util.Status500(c, err)
 		return
 	}
 
-	util.Status200(c, true)
-}
-
-// Unshelve 下架
-func Unshelve(c *gin.Context) {
-	ctx := c.Request.Context()
-	var products model.Product
-	err := c.BindQuery(&products)
-	if err != nil {
-		util.Status400(c, err)
-		return
-	}
-	err = util.MDB.WithContext(ctx).Model(&products).Update("products_status", model.Unshelve).Error
-	if err != nil {
-		util.Status500(c, err)
-		return
-	}
-	err = esIndex(ctx, products)
-	if err != nil {
-		util.Status500(c, err)
-		return
-	}
 	util.Status200(c, true)
 }
 
