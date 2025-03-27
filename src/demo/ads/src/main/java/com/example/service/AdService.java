@@ -8,4 +8,6 @@ public interface AdService {
     List<AdEntity> listAds();
 
     AdEntity getAdById(Long id);
+
+    List findAdWithSleep();
 }
