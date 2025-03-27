@@ -1,18 +1,18 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"log"
-	"sls-mall-go/common/model"
+	"mime/multipart"
 
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	openapicred "github.com/aliyun/credentials-go/credentials"
 )
 
-func PushOSS(products model.Product) {
+func PushOSS(file *multipart.FileHeader, c *gin.Context) {
 	// 请根据实际要求设置region，以实例华东1（杭州）为例，regionID为cn-hangzhou
 	region := "cn-heyuan"
 
@@ -46,20 +46,19 @@ func PushOSS(products model.Product) {
 	client := oss.NewClient(cfg)
 	log.Printf("ossclient: %v", client)
 
-	// 检查 products 结构体的内容
-	log.Printf("products: %+v", products)
-	if products.ProductsName == "" {
-		log.Printf("products.ProductsName is empty")
-	}
-
 	// 获取图片数据
-	imageData := products.ProductBasicType.ProductsPic
-	fmt.Println("imageData: ", imageData, "products.ProductsName: ", products.ProductsName)
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "文件读取失败"})
+		return
+	}
+	defer src.Close()
+	fmt.Println("imageData: ", file, "products.ProductsName: ", file.Filename)
 	// 创建上传对象的请求
 	request := &oss.PutObjectRequest{
-		Bucket: oss.Ptr("o11y-demo-cn-heyuan"),           // 存储空间名称
-		Key:    oss.Ptr("test/" + products.ProductsName), // 对象名称，使用文件名作为对象名称
-		Body:   bytes.NewReader([]byte(imageData)),       // 要上传的图片数据
+		Bucket: oss.Ptr("o11y-demo-cn-heyuan"),   // 存储空间名称
+		Key:    oss.Ptr("test/" + file.Filename), // 对象名称，使用文件名作为对象名称
+		Body:   src,                              // 要上传的图片数据
 	}
 
 	// 发送上传对象的请求

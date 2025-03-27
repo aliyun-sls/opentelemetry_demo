@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sls-mall-go/common/model"
 	"time"
 )
@@ -110,24 +113,43 @@ func shelve(urlShelve string) {
 	}*/
 	// GET 请求到 shelve 接口，添加查询参数
 	path, _ := os.Getwd()
-	fmt.Println(path)
-	files, err := os.ReadDir(path + "/tupian/")
+	path = path + "/tupian/"
+	files, err := os.ReadDir(path)
 	if err != nil {
 		log.Fatalf("failed to read directory: %v", err)
 	}
-
+	var data *os.File
 	var product model.Product
 	var picPath []uint8
-	//var filePath = ""
 	for _, file := range files {
 		if !file.IsDir() {
-			//filePath = file.Name()
-			data, _ := product.ProductBasicType.ProductsPic.Value()
-			picPath = data.([]byte)
-			fmt.Println(file.Name(), picPath)
+			filePath := file.Name()
+			data, err = os.Open(filePath)
+			if err != nil {
+				fmt.Println("打开文件失败:", err)
+				return
+			}
 			break // 只取第一张图片
 		}
 	}
+	//创建multipart writer
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	//创建文件表单字段
+	part, err := writer.CreateFormFile("image", filepath.Base(path))
+	if err != nil {
+		fmt.Println("创建表单字段失败:", err)
+		return
+	}
+
+	//将文件内容拷贝到表单
+	_, err = io.Copy(part, data)
+	if err != nil {
+		fmt.Println("拷贝文件内容失败:", err)
+		return
+	}
+
 	product = model.Product{
 		ProductBasicType: model.ProductBasicType{
 			ProductsName: "yichen",
@@ -141,12 +163,18 @@ func shelve(urlShelve string) {
 		ProductsDesc:   "electronics",
 		ProductsStatus: model.Shelve,
 	}
-	jsonData, err := json.Marshal(product)
+
+	writer.WriteField("brand_id", "123")
+	writer.WriteField("product_name", "测试产品")
+
+	//关闭writer完成表单构建
+	err = writer.Close()
 	if err != nil {
-		log.Fatalf("Error marshalling user data: %v", err)
+		fmt.Println("关闭writer失败:", err)
+		return
 	}
 
-	respShelve, err := http.Post(urlShelve, "application/json", bytes.NewBuffer(jsonData))
+	respShelve, err := http.Post(urlShelve, "Content-Type", body)
 	if err != nil {
 		log.Fatalf("Error calling shelve endpoint: %v", err)
 	}

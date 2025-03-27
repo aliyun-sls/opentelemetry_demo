@@ -34,7 +34,8 @@ func Shelve(c *gin.Context) {
 	}
 	// 添加日志输出，检查products结构体内容
 	log.Printf("products after BindQuery: %+v", products)
-	PushOSS(products)
+	file, _ := c.FormFile("products_pic")
+	PushOSS(file, c)
 	err = util.MDB.WithContext(ctx).Model(&products).Where("id = ?", products.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
 		util.Status500(c, err)
