@@ -7,7 +7,6 @@ COPY ./src/gateway/gradle ./gradle
 
 RUN chmod +x ./gradlew
 RUN ./gradlew
-RUN ./gradlew downloadRepos
 
 COPY ./src/gateway/ ./
 COPY ./pb/ ./proto
