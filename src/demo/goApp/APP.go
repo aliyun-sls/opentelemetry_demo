@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
-	"net/url"
 	"os"
 	"sls-mall-go/common/model"
 	"time"
@@ -39,7 +39,7 @@ func main() {
 	}()
 
 	urlLogin := "http://user.default.svc.cluster.local:8080/login"
-	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve/?"
+	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
 	urlGateway := "http://gateway:8080"
 
 	// 创建一个每10秒触发一次的定时器
@@ -56,6 +56,11 @@ func main() {
 	}
 }
 func gateway(urlGateway string) {
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	respGateway, err := http.Get(urlGateway)
 	if err != nil {
 		log.Fatalf("Error calling login endpoint: %v", err)
@@ -69,6 +74,11 @@ func gateway(urlGateway string) {
 	log.Printf("Gateway Response: %s", bodyGateway)
 }
 func user(urlLogin string) {
+	if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}
 	user := User{
 		Username: "admin",
 		Password: "admin",
@@ -93,6 +103,11 @@ func user(urlLogin string) {
 }
 
 func shelve(urlShelve string) {
+	/*if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}*/
 	// GET 请求到 shelve 接口，添加查询参数
 	path, _ := os.Getwd()
 	fmt.Println(path)
@@ -108,7 +123,7 @@ func shelve(urlShelve string) {
 		if !file.IsDir() {
 			//filePath = file.Name()
 			data, _ := product.ProductBasicType.ProductsPic.Value()
-			picPath = data.([]uint8)
+			picPath = data.([]byte)
 			fmt.Println(file.Name(), picPath)
 			break // 只取第一张图片
 		}
@@ -116,7 +131,7 @@ func shelve(urlShelve string) {
 	product = model.Product{
 		ProductBasicType: model.ProductBasicType{
 			ProductsName: "yichen",
-			ProductsPic:  model.PicPath(picPath),
+			ProductsPic:  picPath,
 			UnitPrice:    100,
 			ProductsUnit: 1,
 		},
@@ -126,22 +141,12 @@ func shelve(urlShelve string) {
 		ProductsDesc:   "electronics",
 		ProductsStatus: model.Shelve,
 	}
-	fmt.Println(product.ProductsPic, string(product.ProductsPic), fmt.Sprintf("%s", product.ProductsPic))
-	// 将product结构体转换为url.Values
-	res := url.Values{}
-	res.Add("products_name", product.ProductBasicType.ProductsName)
-	res.Add("products_pic", string(product.ProductBasicType.ProductsPic))
-	res.Add("unit_price", fmt.Sprintf("%d", product.ProductBasicType.UnitPrice))
-	res.Add("products_unit", fmt.Sprintf("%d", product.ProductBasicType.ProductsUnit))
-	res.Add("brand_id", fmt.Sprintf("%d", product.BrandId))
-	res.Add("seller_id", fmt.Sprintf("%d", product.SellerId))
-	res.Add("products_cate", fmt.Sprintf("%d", product.ProductsCate))
-	res.Add("products_desc", product.ProductsDesc)
-	res.Add("products_status", string(product.ProductsStatus))
+	jsonData, err := json.Marshal(product)
+	if err != nil {
+		log.Fatalf("Error marshalling user data: %v", err)
+	}
 
-	queryParams := res.Encode()
-	fmt.Println(urlShelve + queryParams)
-	respShelve, err := http.Get(urlShelve + queryParams)
+	respShelve, err := http.Post(urlShelve, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Fatalf("Error calling shelve endpoint: %v", err)
 	}

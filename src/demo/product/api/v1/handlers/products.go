@@ -20,10 +20,14 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
-	ToApp()
+	/* if rand.Int()%5 == 0 {
+		time.Sleep(5 * time.Second)
+	} else if rand.Int()%3 == 0 {
+		time.Sleep(2 * time.Second)
+	}*/
 	ctx := c.Request.Context()
 	var products model.Product
-	err := c.BindQuery(&products)
+	err := c.ShouldBindJSON(&products)
 	if err != nil {
 		util.Status400(c, err)
 		return
