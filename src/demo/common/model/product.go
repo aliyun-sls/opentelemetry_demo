@@ -9,8 +9,10 @@ const (
 
 // Product 商品
 type Product struct {
-	Model
-	ProductsCate int `json:"products_cate" gorm:"index:ProductsCateIndex;comment:'商品类别'"`
+	ID           uint   `json:"id" gorm:"primaryKey"`
+	ProductsName string `json:"products_name"`
+	Price        int    `json:"price"` // 将 Price 字段类型从 float64 改为 int
+	ProductsCate int    `json:"products_cate" gorm:"index:ProductsCateIndex;comment:'商品类别'"`
 	ProductBasicType
 	ProductsDesc    string           `json:"products_desc" gorm:"size:1000;not null;default:'';comment:'商品简介'"`
 	BrandId         int              `json:"brand_id" form:"brand_id" gorm:"not null;default:0;comment:'品牌ID'"`
