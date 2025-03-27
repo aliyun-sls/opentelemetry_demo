@@ -1,0 +1,31 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: check
+          uri: no://op
+          predicates:
+            - Path=/api/checkout**
+          filters:
+            - name: CheckFilter
+              args:
+                checkoutAddr: ${CHECKOUT_ADDR:localhost:50051}
+                productAddr: ${PRODUCT_ADDR:localhost:50052}
+        - id: default
+          uri: http://frontend:8080
+          predicates:
+            - Path=/**
+        - id: ads
+          uri: http://ads:8080
+          predicates:
+            - Path=/ads/**
+        - id: marketing
+          uri: http://marketing:8080
+          predicates:
+            - Path=/marketing/**
+        - id: notification
+          uri: http://notification:8080
+          predicates:
+            - Path=/notification/**
+server:
+  port: 8085
