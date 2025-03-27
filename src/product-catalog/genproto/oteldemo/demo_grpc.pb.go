@@ -25,8 +25,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	"math/rand"
-	"time"
 )
 
 // This is a compile-time assertion to ensure that this generated file
