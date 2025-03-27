@@ -61,6 +61,26 @@ func Shelve(c *gin.Context) {
 
 	util.Status200(c, true)
 }
+func Unshelve(c *gin.Context) {
+	ctx := c.Request.Context()
+	var products model.Product
+	err := c.BindQuery(&products)
+	if err != nil {
+		util.Status400(c, err)
+		return
+	}
+	err = util.MDB.WithContext(ctx).Model(&products).Update("products_status", model.Unshelve).Error
+	if err != nil {
+		util.Status500(c, err)
+		return
+	}
+	err = esIndex(ctx, products)
+	if err != nil {
+		util.Status500(c, err)
+		return
+	}
+	util.Status200(c, true)
+}
 
 // ModifyProducts 修改
 func ModifyProducts(c *gin.Context) {
