@@ -54,7 +54,7 @@ func main() {
 
 		shelve(urlShelve)
 
-		gateway(urlGateway)
+		//gateway(urlGateway)
 	}
 }
 func gateway(urlGateway string) {
