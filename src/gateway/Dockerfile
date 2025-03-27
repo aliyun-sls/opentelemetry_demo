@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} eclipse-temurin:21-jdk AS builder
+FROM --platform=${BUILDPLATFORM} eclipse-temurin:17-jdk AS builder
 ARG _JAVA_OPTIONS
 WORKDIR /usr/src/app/
 
@@ -15,7 +15,7 @@ RUN ./gradlew build -PprotoSourceDir=./proto
 
 # -----------------------------------------------------------------------------
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:17-jre
 
 ARG OTEL_JAVA_AGENT_VERSION
 ARG _JAVA_OPTIONS
@@ -27,4 +27,4 @@ COPY --from=builder /usr/src/app/ ./
 # ENV JAVA_TOOL_OPTIONS=-javaagent:/usr/src/app/opentelemetry-javaagent.jar
 
 EXPOSE ${GATEWAY_PORT}
-ENTRYPOINT [ "java", "-jar" , "./build/libs/gateway-1.0.0-SNAPSHOT.jar" ]
+ENTRYPOINT [ "java", "-jar" , "./build/libs/gateway-0.0.1-SNAPSHOT.jar" ]
