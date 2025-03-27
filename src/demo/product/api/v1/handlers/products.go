@@ -8,7 +8,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"io"
 	"net/http"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
@@ -158,12 +157,6 @@ func PutProducts(c *gin.Context) {
 	}
 
 	util.Status200(c, products)
-}
-
-// 上传商品图片到OSS的函数
-func uploadToOSS(file io.Reader, fileName string) error {
-	PushOSS(file, fileName)
-	return nil
 }
 
 // GetProductsDetail 产品详细信息
