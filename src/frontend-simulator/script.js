@@ -49,10 +49,12 @@ async function order(page) {
     await sleep(5);
     const randomIndex = Math.floor(Math.random() * 10) + 1;
     await page.click(`div[data-cy="product-list"]  a:nth-of-type(${randomIndex})`);
-    await sleep(5);
+    await sleep(10);
     await page.click(`button[data-cy="product-add-to-cart"]`);
-    await sleep(5);
+    console.info(`RunScript product-add-to-cart -------------`);
+    await sleep(10);
     await page.click(`button[data-cy="checkout-place-order"]`);
+    console.info(`RunScript checkout-place-order -------------`);
 
   } catch (error) {
     console.error(error);
