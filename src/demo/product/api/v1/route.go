@@ -13,7 +13,7 @@ func Routers(r *gin.Engine) {
 		v1 := api.Group("/v1")
 		productsGroup := v1.Group("/products")
 		{
-			productsGroup.GET("/shelve", handlers.Shelve)
+			productsGroup.POST("/shelve", handlers.Shelve)
 			productsGroup.GET("/unshelve", handlers.Unshelve)
 			productsGroup.POST("/modify_products", handlers.ModifyProducts)
 			productsGroup.GET("/get_products", handlers.GetProductsDetail)

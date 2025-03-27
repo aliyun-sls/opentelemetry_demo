@@ -2,8 +2,11 @@ package OSS
 
 import (
 	"context"
+	"github.com/gin-gonic/gin"
 	"log"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
@@ -81,4 +84,48 @@ func push(client *oss.Client) {
 			log.Printf("put object result:%#v\n", result)
 		}
 	}
+}
+
+// handler/upload.go
+func UploadImage(c *gin.Context) {
+	file, err := c.FormFile("image")
+	if err != nil {
+		c.JSON(400, gin.H{"error": "获取文件失败"})
+		return
+	}
+
+	// 获取OSS Bucket
+	bucket, err := config.OSSClient.Bucket("your-bucket-name")
+	if err != nil {
+		c.JSON(500, gin.H{"error": "OSS连接失败"})
+		return
+	}
+
+	// 生成唯一文件名
+	ext := filepath.Ext(file.Filename)
+	filename := "products/" + time.Now().Format("20060102") + "/" + generateUUID() + ext
+
+	// 打开文件
+	src, err := file.Open()
+	if err != nil {
+		c.JSON(500, gin.H{"error": "文件读取失败"})
+		return
+	}
+	defer src.Close()
+
+	// 上传到OSS
+	err = bucket.PutObject(filename, src)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "上传OSS失败"})
+		return
+	}
+
+	// 返回访问URL
+	url := "https://your-bucket-name.oss-cn-hangzhou.aliyuncs.com/" + filename
+	c.JSON(200, gin.H{"url": url})
+}
+
+func generateUUID() string {
+	// 实现你自己的UUID生成逻辑
+	return "unique-id"
 }
