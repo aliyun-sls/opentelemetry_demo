@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sls-mall-go/common/model"
 	"time"
 )
 
@@ -119,8 +118,7 @@ func shelve(urlShelve string) {
 		log.Fatalf("failed to read directory: %v", err)
 	}
 	var data *os.File
-	var product model.Product
-	var picPath []uint8
+
 	for _, file := range files {
 		if !file.IsDir() {
 			filePath := file.Name()
@@ -149,21 +147,6 @@ func shelve(urlShelve string) {
 		fmt.Println("拷贝文件内容失败:", err)
 		return
 	}
-
-	product = model.Product{
-		ProductBasicType: model.ProductBasicType{
-			ProductsName: "yichen",
-			ProductsPic:  picPath,
-			UnitPrice:    100,
-			ProductsUnit: 1,
-		},
-		BrandId:        123,
-		SellerId:       456,
-		ProductsCate:   1,
-		ProductsDesc:   "electronics",
-		ProductsStatus: model.Shelve,
-	}
-
 	writer.WriteField("brand_id", "123")
 	writer.WriteField("product_name", "测试产品")
 

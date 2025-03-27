@@ -8,7 +8,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"log"
+	"io"
+	"net/http"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/service"
@@ -20,32 +21,47 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
-	/* if rand.Int()%5 == 0 {
-		time.Sleep(5 * time.Second)
-	} else if rand.Int()%3 == 0 {
-		time.Sleep(2 * time.Second)
-	}*/
-	ctx := c.Request.Context()
-	var products model.Product
-	err := c.ShouldBindJSON(&products)
-	if err != nil {
-		util.Status400(c, err)
+	if c.Request.Method != http.MethodPost {
+		http.Error(c.Writer, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	// 添加日志输出，检查products结构体内容
-	log.Printf("products after BindQuery: %+v", products)
-	file, _ := c.FormFile("products_pic")
-	PushOSS(file, c)
-	err = util.MDB.WithContext(ctx).Model(&products).Where("id = ?", products.ID).Update("products_status", model.Shelve).Error
+
+	// 解析上传的文件
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		http.Error(c.Writer, "Failed to get file from request", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// 解析JSON数据
+	var product model.Product
+	err = json.NewDecoder(c.Request.Body).Decode(&product)
+	if err != nil {
+		http.Error(c.Writer, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+
+	// 上传图片到OSS
+	err = uploadToOSS(file, header.Filename)
+	if err != nil {
+		http.Error(c.Writer, "Failed to upload image to OSS", http.StatusInternalServerError)
+		return
+	}
+
+	// 更新商品状态为上架
+	err = util.MDB.WithContext(c.Request.Context()).Model(&product).Where("id = ?", product.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
 		util.Status500(c, err)
 		return
 	}
-	err = esIndex(ctx, products)
+
+	err = esIndex(c.Request.Context(), product)
 	if err != nil {
 		util.Status500(c, err)
 		return
 	}
+
 	util.Status200(c, true)
 }
 
@@ -169,6 +185,10 @@ func PutProducts(c *gin.Context) {
 }
 
 // 上传商品图片到OSS的函数
+func uploadToOSS(file io.Reader, fileName string) error {
+	PushOSS(file, fileName)
+	return nil
+}
 
 // GetProductsDetail 产品详细信息
 func GetProductsDetail(c *gin.Context) {
@@ -199,6 +219,7 @@ func GetProductsDetail(c *gin.Context) {
 	util.Status200(c, product)
 }
 
+// esIndex 索引到Elasticsearch
 func esIndex(ctx context.Context, products model.Product) error {
 	var body strings.Builder
 	docID := strconv.FormatInt(int64(products.ID), 10)
@@ -247,6 +268,7 @@ func esIndex(ctx context.Context, products model.Product) error {
 	return nil
 }
 
+// getProduct 获取产品详情
 func getProduct(ctx context.Context, productsId uint) (product model.Product, err error) {
 	productKey := fmt.Sprintf("mall-products-%d", productsId)
 	productsJs, err := util.RDB.Get(ctx, productKey).Result()
