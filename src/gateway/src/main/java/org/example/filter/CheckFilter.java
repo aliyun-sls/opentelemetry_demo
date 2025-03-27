@@ -10,6 +10,8 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class CheckFilter implements GatewayFilter {
+    private static final Logger log = LoggerFactory.getLogger(CheckFilter.class);
     public static ObjectMapper objectMapper = new ObjectMapper();
     private ManagedChannel checkOutChannel;
     private ManagedChannel productCatalogChannel;
@@ -83,6 +86,7 @@ public class CheckFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
+        log.info("Filtering request {}", exchange.getRequest().getPath());
         // 验证1：仅允许POST请求
         if (!exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
             exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);
