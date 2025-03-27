@@ -123,7 +123,7 @@ func shelve(urlShelve string) {
 		if !file.IsDir() {
 			//filePath = file.Name()
 			data, _ := product.ProductBasicType.ProductsPic.Value()
-			picPath = data.([]uint8)
+			picPath = data.([]byte)
 			fmt.Println(file.Name(), picPath)
 			break // 只取第一张图片
 		}
@@ -131,7 +131,7 @@ func shelve(urlShelve string) {
 	product = model.Product{
 		ProductBasicType: model.ProductBasicType{
 			ProductsName: "yichen",
-			ProductsPic:  model.PicPath(picPath),
+			ProductsPic:  picPath,
 			UnitPrice:    100,
 			ProductsUnit: 1,
 		},
