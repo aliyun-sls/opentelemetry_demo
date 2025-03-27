@@ -12,7 +12,7 @@ function sleep(time) {
 async function visitProducts(page) {
   try {
     await page.goto(
-      "http://alb-q607t1mdy9tdnwkqs0.cn-heyuan.alb.aliyuncsslb.com/#hot-products"
+      "http://frontend-proxy:8080/#hot-products"
     );
     await page.waitForNetworkIdle();
     await sleep(10);
@@ -21,9 +21,9 @@ async function visitProducts(page) {
     for (let i of array) {
       j += 1;
       await page.click(`div[data-cy="product-list"] a:nth-of-type(${j})`);
-      await sleep(3);
+      await sleep(5);
       await page.goBack();
-      await sleep(3);
+      await sleep(5);
     }
   } catch (error) {
     console.error(error);
@@ -33,7 +33,7 @@ async function visitProducts(page) {
 async function cartList(page) {
   try {
     await page.goto(
-      "http://alb-q607t1mdy9tdnwkqs0.cn-heyuan.alb.aliyuncsslb.com/cart"
+      "http://frontend-proxy:8080/cart"
     );
     await sleep(5);
   } catch (error) {
@@ -44,14 +44,14 @@ async function cartList(page) {
 async function order(page) {
   try {
     await page.goto(
-      "http://alb-q607t1mdy9tdnwkqs0.cn-heyuan.alb.aliyuncsslb.com/#hot-products"
+      "http://frontend-proxy:8080/#hot-products"
     );
-    await sleep(3);
+    await sleep(5);
     const randomIndex = Math.floor(Math.random() * 10) + 1;
     await page.click(`div[data-cy="product-list"]  a:nth-of-type(${randomIndex})`);
     await sleep(5);
     await page.click(`button[data-cy="product-add-to-cart"]`);
-    await sleep(3);
+    await sleep(5);
     await page.click(`button[data-cy="checkout-place-order"]`);
 
   } catch (error) {
