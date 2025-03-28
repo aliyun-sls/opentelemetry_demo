@@ -142,7 +142,7 @@ func main() {
 	var port string
 	mustMapEnv(&port, "PRODUCT_CATALOG_PORT")
 
-	port = strings.TrimPrefix(port, "tcp://")
+	port = strings.Split(port, ":")[2]
 
 	log.Infof("Product Catalog gRPC server started on port: %s", port)
 
