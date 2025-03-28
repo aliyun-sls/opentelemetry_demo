@@ -20,18 +20,18 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
-	var products model.Product
-	err := c.BindQuery(&products)
+	var product model.Product
+	err := c.BindQuery(&product)
 	if err != nil {
 		util.Status400(c, err)
 		return
 	}
-	err = util.MDB.WithContext(c.Request.Context()).Model(&products).Where("id = ?", products.ID).Update("products_status", model.Shelve).Error
+	err = util.MDB.WithContext(c.Request.Context()).Model(&model.Product{}).Where("id = ?", product.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
 		util.Status500(c, err)
 		return
 	}
-	err = esIndex(c.Request.Context(), products)
+	err = esIndex(c.Request.Context(), product)
 	if err != nil {
 		util.Status500(c, err)
 		return
