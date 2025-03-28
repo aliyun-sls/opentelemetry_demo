@@ -148,7 +148,7 @@ func PutProducts(c *gin.Context) {
 	}
 	product.ProductsStatus = model.Shelve
 
-	err = util.MDB.WithContext(ctx).Create(&product).Error
+	err = util.MDB.WithContext(ctx).Model(&product).Create(&product).Error
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
@@ -195,7 +195,7 @@ func GetProductsDetail(c *gin.Context) {
 		ProductsIdType: getProductsDetailRequest.ProductsIdType,
 	}
 	if collect.UserId != 0 {
-		err = util.MDB.WithContext(ctx).Where(collect).Find(collect).Error
+		err = util.MDB.WithContext(ctx).Model(&model.Collect{}).Where(collect).Find(collect).Error
 		if err != nil {
 			util.Status500(c, err)
 			return
