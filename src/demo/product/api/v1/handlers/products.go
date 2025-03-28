@@ -148,7 +148,7 @@ func PutProducts(c *gin.Context) {
 	product.ProductsStatus = model.Shelve
 
 	// 显式指定表名
-	err = util.MDB.WithContext(ctx).Model(&model.Product{}).Create(&product).Error
+	err = util.MDB.WithContext(ctx).Table("product").Model(&model.Product{}).Create(&product).Error
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
