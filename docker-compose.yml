@@ -379,6 +379,8 @@ services:
       - FLAGD_PORT
       - FLAGD_UI_HOST
       - FLAGD_UI_PORT
+      - GATEWAY_APP_HOST
+      - GATEWAY_APP_PORT
     depends_on:
       frontend:
         condition: service_started
