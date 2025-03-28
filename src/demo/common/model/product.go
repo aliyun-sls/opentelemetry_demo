@@ -11,14 +11,14 @@ const (
 
 // Product 商品
 type Product struct {
-	ID           uint   `json:"id" gorm:"primaryKey"`
-	ProductsName string `json:"products_name"`
-	Price        int    `json:"price"` // 将 Price 字段类型从 float64 改为 int
-	ProductsCate int    `json:"products_cate" gorm:"index:ProductsCateIndex;comment:'商品类别'"`
+	ID            uint   `json:"id" gorm:"primaryKey"`
+	ProductsName  string `json:"products_name"`
+	ProductsPrice string `json:"products_price" form:"products_price"` // 将 Price 字段类型从 float64 改为 int
+	ProductsCate  string `json:"products_cate" gorm:"index:ProductsCateIndex;comment:'商品类别'"`
 	ProductBasicType
-	ProductsDesc    string           `json:"products_desc" gorm:"size:1000;not null;default:'';comment:'商品简介'"`
-	BrandId         int              `json:"brand_id" form:"brand_id" gorm:"not null;default:0;comment:'品牌ID'"`
-	SellerId        int              `json:"seller_id" form:"seller_id" gorm:"not null;default:0;comment:'商家ID'"`
+	ProductsDesc    string           `json:"products_desc" form:"products_desc" gorm:"size:1000;not null;default:'';comment:'商品简介'"`
+	BrandId         string           `json:"brand_id" form:"brand_id" gorm:"not null;default:0;comment:'品牌ID'"`
+	SellerId        string           `json:"seller_id" form:"seller_id" gorm:"not null;default:0;comment:'商家ID'"`
 	ProductsStatus  ProductsStatus   `json:"products_status" gorm:"size:10;index;not null;default:0;comment:'商品状态'"`
 	Inventory       *Inventory       `json:"inventory,omitempty" gorm:"foreignKey:ProductsId;"`
 	ProductCategory *ProductCategory `json:"product_category,omitempty" gorm:"foreignKey:ProductsCate;"`

@@ -21,32 +21,10 @@ import (
 // Shelve 上架
 func Shelve(c *gin.Context) {
 	var product model.Product
-	image, err := c.FormFile("products_pic")
-	if image != nil {
-		err = PushOSS(image, image.Filename)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image file"})
-			return
-		}
-	}
-	PushOSS(image, image.Filename)
-	product = model.Product{
-		ID:           0,
-		ProductsName: c.PostForm("products_name"),
-		Price:        0,
-		ProductsCate: 0,
-		ProductBasicType: model.ProductBasicType{
-			ProductsName: c.PostForm("products_name"),
-			ProductsUnit: 0,
-			UnitPrice:    0,
-			ProductsPic:  image,
-		},
-		ProductsDesc:    "",
-		BrandId:         0,
-		SellerId:        0,
-		ProductsStatus:  0,
-		Inventory:       nil,
-		ProductCategory: nil,
+	err := c.BindQuery(&product)
+	if err != nil {
+		util.Status400(c, err)
+		return
 	}
 	err = util.MDB.WithContext(c.Request.Context()).Model(&product).Where("id = ?", product.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
@@ -139,23 +117,45 @@ func ModifyProducts(c *gin.Context) {
 // PutProducts 保存
 func PutProducts(c *gin.Context) {
 	ctx := c.Request.Context()
-	var products model.Product
-	err := c.BindJSON(&products)
-	if err != nil {
-		fmt.Println(err)
-		util.Status400(c, err)
-		return
+	var product model.Product
+	image, err := c.FormFile("products_pic")
+	if image != nil {
+		err = PushOSS(image, image.Filename)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image file"})
+			return
+		}
 	}
-	products.ProductsStatus = model.Shelve
+	PushOSS(image, image.Filename)
+	product = model.Product{
+		ID:             0,
+		ProductsName:   c.PostForm("products_name"),
+		ProductsPrice:  c.PostForm("price"),
+		ProductsCate:   c.PostForm("products_cate"),
+		ProductsDesc:   c.PostForm("products_desc"),
+		BrandId:        c.PostForm("brand_id"),
+		SellerId:       c.PostForm("seller_id"),
+		ProductsStatus: 0,
+		Inventory: &model.Inventory{
+			InventoryId:      0,
+			ProductsIdType:   model.ProductsIdType{},
+			InventoryName:    c.PostForm("inventory_name"),
+			InventoryNum:     c.PostForm("inventory_num"),
+			InventoryUnit:    0,
+			InventoryAddress: c.PostForm("inventory_address"),
+		},
+		ProductCategory: nil,
+	}
+	product.ProductsStatus = model.Shelve
 
-	err = util.MDB.WithContext(ctx).Create(&products).Error
+	err = util.MDB.WithContext(ctx).Create(&product).Error
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
 		return
 	}
 
-	err = esIndex(ctx, products)
+	err = esIndex(ctx, product)
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
@@ -163,12 +163,12 @@ func PutProducts(c *gin.Context) {
 	}
 
 	// InventoryNum
-	inventory := products.Inventory
+	inventory := product.Inventory
 	if inventory == nil {
 		inventory = &model.Inventory{}
-		inventory.ProductsId = products.ID
-		inventory.InventoryName = products.ProductsName
-		inventory.InventoryNum = 100000
+		inventory.ProductsId = product.ID
+		inventory.InventoryName = product.Inventory.InventoryName
+		inventory.InventoryNum = product.Inventory.InventoryNum
 	}
 	err = service.CreateInventory(ctx, *inventory)
 	if err != nil {
@@ -176,7 +176,7 @@ func PutProducts(c *gin.Context) {
 		return
 	}
 
-	util.Status200(c, products)
+	util.Status200(c, product)
 }
 
 // GetProductsDetail 产品详细信息

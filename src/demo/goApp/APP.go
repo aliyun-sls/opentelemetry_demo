@@ -41,7 +41,7 @@ func main() {
 	}()
 
 	//urlLogin := "http://user.default.svc.cluster.local:8080/login"
-	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/shelve"
+	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/put_products"
 
 	// 创建一个每10秒触发一次的定时器
 	ticker := time.NewTicker(10 * time.Second)
@@ -51,7 +51,7 @@ func main() {
 		// 创建请求体
 		//user(urlLogin)
 
-		shelve(urlShelve)
+		PutProducts(urlShelve)
 
 	}
 }
@@ -85,7 +85,7 @@ func user(urlLogin string) {
 	log.Printf("Login Response: %s", body)
 }
 
-func shelve(urlShelve string) {
+func PutProducts(urlShelve string) {
 	/*if rand.Int()%5 == 0 {
 		time.Sleep(5 * time.Second)
 	} else if rand.Int()%3 == 0 {
@@ -118,6 +118,16 @@ func shelve(urlShelve string) {
 
 	//创建文件表单字段
 	writer.WriteField("products_name", "Test Product")
+	writer.WriteField("products_price", "100")
+	writer.WriteField("products_unit", "1")
+	writer.WriteField("products_desc", "This is a test product")
+	writer.WriteField("products_category", "1")
+	writer.WriteField("products_status", "1")
+	writer.WriteField("seller_id", "1")
+	writer.WriteField("brand_id", "1")
+	writer.WriteField("inventory_name", "Test Inventory")
+	writer.WriteField("inventory_address", "Test Address")
+	writer.WriteField("inventory_num", "10")
 	part, err := writer.CreateFormFile("products_pic", filepath.Base(data.Name()))
 	if err != nil {
 		fmt.Println(err)
@@ -138,8 +148,11 @@ func shelve(urlShelve string) {
 	respShelve, err := http.Post(urlShelve, writer.FormDataContentType(), body)
 	if err != nil {
 		log.Printf("Error calling shelve endpoint: %v", err)
+		return // 直接返回，避免后续操作
 	}
-	defer respShelve.Body.Close()
+	if respShelve != nil {
+		defer respShelve.Body.Close()
+	}
 
 	bodyShelve, err := ioutil.ReadAll(respShelve.Body)
 	if err != nil {
