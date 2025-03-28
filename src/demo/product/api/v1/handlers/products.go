@@ -20,18 +20,18 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
-	var product model.Product
-	err := c.BindQuery(&product)
+	var products model.Product
+	err := c.BindQuery(&products)
 	if err != nil {
 		util.Status400(c, err)
 		return
 	}
-	err = util.MDB.WithContext(c.Request.Context()).Model(&product).Where("id = ?", product.ID).Update("products_status", model.Shelve).Error
+	err = util.MDB.WithContext(c.Request.Context()).Model(&products).Where("id = ?", products.ID).Update("products_status", model.Shelve).Error
 	if err != nil {
 		util.Status500(c, err)
 		return
 	}
-	err = esIndex(c.Request.Context(), product)
+	err = esIndex(c.Request.Context(), products)
 	if err != nil {
 		util.Status500(c, err)
 		return
@@ -117,7 +117,7 @@ func ModifyProducts(c *gin.Context) {
 // PutProducts 保存
 func PutProducts(c *gin.Context) {
 	ctx := c.Request.Context()
-	var product model.Product
+	var products model.Product
 	image, err := c.FormFile("products_pic")
 	if image != nil {
 		err = PushOSS(image, image.Filename)
@@ -126,8 +126,7 @@ func PutProducts(c *gin.Context) {
 			return
 		}
 	}
-	PushOSS(image, image.Filename)
-	product = model.Product{
+	products = model.Product{
 		ID:             0,
 		ProductsName:   c.PostForm("products_name"),
 		ProductsPrice:  c.PostForm("price"),
@@ -146,16 +145,17 @@ func PutProducts(c *gin.Context) {
 		},
 		ProductCategory: nil,
 	}
-	product.ProductsStatus = model.Shelve
+	products.ProductsStatus = model.Shelve
 
-	err = util.MDB.WithContext(ctx).Model(&product).Create(&product).Error
+	// 显式指定表名
+	err = util.MDB.WithContext(ctx).Model(&products).Create(&products).Error
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
 		return
 	}
 
-	err = esIndex(ctx, product)
+	err = esIndex(ctx, products)
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
@@ -163,12 +163,12 @@ func PutProducts(c *gin.Context) {
 	}
 
 	// InventoryNum
-	inventory := product.Inventory
+	inventory := products.Inventory
 	if inventory == nil {
-		inventory = &model.Inventory{}
-		inventory.ProductsId = product.ID
-		inventory.InventoryName = product.Inventory.InventoryName
-		inventory.InventoryNum = product.Inventory.InventoryNum
+		inventory = &model.Inventory{
+			InventoryName: c.PostForm("inventory_name"),
+			InventoryNum:  c.PostForm("inventory_num"),
+		}
 	}
 	err = service.CreateInventory(ctx, *inventory)
 	if err != nil {
@@ -176,7 +176,7 @@ func PutProducts(c *gin.Context) {
 		return
 	}
 
-	util.Status200(c, product)
+	util.Status200(c, products)
 }
 
 // GetProductsDetail 产品详细信息
