@@ -60,9 +60,13 @@ async function order(page) {
     while (retryCount < maxRetries && !success) {
       await page.click(`button[data-cy="checkout-place-order"]`);
       await sleep(5);
-      const title = await page.title();
-      if (title.includes("Checkout")) {
-        success = true;
+      const elementExists = await page.$(`button[data-cy="checkout-place-order"]`);
+      if (!elementExists) {
+        const title = await page.title();
+        if (title.includes("Checkout")) {
+           console.info(`RunScript Checkout found in title`);
+           success = true;
+        }
         console.info(`RunScript checkout-place-order -------------`);
       } else {
         retryCount++;
