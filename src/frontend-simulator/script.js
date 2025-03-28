@@ -26,7 +26,7 @@ async function visitProducts(page) {
       await sleep(5);
     }
   } catch (error) {
-    console.error(error);
+    console.error(`${new Date().toISOString()}:`, error);
   }
 }
 
@@ -37,7 +37,7 @@ async function cartList(page) {
     );
     await sleep(5);
   } catch (error) {
-    console.error(error);
+    console.error(`${new Date().toISOString()}:`, error);
   }
 }
 
@@ -51,7 +51,7 @@ async function order(page) {
     await page.click(`div[data-cy="product-list"]  a:nth-of-type(${randomIndex})`);
     await sleep(5);
     await page.click(`button[data-cy="product-add-to-cart"]`);
-    console.info(`RunScript product-add-to-cart -------------`);
+    console.info(`${new Date().toISOString()}: RunScript product-add-to-cart `);
     await sleep(5);
     let retryCount = 0;
     const maxRetries = 3;
@@ -63,20 +63,20 @@ async function order(page) {
       if (!elementExists) {
         const title = await page.title();
         if (title.includes("Checkout")) {
-           console.info(`RunScript Checkout found in title`);
+           console.info(`${new Date().toISOString()}: RunScript Checkout found in title`);
            success = true;
         }
-        console.info(`RunScript checkout-place-order -------------`);
+        console.info(`${new Date().toISOString()}: RunScript checkout-place-order `);
       } else {
         retryCount++;
-        console.info(`Checkout not found in title, retrying... (${retryCount}/${maxRetries})`);
+        console.info(`${new Date().toISOString()}: Checkout not found in title, retrying... (${retryCount}/${maxRetries})`);
       }
     }
     if (!success) {
-      console.error(`Failed to find "Checkout" in title after ${maxRetries} retries.`);
+      console.error(`${new Date().toISOString()}: Failed to find "Checkout" in title after ${maxRetries} retries.`);
     }
   } catch (error) {
-    console.error(error);
+    console.error(`${new Date().toISOString()}:`, error);
   }
 }
 
@@ -120,7 +120,7 @@ async function launchBrowser() {
 
 const runScript = async (callback) => {
   try {
-    console.info(`RunScript start -------------`);
+    console.info(`${new Date().toISOString()}: RunScript start `);
 
     const browser = await launchBrowser();
     const page = await browser.newPage();
@@ -134,10 +134,10 @@ const runScript = async (callback) => {
     await page.close();
     await browser.close();
     callback();
-    console.info(`RunScript end -------------`);
+    console.info(`${new Date().toISOString()}: RunScript end `);
   } catch (error) {
     callback();
-    console.error(error);
+    console.error(`${new Date().toISOString()}:`, error);
   }
 };
 
