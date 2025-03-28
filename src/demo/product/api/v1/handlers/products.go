@@ -117,7 +117,7 @@ func ModifyProducts(c *gin.Context) {
 // PutProducts 保存
 func PutProducts(c *gin.Context) {
 	ctx := c.Request.Context()
-	var products model.Product
+	var product model.Product
 	image, err := c.FormFile("products_pic")
 	if image != nil {
 		err = PushOSS(image, image.Filename)
@@ -126,7 +126,7 @@ func PutProducts(c *gin.Context) {
 			return
 		}
 	}
-	products = model.Product{
+	product = model.Product{
 		ID:             0,
 		ProductsName:   c.PostForm("products_name"),
 		ProductsPrice:  c.PostForm("price"),
@@ -145,17 +145,17 @@ func PutProducts(c *gin.Context) {
 		},
 		ProductCategory: nil,
 	}
-	products.ProductsStatus = model.Shelve
+	product.ProductsStatus = model.Shelve
 
 	// 显式指定表名
-	err = util.MDB.WithContext(ctx).Model(&products).Create(&products).Error
+	err = util.MDB.WithContext(ctx).Table("product").Model(&product).Create(&product).Error
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
 		return
 	}
 
-	err = esIndex(ctx, products)
+	err = esIndex(ctx, product)
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
@@ -163,7 +163,7 @@ func PutProducts(c *gin.Context) {
 	}
 
 	// InventoryNum
-	inventory := products.Inventory
+	inventory := product.Inventory
 	if inventory == nil {
 		inventory = &model.Inventory{
 			InventoryName: c.PostForm("inventory_name"),
@@ -176,7 +176,7 @@ func PutProducts(c *gin.Context) {
 		return
 	}
 
-	util.Status200(c, products)
+	util.Status200(c, product)
 }
 
 // GetProductsDetail 产品详细信息
