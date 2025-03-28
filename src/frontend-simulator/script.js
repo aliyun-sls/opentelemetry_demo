@@ -14,7 +14,7 @@ async function visitProducts(page) {
     await page.goto(
       "http://frontend-proxy:8080/#hot-products"
     );
-    await page.waitForNetworkIdle();
+//    await page.waitForNetworkIdle();
     await sleep(5);
     const array = new Array(3);
     let j = 0;
@@ -46,7 +46,6 @@ async function order(page) {
     await page.goto(
       "http://frontend-proxy:8080/#hot-products"
     );
-    await page.waitForNetworkIdle();
     await sleep(5);
     const randomIndex = Math.floor(Math.random() * 10) + 1;
     await page.click(`div[data-cy="product-list"]  a:nth-of-type(${randomIndex})`);
