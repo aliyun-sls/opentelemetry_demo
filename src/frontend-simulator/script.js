@@ -15,7 +15,7 @@ async function visitProducts(page) {
       "http://frontend-proxy:8080/#hot-products"
     );
     await page.waitForNetworkIdle();
-    await sleep(10);
+    await sleep(5);
     const array = new Array(3);
     let j = 0;
     for (let i of array) {
@@ -46,16 +46,32 @@ async function order(page) {
     await page.goto(
       "http://frontend-proxy:8080/#hot-products"
     );
+    await page.waitForNetworkIdle();
     await sleep(5);
     const randomIndex = Math.floor(Math.random() * 10) + 1;
     await page.click(`div[data-cy="product-list"]  a:nth-of-type(${randomIndex})`);
-    await sleep(10);
+    await sleep(5);
     await page.click(`button[data-cy="product-add-to-cart"]`);
     console.info(`RunScript product-add-to-cart -------------`);
-    await sleep(10);
-    await page.click(`button[data-cy="checkout-place-order"]`);
-    console.info(`RunScript checkout-place-order -------------`);
-
+    await sleep(5);
+    let retryCount = 0;
+    const maxRetries = 3;
+    let success = false;
+    while (retryCount < maxRetries && !success) {
+      await page.click(`button[data-cy="checkout-place-order"]`);
+      await sleep(5);
+      const title = await page.title();
+      if (title.includes("Checkout")) {
+        success = true;
+        console.info(`RunScript checkout-place-order -------------`);
+      } else {
+        retryCount++;
+        console.info(`Checkout not found in title, retrying... (${retryCount}/${maxRetries})`);
+      }
+    }
+    if (!success) {
+      console.error(`Failed to find "Checkout" in title after ${maxRetries} retries.`);
+    }
   } catch (error) {
     console.error(error);
   }
