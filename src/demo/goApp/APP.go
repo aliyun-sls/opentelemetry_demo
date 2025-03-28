@@ -68,18 +68,21 @@ func user(urlLogin string) {
 	jsonData, err := json.Marshal(user)
 	if err != nil {
 		log.Printf("Error marshalling user data: %v", err)
+		return
 	}
 
 	// POST 请求到登录接口
 	resp, err := http.Post(urlLogin, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Printf("Error calling login endpoint: %v", err)
+		return
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Error reading login response body: %v", err)
+		return
 	}
 	log.Printf("Login Response: %s", body)
 }
