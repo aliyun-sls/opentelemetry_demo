@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 // GetApp01 调用 /getapp01 接口
 func GetApp01() (string, error) {
 	// 定义请求URL
-	url := "http://goapp.default.svc.cluster.local:8080/getapp01"
+	url := "http://goapp." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/getapp01"
 
 	// 发送GET请求
 	resp, err := http.Get(url)

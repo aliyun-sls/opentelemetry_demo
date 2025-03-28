@@ -40,8 +40,8 @@ func main() {
 		}
 	}()
 
-	//urlLogin := "http://user.default.svc.cluster.local:8080/login"
-	urlShelve := "http://product.default.svc.cluster.local:8080/api/v1/products/put_products"
+	urlLogin := "http://user." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/login"
+	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
 
 	// 创建一个每10秒触发一次的定时器
 	ticker := time.NewTicker(10 * time.Second)
@@ -49,10 +49,9 @@ func main() {
 
 	for range ticker.C {
 		// 创建请求体
-		//user(urlLogin)
+		user(urlLogin)
 
 		PutProducts(urlShelve)
-
 	}
 }
 
@@ -69,28 +68,31 @@ func user(urlLogin string) {
 	jsonData, err := json.Marshal(user)
 	if err != nil {
 		log.Printf("Error marshalling user data: %v", err)
+		return
 	}
 
 	// POST 请求到登录接口
 	resp, err := http.Post(urlLogin, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Printf("Error calling login endpoint: %v", err)
+		return
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Error reading login response body: %v", err)
+		return
 	}
 	log.Printf("Login Response: %s", body)
 }
 
 func PutProducts(urlShelve string) {
-	/*if rand.Int()%5 == 0 {
+	if rand.Int()%5 == 0 {
 		time.Sleep(5 * time.Second)
 	} else if rand.Int()%3 == 0 {
 		time.Sleep(2 * time.Second)
-	}*/
+	}
 	// GET 请求到 shelve 接口，添加查询参数
 	path, _ := os.Getwd()
 	path = path + "/tupian/"

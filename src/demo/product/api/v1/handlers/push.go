@@ -51,7 +51,6 @@ func PushOSS(file *multipart.FileHeader, fileName string) error {
 	}
 	defer fileReader.Close()
 
-	fmt.Println("imageData: ", file, "products.ProductsName: ", fileName)
 	// 创建上传对象的请求
 	request := &oss.PutObjectRequest{
 		Bucket: oss.Ptr("o11y-demo-cn-heyuan"), // 存储空间名称
