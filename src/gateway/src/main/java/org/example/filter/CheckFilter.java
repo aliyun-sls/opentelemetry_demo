@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -98,7 +99,7 @@ public class CheckFilter implements GatewayFilter {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required"));
         }
 
-        return exchange.getRequest().getBody().single().switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body cannot be empty"))).flatMap(dataBuffer -> {
+        return DataBufferUtils.join(exchange.getRequest().getBody()).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body cannot be empty"))).flatMap(dataBuffer -> {
             try {
                 JsonNode json = objectMapper.readTree(dataBuffer.asInputStream());
                 Demo.PlaceOrderRequest.Builder requestBuilder = Demo.PlaceOrderRequest.newBuilder();
