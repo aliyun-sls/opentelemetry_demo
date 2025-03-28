@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -56,11 +55,6 @@ func main() {
 }
 
 func user(urlLogin string) {
-	if rand.Int()%5 == 0 {
-		time.Sleep(5 * time.Second)
-	} else if rand.Int()%3 == 0 {
-		time.Sleep(2 * time.Second)
-	}
 	user := User{
 		Username: "admin",
 		Password: "admin",
@@ -88,11 +82,6 @@ func user(urlLogin string) {
 }
 
 func PutProducts(urlShelve string) {
-	if rand.Int()%5 == 0 {
-		time.Sleep(5 * time.Second)
-	} else if rand.Int()%3 == 0 {
-		time.Sleep(2 * time.Second)
-	}
 	// GET 请求到 shelve 接口，添加查询参数
 	path, _ := os.Getwd()
 	path = path + "/tupian/"
