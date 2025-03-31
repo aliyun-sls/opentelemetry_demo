@@ -131,14 +131,13 @@ const runScript = async (callback) => {
         if (request.url().includes('api/products') || request.url().includes('api/shipping')
          || request.url().includes('api/recommendations') || request.url().includes('api/cart')
          || request.url().includes('api/checkout')) {
-          if (request.postData()) {
-             console.log('Request URL:', request.url(), 'Request Post Data:', request.postData());
-          }else{
-             console.log('Request URL:', request.url());
-          }
-
-
-        }
+         console.log(
+                     'Request URL:', request.url(),
+                     request.headers()['traceparent'] ? `\ntraceparent: ${request.headers()['traceparent']}` : '',
+                     request.headers()['tracestate'] ? `\ntracestate: ${request.headers()['tracestate']}` : '',
+                     request.postData() ? `\nRequest Post Data: ${request.postData()}` : ''
+                 );
+         }
         request.continue();
     });
 //    page.on('response', async response => {
