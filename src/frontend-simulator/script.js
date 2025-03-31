@@ -9,10 +9,12 @@ function sleep(time) {
   });
 }
 
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://frontend-proxy:8080";
+
 async function visitProducts(page) {
   try {
     await page.goto(
-      "http://frontend-proxy:8080/#hot-products"
+      `${FRONTEND_URL}/#hot-products`
     );
 //    await page.waitForNetworkIdle();
     await sleep(5);
@@ -33,7 +35,7 @@ async function visitProducts(page) {
 async function cartList(page) {
   try {
     await page.goto(
-      "http://frontend-proxy:8080/cart"
+      `${FRONTEND_URL}/cart`
     );
     await sleep(5);
   } catch (error) {
@@ -44,7 +46,7 @@ async function cartList(page) {
 async function order(page) {
   try {
     await page.goto(
-      "http://frontend-proxy:8080/#hot-products"
+      `${FRONTEND_URL}/#hot-products`
     );
     await sleep(5);
     const randomIndex = Math.floor(Math.random() * 10) + 1;
@@ -124,11 +126,29 @@ const runScript = async (callback) => {
 
     const browser = await launchBrowser();
     const page = await browser.newPage();
+    await page.setRequestInterception(true);
+    page.on('request', request => {
+        if (request.url().includes('api/products') || request.url().includes('api/shipping')
+         || request.url().includes('api/recommendations') || request.url().includes('api/cart')
+         || request.url().includes('api/checkout')) {
+          if (request.postData()) {
+             console.log('Request URL:', request.url(), 'Request Post Data:', request.postData());
+          }else{
+             console.log('Request URL:', request.url());
+          }
 
+
+        }
+        request.continue();
+    });
+//    page.on('response', async response => {
+//        console.log('Response URL:', response.url());
+//        console.log('Response Status:', response.status());
+//    });
+    await order(page);
+    await order(page);
+    await order(page);
     await visitProducts(page);
-    await order(page);
-    await order(page);
-    await order(page);
     await cartList(page);
     await sleep(10);
     await page.close();
