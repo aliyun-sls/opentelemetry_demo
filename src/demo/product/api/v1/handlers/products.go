@@ -8,7 +8,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"math/rand"
 	"net/http"
+	"os"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/service"
@@ -116,6 +118,13 @@ func ModifyProducts(c *gin.Context) {
 
 // PutProducts 保存
 func PutProducts(c *gin.Context) {
+	if os.Getenv("ISTROUBLE") == "true" {
+		if rand.Int()%5 == 0 {
+			time.Sleep(5 * time.Second)
+		} else if rand.Int()%3 == 0 {
+			time.Sleep(2 * time.Second)
+		}
+	}
 	ctx := c.Request.Context()
 	var product model.Product
 	image, err := c.FormFile("products_pic")

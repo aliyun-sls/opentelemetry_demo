@@ -3,7 +3,9 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"math/rand"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -27,6 +29,13 @@ func register(c *gin.Context) {
 }
 
 func login(c *gin.Context) {
+	if os.Getenv("ISTROUBLE") == "true" {
+		if rand.Int()%5 == 0 {
+			time.Sleep(5 * time.Second)
+		} else if rand.Int()%3 == 0 {
+			time.Sleep(2 * time.Second)
+		}
+	}
 	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
