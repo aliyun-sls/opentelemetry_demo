@@ -133,9 +133,9 @@ const runScript = async (callback) => {
          || request.url().includes('api/checkout')) {
          console.log(
                      'Request URL:', request.url(),
-                     request.headers()['traceparent'] ? `\ntraceparent: ${request.headers()['traceparent']}` : '',
-                     request.headers()['tracestate'] ? `\ntracestate: ${request.headers()['tracestate']}` : '',
-                     request.postData() ? `\nRequest Post Data: ${request.postData()}` : ''
+                     request.headers()['traceparent'] ? ` traceparent: ${request.headers()['traceparent']}` : '',
+                     request.headers()['tracestate'] ? ` tracestate: ${request.headers()['tracestate']}` : '',
+                     request.postData() ? ` Request Post Data: ${request.postData()}` : ''
                  );
          }
         request.continue();
