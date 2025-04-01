@@ -1,10 +1,9 @@
 module github.com/opentelemetry/opentelemetry-demo/src/product-catalog
 
-go 1.22.7
-
-toolchain go1.22.9
+go 1.23.7
 
 require (
+	github.com/go-sql-driver/mysql v1.9.1
 	github.com/open-feature/go-sdk v1.14.1
 	github.com/open-feature/go-sdk-contrib/hooks/open-telemetry v0.3.4
 	github.com/open-feature/go-sdk-contrib/providers/flagd v0.2.6
@@ -28,6 +27,7 @@ require (
 	buf.build/gen/go/open-feature/flagd/protocolbuffers/go v1.36.5-20250127221518-be6d1143b690.1 // indirect
 	connectrpc.com/connect v1.18.1 // indirect
 	connectrpc.com/otelconnect v0.7.1 // indirect
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/barkimedes/go-deepcopy v0.0.0-20220514131651-17c30cfc62df // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/diegoholiveira/jsonlogic/v3 v3.7.4 // indirect
