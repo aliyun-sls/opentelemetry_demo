@@ -23,6 +23,6 @@ public class Scenario {
 
     @Override
     public String toString() {
-        return "{name='" + name + ", weight=" + weight + '}';
+        return "Scenario{name='" + name + "', weight=" + weight + '}';
     }
 }

@@ -1,10 +1,12 @@
 package com.example;
 
 import com.example.service.ScenarioConfig;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
@@ -17,4 +19,10 @@ public class AdsApplication {
 		SpringApplication.run(AdsApplication.class, args);
 	}
 
+	@Bean
+	public CommandLineRunner commandLineRunner(ScenarioConfig scenarioConfig) {
+		return args -> {
+			System.out.println("Scenarios: " + scenarioConfig.getScenarios());
+		};
+	}
 }
