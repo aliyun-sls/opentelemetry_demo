@@ -12,11 +12,9 @@ public class ScenarioSelector {
     private final Random random = new Random();
 
     public ScenarioSelector(List<Scenario> scenarios) {
-        System.out.println(scenarios);
         this.scenarios = scenarios;
         // 验证概率总和是否为 1.0
         double total = scenarios.stream().mapToDouble(Scenario::getWeight).sum();
-        System.out.println(total);
         if (Math.abs(total - 1.0) > 0.0001) {
             throw new IllegalArgumentException("概率总和必须为 1.0");
         }
