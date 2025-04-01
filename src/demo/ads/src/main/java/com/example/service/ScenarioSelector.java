@@ -1,7 +1,6 @@
 package com.example.service;
 
 import com.example.entity.Scenario;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,18 +9,13 @@ import java.util.Random;
 @Service
 public class ScenarioSelector {
 
-    @Autowired
-    ScenarioConfig scenarioConfig;
     private List<Scenario> scenarios;
     private final Random random = new Random();
 
-    public ScenarioSelector() {
+    public ScenarioSelector(ScenarioConfig scenarioConfig) {
         this.scenarios = scenarioConfig.getScenarios();
-    }
-
-    public void setScenarioSelector(List<Scenario> scenarios) {
-        if (scenarios.isEmpty()) {
-            this.scenarios = scenarioConfig.getScenarios();
+        if (scenarios == null || scenarios.isEmpty()) {
+            throw new IllegalStateException("Scenarios list is empty or not initialized");
         }
         // 验证概率总和是否为 1.0
         double total = scenarios.stream().mapToDouble(Scenario::getWeight).sum();

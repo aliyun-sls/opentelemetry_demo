@@ -60,7 +60,7 @@ public class AdController {
     @PostMapping("/ads/update-scenarios")
     public ResponseEntity<?> updateScenarios(@RequestBody List<Scenario> newScenarios) {
         scenarioConfig.setScenarios(newScenarios);
-        scenarioSelector.setScenarioSelector(newScenarios);
+        scenarioSelector = new ScenarioSelector(scenarioConfig);
         return ResponseEntity.ok().build();
     }
 
