@@ -22,24 +22,18 @@ import (
 
 // Shelve 上架
 func Shelve(c *gin.Context) {
-	var product model.Product
-	err := c.BindQuery(&product)
-	if err != nil {
-		util.Status400(c, err)
+	delay := c.Query("delay")
+	if delay != "" {
+		duration, err := time.ParseDuration(delay)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "invalid delay format"})
+			return
+		}
+		time.Sleep(duration)
+		c.JSON(200, gin.H{"message": "delay finish"})
 		return
 	}
-	err = util.MDB.WithContext(c.Request.Context()).Model(&model.Product{}).Where("id = ?", product.ID).Update("products_status", model.Shelve).Error
-	if err != nil {
-		util.Status500(c, err)
-		return
-	}
-	err = esIndex(c.Request.Context(), product)
-	if err != nil {
-		util.Status500(c, err)
-		return
-	}
-
-	util.Status200(c, true)
+	//util.Status200(c, true)
 }
 func Unshelve(c *gin.Context) {
 	ctx := c.Request.Context()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"sls-mall-go/common/util"
 	apiv1 "sls-mall-go/product/api/v1"
 )
@@ -16,7 +17,8 @@ func main() {
 
 	//util.InitES()
 	//util.InitPyroscope(config.ServiceName)
-	r := util.InitGin()
+	/*r := util.InitGin()*/
+	r := gin.Default()
 	apiv1.Routers(r)
 	//err := r.Run(":" + config.ServicePort)
 	err := r.Run(":8080")

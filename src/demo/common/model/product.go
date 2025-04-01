@@ -9,6 +9,11 @@ const (
 	Unshelve ProductsStatus = 2
 )
 
+type Trouble struct {
+	Delay   string
+	Percent string
+}
+
 // Product 商品
 type Product struct {
 	ID            uint   `json:"id" gorm:"primaryKey"`
