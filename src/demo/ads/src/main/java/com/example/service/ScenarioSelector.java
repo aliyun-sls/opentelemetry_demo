@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.entity.Scenario;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +13,7 @@ public class ScenarioSelector {
     private List<Scenario> scenarios;
     private final Random random = new Random();
 
+    @Autowired
     public ScenarioSelector(ScenarioConfig scenarioConfig) {
         this.scenarios = scenarioConfig.getScenarios();
         if (scenarios == null || scenarios.isEmpty()) {
