@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -35,66 +36,40 @@ public class AdController {
 
     @GetMapping("/listAds")
     public ResponseEntity<List> listAds() {
-        List ads;
-
+        List ads = new ArrayList();
         String selectedScenario = scenarioSelector.selectScenario();
-
         try {
             scenarioHandler.handleScenario(selectedScenario);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(List.of("Error: " + e.getMessage()));
-        }
-
-        Random random = new Random();
-        double n = random.nextDouble();
-        if (n < 0.1) {
-            ads = adService.findAdWithSleep();
-        }else {
-            if (n<0.4){
-                try {
-                    TimeUnit.SECONDS.sleep(10);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            ads = adService.listAds();
+            return ResponseEntity.status(500).build();
         }
         return ResponseEntity.ok(ads);
     }
 
     @GetMapping("/ads/listAds")
-    public ResponseEntity<List<AdEntity>> listAdsAll() {
-        List ads = null;
-        Random random = new Random();
-        double n = random.nextDouble();
-        if (n < 0.1) {
-            ads = adService.findAdWithSleep();
-        }else {
-            if (n<0.4){
-                try {
-                    TimeUnit.SECONDS.sleep(10);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            ads = adService.listAds();
-        }
-        return ResponseEntity.ok(ads);
+    public ResponseEntity<List> listAdsAll() {
+        return listAds();
     }
 
     // 新增: 根据广告ID查询广告详情
-    @GetMapping("/ad/{id}")
+    @GetMapping("/ads/{id}")
     public ResponseEntity<AdEntity> getAdById(@PathVariable Long id) {
         AdEntity ad = adService.getAdById(id);
         return ad != null ? ResponseEntity.ok(ad) : ResponseEntity.notFound().build();
     }
 
     // 通过 REST API 更新场景配置
-    @PostMapping("/update-scenarios")
+    @PostMapping("/ads/update-scenarios")
     public ResponseEntity<?> updateScenarios(@RequestBody List<Scenario> newScenarios) {
         scenarioConfig.setScenarios(newScenarios);
         scenarioSelector = new ScenarioSelector(newScenarios);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/ads/scenarios")
+    public ResponseEntity<List<Scenario>> scenarios() {
+        List<Scenario> s = scenarioConfig.getScenarios();
+        return ResponseEntity.ok(s);
     }
 
 }
