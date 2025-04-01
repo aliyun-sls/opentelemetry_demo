@@ -1,6 +1,6 @@
 module sls-mall-go/product
 
-go 1.22.3
+go 1.23.7
 
 require (
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.1

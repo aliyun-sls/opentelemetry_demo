@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"math/rand"
 	"net"
 	"os"
 	"os/signal"
@@ -140,8 +141,8 @@ func main() {
 
 	svc := &productCatalog{}
 	var port string
-	mustMapEnv(&port, "PRODUCT_CATALOG_PORT")
-
+	//mustMapEnv(&port, "PRODUCT_CATALOG_PORT")
+	port = "8080"
 	log.Infof("Product Catalog gRPC server started on port: %s", port)
 
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
@@ -281,11 +282,18 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
-	pb.Mysql()
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.product.id", req.Id),
 	)
+
+	// 处理请求参数 delay=delay
+	if req.GetDelay() == "delay" {
+		fmt.Println("delay")
+		// 增加对 delay 参数的处理逻辑，确保不会因为延迟导致请求失败
+		delayDuration := time.Duration(rand.Intn(5)+1) * time.Second
+		time.Sleep(delayDuration)
+	}
 
 	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
@@ -315,6 +323,12 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	span.SetAttributes(
 		attribute.String("app.product.name", found.Name),
 	)
+
+	// 确保返回的 Product 对象不为空
+	if found == nil {
+		return nil, status.Errorf(codes.Internal, "Internal Server Error")
+	}
+
 	return found, nil
 }
 

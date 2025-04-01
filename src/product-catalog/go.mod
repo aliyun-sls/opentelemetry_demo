@@ -1,8 +1,6 @@
 module github.com/opentelemetry/opentelemetry-demo/src/product-catalog
 
-go 1.22.7
-
-toolchain go1.22.9
+go 1.23.7
 
 require (
 	github.com/open-feature/go-sdk v1.14.1
