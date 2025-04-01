@@ -15,7 +15,7 @@ public class ScenarioSelector {
     private List<Scenario> scenarios;
     private final Random random = new Random();
 
-    public ScenarioSelector(List<Scenario> scenarios) {
+    public void setScenarioSelector(List<Scenario> scenarios) {
         if (scenarios.isEmpty()) {
             this.scenarios = scenarioConfig.getScenarios();
         }
