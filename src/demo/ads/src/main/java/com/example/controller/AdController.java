@@ -33,19 +33,19 @@ public class AdController {
     private ScenarioHandler scenarioHandler;
 
     @GetMapping("/listAds")
-    public ResponseEntity<List> listAds() {
+    public ResponseEntity<?> listAds() {
         List ads = new ArrayList();
         String selectedScenario = scenarioSelector.selectScenario();
         try {
             scenarioHandler.handleScenario(selectedScenario);
         } catch (Exception e) {
-            return ResponseEntity.status(500).build();
+            return ResponseEntity.status(500).body(e);
         }
         return ResponseEntity.ok(ads);
     }
 
     @GetMapping("/ads/listAds")
-    public ResponseEntity<List> listAdsAll() {
+    public ResponseEntity<?> listAdsAll() {
         return listAds();
     }
 
