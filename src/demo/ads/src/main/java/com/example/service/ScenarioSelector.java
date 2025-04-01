@@ -1,10 +1,12 @@
 package com.example.service;
 
 import com.example.entity.Scenario;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Random;
 
+@Service
 public class ScenarioSelector {
     private final List<Scenario> scenarios;
     private final Random random = new Random();
