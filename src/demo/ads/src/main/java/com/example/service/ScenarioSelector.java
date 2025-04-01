@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.entity.Scenario;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -8,11 +9,16 @@ import java.util.Random;
 
 @Service
 public class ScenarioSelector {
-    private final List<Scenario> scenarios;
+
+    @Autowired
+    ScenarioConfig scenarioConfig;
+    private List<Scenario> scenarios;
     private final Random random = new Random();
 
     public ScenarioSelector(List<Scenario> scenarios) {
-        this.scenarios = scenarios;
+        if (scenarios.isEmpty()) {
+            this.scenarios = scenarioConfig.getScenarios();
+        }
         // 验证概率总和是否为 1.0
         double total = scenarios.stream().mapToDouble(Scenario::getWeight).sum();
         if (Math.abs(total - 1.0) > 0.0001) {

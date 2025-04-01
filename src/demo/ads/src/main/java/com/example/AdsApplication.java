@@ -18,11 +18,4 @@ public class AdsApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(AdsApplication.class, args);
 	}
-
-	@Bean
-	public CommandLineRunner commandLineRunner(ScenarioConfig scenarioConfig) {
-		return args -> {
-			System.out.println("Scenarios: " + scenarioConfig.getScenarios());
-		};
-	}
 }

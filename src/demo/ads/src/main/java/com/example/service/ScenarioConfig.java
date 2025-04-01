@@ -1,6 +1,7 @@
 package com.example.service;
 
 import com.example.entity.Scenario;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "ads-scenarios")
+@Data
 public class ScenarioConfig {
     private List<Scenario> scenarios;
 
