@@ -19,6 +19,7 @@ public class ScenarioConfig {
     }
 
     public void setScenarios(List<Scenario> scenarios) {
+        System.out.println(scenarios);
         this.scenarios = scenarios;
     }
 }
