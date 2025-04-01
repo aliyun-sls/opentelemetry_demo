@@ -3,6 +3,7 @@ package org.example.config;
 public class Config {
     public String checkoutAddr;
     public String productAddr;
+    public String currencyAddr;
 
     public String getCheckoutAddr() {
         return checkoutAddr;
@@ -18,5 +19,13 @@ public class Config {
 
     public void setProductAddr(String productAddr) {
         this.productAddr = productAddr;
+    }
+
+    public String getCurrencyAddr() {
+        return currencyAddr;
+    }
+
+    public void setCurrencyAddr(String currencyAddr) {
+        this.currencyAddr = currencyAddr;
     }
 }
