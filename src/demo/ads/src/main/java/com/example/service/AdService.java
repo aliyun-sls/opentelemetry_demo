@@ -10,4 +10,10 @@ public interface AdService {
     AdEntity getAdById(Long id);
 
     List findAdWithSleep();
+
+    List findFromInexistentTable();
+
+    void excuteMassInsert();
+
+    void excuteComplexSQL();
 }
