@@ -20,4 +20,9 @@ public class Scenario {
     public void setWeight(double weight) {
         this.weight = weight;
     }
+
+    @Override
+    public String toString() {
+        return "{name='" + name + ", weight=" + weight + '}';
+    }
 }
