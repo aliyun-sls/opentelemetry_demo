@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 )
 
 type CPU struct {
@@ -35,9 +34,7 @@ func (a *CPU) cpu(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
-}
 
-func run() {
 	ConsumeCPU()
 }
 
@@ -45,14 +42,7 @@ func main() {
 	app := &CPU{}
 	fmt.Println("开启监听。。。。。")
 	http.HandleFunc("/cpu", app.cpu)
-	go func() {
-		for {
-			run()
-			time.Sleep(1 * time.Second)
-		}
 
-	}()
-	// 将监听服务放在一个独立的goroutine中运行
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
