@@ -10,21 +10,13 @@ import (
 type CPU struct {
 }
 
-// ConsumeCPU 通过遍历一个大数组来消耗 CPU 资源
+// ConsumeCPU 通过循环计算来消耗 CPU 资源
 func (a *CPU) ConsumeCPU() {
-	// 创建一个包含几百万个元素的数组
-	const size = 100000000
-	arr := make([]int, size)
-
-	// 填充数组
-	for i := 0; i < size; i++ {
-		arr[i] = i
-	}
-
-	// 遍历数组并进行一些简单的计算来消耗 CPU
+	// 通过循环计算来消耗 CPU
+	const iterations = 1000000000
 	sum := 0
-	for _, value := range arr {
-		sum += value
+	for i := 0; i < iterations; i++ {
+		sum += i
 	}
 	fmt.Println("Sum:", sum)
 }
