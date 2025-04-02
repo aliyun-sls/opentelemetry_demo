@@ -13,7 +13,9 @@
         <module>marketing</module>
         <module>notification</module>
         <module>promotion</module>
-<!--        <module>gateway</module>-->
+        <module>logistics</module>
+        <module>reporting</module>
+        <module>review</module>
     </modules>
 
     <parent>
