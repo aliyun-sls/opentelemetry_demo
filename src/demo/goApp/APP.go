@@ -41,17 +41,29 @@ func main() {
 
 	urlLogin := "http://user." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/login"
 	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
+	urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
 
 	// 创建一个每10秒触发一次的定时器
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		// 创建请求体
+
+		cpu(urlCpu)
 		user(urlLogin)
 
 		PutProducts(urlShelve)
 	}
+}
+
+func cpu(urlCpu string) {
+	body, err := http.Get(urlCpu)
+	if err != nil {
+		log.Printf("Error calling cpu endpoint: %v", err)
+		return
+	}
+	log.Printf("gocpu Response: %s", body)
 }
 
 func user(urlLogin string) {
