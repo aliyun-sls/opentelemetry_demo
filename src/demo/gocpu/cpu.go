@@ -40,9 +40,7 @@ func main() {
 	http.HandleFunc("/cpu", app.cpu)
 
 	// 将监听服务放在一个独立的goroutine中运行
-	go func() {
-		if err := http.ListenAndServe(":8080", nil); err != nil {
-			log.Fatalf("Error starting server: %v", err)
-		}
-	}()
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("Error starting server: %v", err)
+	}
 }
