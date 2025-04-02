@@ -10,7 +10,9 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -273,12 +275,29 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
+func httpCall(addr, path string) {
+	resp, err := http.Get("http://" + addr + path)
+	if err != nil {
+		log.Errorf("Error %q %q", err, addr+path)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("Error %q %q", err, addr+path)
+		return
+	}
+	log.Infof("Response: %q", string(body))
+}
+
 func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.ListProductsResponse, error) {
 	span := trace.SpanFromContext(ctx)
 
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(catalog)),
 	)
+	httpCall("review:8080", "review")
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
@@ -316,6 +335,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	span.SetAttributes(
 		attribute.String("app.product.name", found.Name),
 	)
+	httpCall("reporting:8080", "reporting")
 	return found, nil
 }
 
