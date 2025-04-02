@@ -11,7 +11,7 @@ type CPU struct {
 }
 
 // ConsumeCPU 通过循环计算来消耗 CPU 资源
-func (a *CPU) ConsumeCPU() {
+func ConsumeCPU() {
 	// 通过循环计算来消耗 CPU
 	const iterations = 1000000000
 	sum := 0
@@ -35,7 +35,7 @@ func (a *CPU) cpu(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 
-	a.ConsumeCPU()
+	ConsumeCPU()
 }
 
 func main() {
@@ -43,8 +43,8 @@ func main() {
 	fmt.Println("开启监听。。。。。")
 	http.HandleFunc("/cpu", app.cpu)
 
-	// 将监听服务放在一个独立的goroutine中运行
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
+
 }
