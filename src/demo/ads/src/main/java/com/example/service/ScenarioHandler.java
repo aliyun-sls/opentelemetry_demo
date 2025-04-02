@@ -20,7 +20,7 @@ public class ScenarioHandler {
     // 程序延迟
     public void handleDelay() {
         try {
-            Thread.sleep(10000);
+            Thread.sleep(3000);
             adService.listAds();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
