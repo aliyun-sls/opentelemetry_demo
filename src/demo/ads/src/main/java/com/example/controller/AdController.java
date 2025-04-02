@@ -6,6 +6,8 @@ import com.example.service.AdService;
 import com.example.service.ScenarioConfig;
 import com.example.service.ScenarioHandler;
 import com.example.service.ScenarioSelector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -14,11 +16,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 
 @Controller
 public class AdController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdController.class);
 
     @Autowired
     private AdService adService;
@@ -33,20 +39,35 @@ public class AdController {
     private ScenarioHandler scenarioHandler;
 
     @GetMapping("/listAds")
-    public ResponseEntity<?> listAds() {
+    public ResponseEntity<?> listAds(HttpServletRequest request) {
         List ads = new ArrayList();
         String selectedScenario = scenarioSelector.selectScenario();
         try {
             scenarioHandler.handleScenario(selectedScenario);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(e);
+            logger.error("Error handling scenario: {}, Headers: {}, Exception: ", selectedScenario, logRequestHeaders(request), e);
+            return ResponseEntity.status(500).body(e.getMessage());
         }
+        logger.info("Selected scenario: {}, Headers: {}", selectedScenario, logRequestHeaders(request));
         return ResponseEntity.ok(ads);
     }
 
+    private String logRequestHeaders(HttpServletRequest request) {
+        StringBuilder headers = new StringBuilder();
+        Enumeration<String> headerNames = request.getHeaderNames();
+        if (headerNames != null) {
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                String headerValue = request.getHeader(headerName);
+                headers.append(headerName).append(" = ").append(headerValue).append(", ");
+            }
+        }
+        return headers.toString();
+    }
+
     @GetMapping("/ads/listAds")
-    public ResponseEntity<?> listAdsAll() {
-        return listAds();
+    public ResponseEntity<?> listAdsAll(HttpServletRequest request) {
+        return listAds(request);
     }
 
     // 新增: 根据广告ID查询广告详情
