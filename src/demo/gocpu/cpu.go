@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,8 +30,19 @@ func (a *CPU) ConsumeCPU() {
 }
 
 func (a *CPU) cpu(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 返回 JSON 格式的响应
+	response := map[string]string{
+		"message": "Hello from /cpu",
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hello from /cpu"))
+	json.NewEncoder(w).Encode(response)
+
 	a.ConsumeCPU()
 }
 
