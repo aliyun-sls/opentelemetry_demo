@@ -41,7 +41,7 @@ func main() {
 
 	urlLogin := "http://user." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/login"
 	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
-	urlCpu := "http://user." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
+	urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
 
 	// 创建一个每10秒触发一次的定时器
 	ticker := time.NewTicker(30 * time.Second)
