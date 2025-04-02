@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 type CPU struct {
@@ -49,6 +50,7 @@ func main() {
 	go func() {
 		for {
 			run()
+			time.Sleep(1 * time.Second)
 		}
 
 	}()
