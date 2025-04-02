@@ -8,7 +8,7 @@ import java.util.Random;
 @org.springframework.stereotype.Controller
 public class Controller {
 
-    private static final int ARRAY_SIZE = 1000000; // 数组大小为100万
+    private static final int ARRAY_SIZE = 10000000; // 数组大小为100万
     private static final int[] largeArray = new int[ARRAY_SIZE];
     private static final Random random = new Random();
 
@@ -22,13 +22,13 @@ public class Controller {
     @GetMapping("/reporting")
     public ResponseEntity<?> reporting() {
         int targetValue = random.nextInt(ARRAY_SIZE); // 随机选择一个目标值
-        int index = findInArray(targetValue); // 在数组中查找目标值
+        int index = findInArray(String.valueOf(targetValue)); // 在数组中查找目标值
         return ResponseEntity.ok("Found at index: " + index);
     }
 
-    private int findInArray(int target) {
+    private int findInArray(String target) {
         for (int i = 0; i < ARRAY_SIZE; i++) {
-            if (largeArray[i] == target) {
+            if (largeArray[i] == Integer.parseInt(target)) {
                 return i; // 找到目标值，返回索引
             }
         }
