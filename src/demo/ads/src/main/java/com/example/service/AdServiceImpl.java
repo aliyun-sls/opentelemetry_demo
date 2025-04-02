@@ -31,7 +31,7 @@ public class AdServiceImpl implements AdService{
 
     @Override
     public List findAdWithSleep() {
-        String sql = "SELECT * FROM ads WHERE SLEEP(3)";
+        String sql = "SELECT * FROM ads WHERE SLEEP(2)";
         Query query = entityManager.createNativeQuery(sql, AdEntity.class);
         return query.getResultList();
     }
