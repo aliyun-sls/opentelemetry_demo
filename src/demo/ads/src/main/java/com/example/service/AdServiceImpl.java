@@ -60,7 +60,7 @@ public class AdServiceImpl implements AdService{
     @Override
     public void excuteComplexSQL() {
         String sql = "SELECT EXP(LOG(POW(SQRT(ROUND(LENGTH(a1.text) + LENGTH(a2.text) + RAND() * 1000, 8)), ROUND(POW(RAND(), 3), 3)))) * COS(RADIANS(360 * RAND())) + SIN(RADIANS(180 * RAND())) + a3.id * a4.id / (RAND() + 0.1) AS complex_calculation FROM ads a1 CROSS JOIN ads a2 CROSS JOIN ads a3 CROSS JOIN ads a4 CROSS JOIN ads a5 WHERE a1.id < 35 AND a2.id < 35 AND a3.id < 35 AND a4.id < 35 AND a5.id < 35 LIMIT 5000000";
-        Query query = entityManager.createNativeQuery(sql, List.class);
+        Query query = entityManager.createNativeQuery(sql);
         query.getResultList();
     }
 }
