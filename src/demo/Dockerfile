@@ -15,8 +15,14 @@ COPY notification/src notification/src/
 COPY promotion/pom.xml promotion/
 COPY promotion/src promotion/src/
 
-COPY gateway/pom.xml gateway/
-COPY gateway/src gateway/src/
+COPY logistics/pom.xml logistics/
+COPY logistics/src logistics/src/
+
+COPY reporting/pom.xml reporting/
+COPY reporting/src reporting/src/
+
+COPY review/pom.xml review/
+COPY review/src review/src/
 
 RUN mvn package -DskipTests
 
