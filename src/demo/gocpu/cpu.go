@@ -15,7 +15,7 @@ type CPU struct {
 // ConsumeCPU 通过循环计算来消耗 CPU 资源
 func ConsumeCPU() {
 	// 通过循环计算来消耗 CPU
-	const iterations = 1000000
+	const iterations = 1000000000
 	sum := 0
 	for i := 0; i < iterations; i++ {
 		sum += i
