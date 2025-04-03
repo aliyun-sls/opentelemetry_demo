@@ -363,8 +363,8 @@ type orderPrep struct {
 
 func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Context, userID, userCurrency string, address *pb.Address) (orderPrep, error) {
 
-	ctx, span := tracer.Start(ctx, "prepareOrderItemsAndShippingQuoteFromCart")
-	defer span.End()
+	//ctx, span := tracer.Start(ctx, "prepareOrderItemsAndShippingQuoteFromCart")
+	//defer span.End()
 
 	var out orderPrep
 	cartItems, err := cs.getUserCart(ctx, userID)
