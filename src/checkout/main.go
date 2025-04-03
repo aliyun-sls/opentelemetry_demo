@@ -276,6 +276,10 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	)
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
 
+	// 打印 span Id 和 trace Id
+	spanContext := span.SpanContext()
+	log.Infof("Span ID: %s, Trace ID: %s", spanContext.SpanID(), spanContext.TraceID())
+
 	var err error
 	defer func() {
 		if err != nil {
