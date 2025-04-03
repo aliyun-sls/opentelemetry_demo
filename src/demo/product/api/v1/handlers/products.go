@@ -119,7 +119,7 @@ func PutProducts(c *gin.Context) {
 		}
 	}
 	//ctx := c.Request.Context()
-	var product model.Product
+	/*	var product model.Product*/
 	image, err := c.FormFile("products_pic")
 	if image != nil {
 		err = PushOSS(image, image.Filename)
@@ -128,7 +128,7 @@ func PutProducts(c *gin.Context) {
 			return
 		}
 	}
-	product = model.Product{
+	/*product = model.Product{
 		ID:             0,
 		ProductsName:   c.PostForm("products_name"),
 		ProductsPrice:  c.PostForm("price"),
@@ -148,7 +148,7 @@ func PutProducts(c *gin.Context) {
 		ProductCategory: nil,
 	}
 	product.ProductsStatus = model.Shelve
-
+	*/
 	// 显式指定表名
 	/*err = util.MDB.WithContext(ctx).Table("product").Model(&product).Create(&product).Error
 	if err != nil {
@@ -178,7 +178,7 @@ func PutProducts(c *gin.Context) {
 		return
 	}
 	*/
-	util.Status200(c, product)
+	/*util.Status200(c, product)*/
 }
 
 // GetProductsDetail 产品详细信息
