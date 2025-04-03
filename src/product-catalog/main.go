@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -59,24 +58,9 @@ var (
 
 const DEFAULT_RELOAD_INTERVAL = 10
 
-var probability float64
-
 func init() {
 	log = logrus.New()
-	rand.Seed(time.Now().UnixNano())
-	probStr := os.Getenv("CALL_PROBABILITY")
-	if probStr == "" {
-		probability = 0.1
-	} else {
-		var err error
-		probability, err = strconv.ParseFloat(probStr, 64)
-		if err != nil {
-			log.Fatalf("Invalid probability value: %v", err)
-		}
-		if probability < 0 || probability > 1 {
-			log.Fatalf("Probability value must be between 0 and 1: %v", probability)
-		}
-	}
+
 	loadProductCatalog()
 }
 
@@ -351,10 +335,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	span.SetAttributes(
 		attribute.String("app.product.name", found.Name),
 	)
-	if rand.Float64() < probability {
-		httpCall("reporting:8080", "/reporting")
-	}
-	httpCall("review:8080", "/review")
+	httpCall("reporting:8080", "/reporting")
 	return found, nil
 }
 
