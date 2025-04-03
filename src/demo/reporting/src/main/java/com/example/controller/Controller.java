@@ -8,7 +8,7 @@ import java.util.Random;
 @org.springframework.stereotype.Controller
 public class Controller {
 
-    private static final int ARRAY_SIZE = 10000000; // 数组大小为100万
+    private static final int ARRAY_SIZE = 1000000; // 数组大小为100万
     private static final int[] largeArray = new int[ARRAY_SIZE];
     private static final Random random = new Random();
 
