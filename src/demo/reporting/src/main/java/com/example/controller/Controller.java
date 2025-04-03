@@ -31,10 +31,6 @@ public class Controller {
                 double dummy = Math.atan(Math.random());
                 // 每进行一定次数的计算后休眠，避免过高的CPU占用
                 if (i % 100000 == 0) {
-                    if(System.currentTimeMillis() - startTime < MAX_DURATION){
-                        System.out.println("CPU load simulation ended.");
-                        return;
-                    }
                     try {
                         Thread.sleep(10); // 休眠10毫秒
                     } catch (InterruptedException e) {
