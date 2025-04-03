@@ -66,7 +66,7 @@ public class ListProductFilter implements GatewayFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
         // query: currencyCode productId
-        if (!exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
+        if (!exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
             exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);
             return exchange.getResponse().setComplete();
         }

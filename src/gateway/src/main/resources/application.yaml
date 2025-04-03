@@ -14,7 +14,7 @@ spring:
         - id: getProduct
           uri: no://op
           predicates:
-            - Path=/api/products/**
+            - Path=/api/products/*
           filters:
             - name: GetProduct
               args:
