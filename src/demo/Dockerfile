@@ -33,4 +33,4 @@ WORKDIR /app
 COPY --from=demo_java /app/${module}/target/*.jar demo.jar
 COPY --from=demo_java /app/${module}/src/main/resources/application.properties application.properties
 EXPOSE 8080
-CMD java -jar demo.jar
+CMD java -Xmx1536m -jar demo.jar
