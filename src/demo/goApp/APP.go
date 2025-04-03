@@ -20,6 +20,10 @@ type APP struct {
 func (a *APP) GetApp01(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Hello from /getapp01"))
+	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
+	urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
+	cpu(urlCpu)
+	PutProducts(urlShelve)
 }
 
 type User struct {
