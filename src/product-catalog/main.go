@@ -289,7 +289,10 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 }
 
 func httpCall(addr, path string) {
-	resp, err := http.Get("http://" + addr + path)
+	httpclient := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	resp, err := httpclient.Get("http://" + addr + path)
 	if err != nil {
 		log.Errorf("Error %q %q", err, addr+path)
 		return
