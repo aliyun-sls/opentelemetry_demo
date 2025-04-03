@@ -13,7 +13,6 @@ import (
 	"os"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
-	"sls-mall-go/common/service"
 	"sls-mall-go/common/util"
 	"strconv"
 	"strings"
@@ -119,7 +118,7 @@ func PutProducts(c *gin.Context) {
 			time.Sleep(2 * time.Second)
 		}
 	}
-	ctx := c.Request.Context()
+	//ctx := c.Request.Context()
 	var product model.Product
 	image, err := c.FormFile("products_pic")
 	if image != nil {
@@ -151,7 +150,7 @@ func PutProducts(c *gin.Context) {
 	product.ProductsStatus = model.Shelve
 
 	// 显式指定表名
-	err = util.MDB.WithContext(ctx).Table("product").Model(&product).Create(&product).Error
+	/*err = util.MDB.WithContext(ctx).Table("product").Model(&product).Create(&product).Error
 	if err != nil {
 		fmt.Println(err)
 		util.Status500(c, err)
@@ -178,7 +177,7 @@ func PutProducts(c *gin.Context) {
 		util.Status500(c, err)
 		return
 	}
-
+	*/
 	util.Status200(c, product)
 }
 
