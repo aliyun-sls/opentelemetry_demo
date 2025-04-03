@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -38,10 +39,6 @@ func (a *CPU) cpu(w http.ResponseWriter, r *http.Request) {
 	ConsumeCPU()
 }
 
-func run() {
-	ConsumeCPU()
-}
-
 func main() {
 	app := &CPU{}
 	fmt.Println("开启监听。。。。。")
@@ -55,7 +52,9 @@ func main() {
 	}()
 
 	for {
-		run()
-		time.Sleep(1 * time.Second)
+		ConsumeCPU()
+		if rand.Int()%5 == 0 {
+			time.Sleep(1 * time.Second)
+		}
 	}
 }
