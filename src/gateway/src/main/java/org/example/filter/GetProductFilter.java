@@ -15,6 +15,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.PathContainer;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
@@ -23,7 +24,11 @@ import oteldemo.Demo;
 import oteldemo.ProductCatalogServiceGrpc;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
 
 public class GetProductFilter implements GatewayFilter {
     private static final Logger log = LoggerFactory.getLogger(GetProductFilter.class);
@@ -79,8 +84,9 @@ public class GetProductFilter implements GatewayFilter {
             return exchange.getResponse().setComplete();
         }
 
+        Map<String, String> uriVariables = exchange.getAttribute(URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        String productId = uriVariables.get("productId");
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
-        String productId = queryParams.getFirst("productId");
         String currencyCode = queryParams.getFirst("currencyCode");
 
         if (productId == null || productId.isEmpty()) {
