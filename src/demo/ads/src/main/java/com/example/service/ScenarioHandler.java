@@ -55,9 +55,6 @@ public class ScenarioHandler {
             case "delay":
                 handleDelay();
                 break;
-            case "sql_delay":
-                handleSQLDelay();
-                break;
             case "sql_complex":
                 handleSQLComplex();
                 break;
