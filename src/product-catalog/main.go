@@ -294,7 +294,6 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(catalog)),
 	)
-	httpCall("review:8080", "/review")
 	httpCall("reporting:8080", "/reporting")
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
