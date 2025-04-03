@@ -17,15 +17,15 @@ async function visitProducts(page) {
       `${FRONTEND_URL}/#hot-products`
     );
 //    await page.waitForNetworkIdle();
-    await sleep(5);
-    const array = new Array(3);
+    await sleep(3);
+    const array = new Array(9);
     let j = 0;
     for (let i of array) {
       j += 1;
       await page.click(`div[data-cy="product-list"] a:nth-of-type(${j})`);
-      await sleep(5);
+      await sleep(2);
       await page.goBack();
-      await sleep(5);
+      await sleep(3);
     }
   } catch (error) {
     console.error(`${new Date().toISOString()}:`, error);
