@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	otelhooks "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
+	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
+	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"log"
 	"net/http"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
@@ -109,8 +113,24 @@ func ModifyProducts(c *gin.Context) {
 
 // PutProducts 保存
 func PutProducts(c *gin.Context) {
-	//ctx := c.Request.Context()
-	/*	var product model.Product*/
+	openfeature.AddHooks(otelhooks.NewTracesHook())
+	err := openfeature.SetProvider(flagd.NewProvider())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 获取 productDelay flag 的值
+	client := openfeature.NewClient("products")
+	delay, err := client.IntValue(context.Background(), "productDelay", 0, openfeature.EvaluationContext{})
+	if err != nil {
+		log.Printf("Failed to get productDelay flag: %v", err)
+		// 如果获取 flag 失败，使用默认值 0
+		delay = 0
+	}
+	if delay > 0 {
+		time.Sleep(time.Duration((delay)) * time.Millisecond)
+	}
+
 	image, err := c.FormFile("products_pic")
 	if image != nil {
 		err = PushOSS(image, image.Filename)
@@ -119,56 +139,7 @@ func PutProducts(c *gin.Context) {
 			return
 		}
 	}
-	/*product = model.Product{
-		ID:             0,
-		ProductsName:   c.PostForm("products_name"),
-		ProductsPrice:  c.PostForm("price"),
-		ProductsCate:   c.PostForm("products_cate"),
-		ProductsDesc:   c.PostForm("products_desc"),
-		BrandId:        c.PostForm("brand_id"),
-		SellerId:       c.PostForm("seller_id"),
-		ProductsStatus: 0,
-		Inventory: &model.Inventory{
-			InventoryId:      0,
-			ProductsIdType:   model.ProductsIdType{},
-			InventoryName:    c.PostForm("inventory_name"),
-			InventoryNum:     c.PostForm("inventory_num"),
-			InventoryUnit:    0,
-			InventoryAddress: c.PostForm("inventory_address"),
-		},
-		ProductCategory: nil,
-	}
-	product.ProductsStatus = model.Shelve
-	*/
-	// 显式指定表名
-	/*err = util.MDB.WithContext(ctx).Table("product").Model(&product).Create(&product).Error
-	if err != nil {
-		fmt.Println(err)
-		util.Status500(c, err)
-		return
-	}
 
-	err = esIndex(ctx, product)
-	if err != nil {
-		fmt.Println(err)
-		util.Status500(c, err)
-		return
-	}
-
-	// InventoryNum
-	inventory := product.Inventory
-	if inventory == nil {
-		inventory = &model.Inventory{
-			InventoryName: c.PostForm("inventory_name"),
-			InventoryNum:  c.PostForm("inventory_num"),
-		}
-	}
-	err = service.CreateInventory(ctx, *inventory)
-	if err != nil {
-		util.Status500(c, err)
-		return
-	}
-	*/
 	util.Status200(c, "Put Products complete.")
 }
 

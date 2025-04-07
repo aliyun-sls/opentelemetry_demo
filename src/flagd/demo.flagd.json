@@ -105,6 +105,28 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "adsFlag": {
+      "description": "ads flag",
+      "state": "ENABLED",
+      "variants": {
+        "normal": "normal",
+        "delay": "delay",
+        "table_not_exist": "table_not_exist",
+        "sql_complex": "sql_complex",
+        "mass_insert": "mass_insert"
+      },
+      "defaultVariant": "normal"
+    },
+    "productDelay": {
+      "description": "product put product and put image to oss",
+      "state": "ENABLED",
+      "variants": {
+        "10sec": 10000,
+        "5sec": 5000,
+        "off": 0
+      },
+      "defaultVariant": "off"
     }
   }
 }
