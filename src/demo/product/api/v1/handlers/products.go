@@ -112,6 +112,49 @@ func ModifyProducts(c *gin.Context) {
 //}
 
 // PutProducts 保存
+
+func processProduct(ctx context.Context, client *openfeature.Client) error {
+	// 获取当前配置的 variant
+	delayVariant, err := client.StringValue(
+		ctx,
+		"productDelay",
+		"off", // 默认值
+		openfeature.EvaluationContext{},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get feature flag value: %w", err)
+	}
+	fmt.Println(delayVariant)
+	// 根据 variant 确定延迟时间
+	var delay time.Duration
+	switch delayVariant {
+	case "10sec":
+		delay = 10 * time.Second
+	case "5sec":
+		delay = 5 * time.Second
+	case "off":
+		delay = 0
+	default:
+		delay = 0
+	}
+
+	// 应用延迟
+	if delay > 0 {
+		fmt.Printf("Applying product delay: %v\n", delay)
+		time.Sleep(delay)
+	} else {
+		fmt.Println("Product delay is disabled")
+	}
+
+	// 这里放置你的产品处理逻辑
+	fmt.Println("Processing product...")
+	// 模拟产品处理
+	time.Sleep(1 * time.Second)
+	fmt.Println("Product processing complete")
+
+	return nil
+}
+
 func PutProducts(c *gin.Context) {
 	openfeature.AddHooks(otelhooks.NewTracesHook())
 	err := openfeature.SetProvider(flagd.NewProvider())
@@ -121,16 +164,7 @@ func PutProducts(c *gin.Context) {
 
 	// 获取 productDelay flag 的值
 	client := openfeature.NewClient("products")
-	delay, err := client.IntValue(context.Background(), "productDelay", 0, openfeature.EvaluationContext{})
-	if err != nil {
-		log.Printf("Failed to get productDelay flag: %v", err)
-		// 如果获取 flag 失败，使用默认值 0
-		delay = 0
-	}
-	if delay > 0 {
-		time.Sleep(time.Duration((delay)) * time.Millisecond)
-	}
-
+	processProduct(context.Background(), client)
 	image, err := c.FormFile("products_pic")
 	if image != nil {
 		err = PushOSS(image, image.Filename)
