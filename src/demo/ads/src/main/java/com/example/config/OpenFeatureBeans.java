@@ -16,7 +16,7 @@ public class OpenFeatureBeans {
 
         // Use flagd as the OpenFeature provider and use default configurations
         try {
-            openFeatureAPI.setProviderAndWait(new FlagdProvider(FlagdOptions.builder().host("http://flagd").port(8013).deadline(10000).build()));
+            openFeatureAPI.setProviderAndWait(new FlagdProvider());
         } catch (OpenFeatureError e) {
             throw new RuntimeException("Failed to set OpenFeature provider", e);
         }

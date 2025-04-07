@@ -33,4 +33,5 @@ WORKDIR /app
 COPY --from=demo_java /app/${module}/target/*.jar demo.jar
 COPY --from=demo_java /app/${module}/src/main/resources/application.properties application.properties
 EXPOSE 8080
-CMD java -Xmx1536m -jar demo.jar
+CMD java --add-opens java.base/jdk.internal.misc=ALL-UNNAMED \
+         -Dio.netty.tryReflectionSetAccessible=true -Xmx1536m -jar demo.jar
