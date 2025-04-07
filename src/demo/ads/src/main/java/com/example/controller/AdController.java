@@ -6,6 +6,8 @@ import com.example.service.AdService;
 import com.example.service.ScenarioConfig;
 import com.example.service.ScenarioHandler;
 import com.example.service.ScenarioSelector;
+import dev.openfeature.sdk.Client;
+import dev.openfeature.sdk.OpenFeatureAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +27,8 @@ import java.util.List;
 public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
-
+    private static final Client ffClient = OpenFeatureAPI.getInstance().getClient();
+    private static final String ADS_FEATURE_FLAG = "adsFlag";
     @Autowired
     private AdService adService;
 
@@ -41,7 +44,8 @@ public class AdController {
     @GetMapping("/listAds")
     public ResponseEntity<?> listAds(HttpServletRequest request) {
         List ads = new ArrayList();
-        String selectedScenario = scenarioSelector.selectScenario();
+//        String selectedScenario = scenarioSelector.selectScenario();
+        String selectedScenario = ffClient.getStringValue(ADS_FEATURE_FLAG, "normal");
         try {
             scenarioHandler.handleScenario(selectedScenario);
         } catch (Exception e) {
