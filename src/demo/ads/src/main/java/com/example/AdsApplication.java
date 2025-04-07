@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.service.ScenarioConfig;
+import com.example.config.ScenarioConfig;
 import dev.openfeature.contrib.providers.flagd.FlagdOptions;
 import dev.openfeature.contrib.providers.flagd.FlagdProvider;
 import dev.openfeature.sdk.OpenFeatureAPI;
@@ -17,8 +17,8 @@ import org.springframework.context.annotation.ComponentScan;
 public class AdsApplication {
 
 	public static void main(String[] args) {
-//		FlagdProvider flagd = new FlagdProvider(FlagdOptions.builder().host("flagd").port(8013).build());
-//		OpenFeatureAPI.getInstance().setProvider(flagd);
+		FlagdProvider flagd = new FlagdProvider(FlagdOptions.builder().host("flagd").port(8013).build());
+		OpenFeatureAPI.getInstance().setProvider(flagd);
 		SpringApplication.run(AdsApplication.class, args);
 	}
 }

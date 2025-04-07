@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.example.config.ScenarioConfig;
 import com.example.entity.Scenario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

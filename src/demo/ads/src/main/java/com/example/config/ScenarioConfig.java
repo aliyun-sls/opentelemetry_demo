@@ -1,4 +1,4 @@
-package com.example.service;
+package com.example.config;
 
 import com.example.entity.Scenario;
 import lombok.Data;

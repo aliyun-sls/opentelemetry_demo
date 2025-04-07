@@ -3,7 +3,7 @@ package com.example.controller;
 import com.example.entity.AdEntity;
 import com.example.entity.Scenario;
 import com.example.service.AdService;
-import com.example.service.ScenarioConfig;
+import com.example.config.ScenarioConfig;
 import com.example.service.ScenarioHandler;
 import com.example.service.ScenarioSelector;
 import dev.openfeature.sdk.Client;
@@ -27,7 +27,6 @@ import java.util.List;
 public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
-    private static final Client ffClient = OpenFeatureAPI.getInstance().getClient();
     private static final String ADS_FEATURE_FLAG = "adsFlag";
     @Autowired
     private AdService adService;
@@ -41,11 +40,19 @@ public class AdController {
     @Autowired
     private ScenarioHandler scenarioHandler;
 
+    private final OpenFeatureAPI openFeatureAPI;
+
+    @Autowired
+    public AdController(OpenFeatureAPI OFApi) {
+        this.openFeatureAPI = OFApi;
+    }
+
     @GetMapping("/listAds")
     public ResponseEntity<?> listAds(HttpServletRequest request) {
         List ads = new ArrayList();
 //        String selectedScenario = scenarioSelector.selectScenario();
-        String selectedScenario = ffClient.getStringValue(ADS_FEATURE_FLAG, "normal");
+        final Client client = openFeatureAPI.getClient();
+        String selectedScenario = client.getStringValue(ADS_FEATURE_FLAG, "normal");
         try {
             scenarioHandler.handleScenario(selectedScenario);
         } catch (Exception e) {
