@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	otelhooks "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
-	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"log"
 	"net/http"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
@@ -156,17 +153,17 @@ func processProduct(ctx context.Context, client *openfeature.Client) error {
 }
 
 func PutProducts(c *gin.Context) {
-	openfeature.AddHooks(otelhooks.NewTracesHook())
+	/*openfeature.AddHooks(otelhooks.NewTracesHook())
 	err := openfeature.SetProvider(flagd.NewProvider(
 		flagd.WithHost("192.168.247.17"),
-		flagd.WithPort(8013))) // 将端口号从整数改为字符串
+		flagd.WithPort(8013)))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// 获取 productDelay flag 的值
 	client := openfeature.NewClient("product")
-	processProduct(context.Background(), client)
+	processProduct(context.Background(), client)*/
 
 	image, err := c.FormFile("products_pic")
 	if image != nil {
