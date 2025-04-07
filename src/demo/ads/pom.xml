@@ -49,10 +49,6 @@
 			<version>0.11.3</version>
 			<exclusions>
 				<exclusion>
-					<artifactId>protobuf-java</artifactId>
-					<groupId>com.google.protobuf</groupId>
-				</exclusion>
-				<exclusion>
 					<artifactId>error_prone_annotations</artifactId>
 					<groupId>com.google.errorprone</groupId>
 				</exclusion>
