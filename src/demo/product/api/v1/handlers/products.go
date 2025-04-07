@@ -157,7 +157,8 @@ func processProduct(ctx context.Context, client *openfeature.Client) error {
 
 func PutProducts(c *gin.Context) {
 	openfeature.AddHooks(otelhooks.NewTracesHook())
-	err := openfeature.SetProvider(flagd.NewProvider())
+	err := openfeature.SetProvider(flagd.NewProvider(
+		flagd.WithHost("192.168.247.17")))
 	if err != nil {
 		log.Fatal(err)
 	}
