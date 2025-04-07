@@ -121,6 +121,7 @@ public class GetProductFilter implements GatewayFilter {
                 sink.success(orderJson);
 
             } catch (Exception e) {
+                log.error("Failed to get product", e);
                 sink.error(e);
             }
         }).flatMap(responseBody -> {
@@ -130,6 +131,7 @@ public class GetProductFilter implements GatewayFilter {
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
+                log.error("Failed to get product", e);
                 return Mono.error(e);
             }
         }).onErrorResume(ResponseStatusException.class, e -> {

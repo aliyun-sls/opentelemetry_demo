@@ -19,6 +19,7 @@ spring:
             - name: GetProduct
               args:
                 productAddr: ${CHECKOUT_ADDR:localhost:50051}
+<<<<<<< Updated upstream
                 currencyAddr: ${CURRENCY_ADDR:localhost:50052}
 #        - id: listProduct
 #          uri: no://op
@@ -35,10 +36,34 @@ spring:
             - Path=/**
           filters:
             - name: NoopFilter
+=======
+                currencyAddr: ${PRODUCT_ADDR:localhost:50052}
+#        - id: listProduct
+#          uri: no://op
+#          predicates:
+#            - Path=/api/checkout**
+#          filters:
+#            - name: CheckFilter
+#              args:
+#                currencyAddr: ${CHECKOUT_ADDR:localhost:50051}
+#                productAddr: ${PRODUCT_ADDR:localhost:50052}
+>>>>>>> Stashed changes
         - id: ads
           uri: http://ads:8080
           predicates:
             - Path=/ads/**
+        - id: feature
+          uri: http://flagd-ui:8013
+          predicates:
+            - Path=/feature**
+        - id: grafana
+          uri: http://grafana:3000
+          predicates:
+            - Path=/grafana**
+        - id: images
+          uri: http://image-provider:8081
+          predicates:
+            - Path=/images/**
         - id: marketing
           uri: http://marketing:8080
           predicates:
@@ -47,5 +72,11 @@ spring:
           uri: http://notification:8080
           predicates:
             - Path=/notification/**
+        - id: default
+          uri: http://frontend:8080
+          predicates:
+            - Path=/**
+          filters:
+            - name: NoopFilter
 server:
   port: 8085
