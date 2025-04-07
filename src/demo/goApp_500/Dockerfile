@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=bind,rw,source=./src/demo/goApp_500,target=goApp_500 \
-    cd goApp && \
+    cd goApp_500 && \
     /tmp/instgo go build -ldflags "-s -w" -o /go/bin/refuse/ ./
 
 FROM alpine
