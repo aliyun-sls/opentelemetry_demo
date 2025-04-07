@@ -32,6 +32,7 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
+			<version>8.0.33</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -47,6 +48,17 @@
 			<groupId>dev.openfeature.contrib.providers</groupId>
 			<artifactId>flagd</artifactId>
 			<version>0.11.8</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.netty</groupId>
+			<artifactId>netty-all</artifactId>
+			<version>4.1.94.Final</version> <!-- 使用最新稳定版本 -->
+		</dependency>
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-netty</artifactId>
+			<version>1.71.0</version> <!-- 或更高版本 -->
 		</dependency>
 	</dependencies>
 
