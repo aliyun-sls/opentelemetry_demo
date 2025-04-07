@@ -19,7 +19,6 @@ spring:
             - name: GetProduct
               args:
                 productAddr: ${CHECKOUT_ADDR:localhost:50051}
-<<<<<<< Updated upstream
                 currencyAddr: ${CURRENCY_ADDR:localhost:50052}
 #        - id: listProduct
 #          uri: no://op
@@ -30,24 +29,6 @@ spring:
 #              args:
 #                productAddr: ${CHECKOUT_ADDR:localhost:50051}
 #                currencyAddr: ${CURRENCY_ADDR:localhost:50052}
-        - id: default
-          uri: http://frontend:8080
-          predicates:
-            - Path=/**
-          filters:
-            - name: NoopFilter
-=======
-                currencyAddr: ${PRODUCT_ADDR:localhost:50052}
-#        - id: listProduct
-#          uri: no://op
-#          predicates:
-#            - Path=/api/checkout**
-#          filters:
-#            - name: CheckFilter
-#              args:
-#                currencyAddr: ${CHECKOUT_ADDR:localhost:50051}
-#                productAddr: ${PRODUCT_ADDR:localhost:50052}
->>>>>>> Stashed changes
         - id: ads
           uri: http://ads:8080
           predicates:
