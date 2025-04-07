@@ -17,13 +17,10 @@ type APP struct {
 }
 
 func (a *APP) GetApp01(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hello from /getapp01"))
-	urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
-	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
-
-	cpu(urlCpu)
-	PutProducts(urlShelve)
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("Internal Server Error: Access to /getapp01 is forbidden"))
+	log.Printf("Internal Server Error: Access to /getapp01 is forbidden")
+	return
 }
 
 type User struct {
@@ -38,7 +35,6 @@ func main() {
 
 	// 将监听服务放在一个独立的goroutine中运行
 	http.ListenAndServe(":8080", nil)
-
 }
 
 func cpu(urlCpu string) {
