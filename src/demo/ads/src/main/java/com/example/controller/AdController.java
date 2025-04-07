@@ -27,7 +27,7 @@ import java.util.List;
 public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
-    private static final Client ffClient = OpenFeatureAPI.getInstance().getClient("flagd:8013");
+    private static final Client ffClient = OpenFeatureAPI.getInstance().getClient();
     private static final String ADS_FEATURE_FLAG = "adsFlag";
     @Autowired
     private AdService adService;

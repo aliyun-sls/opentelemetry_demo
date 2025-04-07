@@ -1,12 +1,12 @@
 package com.example;
 
 import com.example.service.ScenarioConfig;
-import org.springframework.boot.CommandLineRunner;
+import dev.openfeature.contrib.providers.flagd.FlagdProvider;
+import dev.openfeature.sdk.OpenFeatureAPI;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
@@ -16,6 +16,8 @@ import org.springframework.context.annotation.ComponentScan;
 public class AdsApplication {
 
 	public static void main(String[] args) {
+		FlagdProvider flagd = new FlagdProvider();
+		OpenFeatureAPI.getInstance().setProvider(flagd);
 		SpringApplication.run(AdsApplication.class, args);
 	}
 }
