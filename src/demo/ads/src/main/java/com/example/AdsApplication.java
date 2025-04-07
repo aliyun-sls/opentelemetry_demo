@@ -17,8 +17,8 @@ import org.springframework.context.annotation.ComponentScan;
 public class AdsApplication {
 
 	public static void main(String[] args) {
-		FlagdProvider flagd = new FlagdProvider(FlagdOptions.builder().host("flagd").port(8013).build());
-		OpenFeatureAPI.getInstance().setProvider(flagd);
+//		FlagdProvider flagd = new FlagdProvider(FlagdOptions.builder().host("flagd").port(8013).build());
+//		OpenFeatureAPI.getInstance().setProvider(flagd);
 		SpringApplication.run(AdsApplication.class, args);
 	}
 }
