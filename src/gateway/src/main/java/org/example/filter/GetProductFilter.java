@@ -117,6 +117,7 @@ public class GetProductFilter implements GatewayFilter {
                 Demo.Money money = DoCurrencyConvert(request.build());
 
                 JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                moneyJson.addProperty("units", Integer.valueOf(moneyJson.get("units").getAsString()));
                 orderJson.add("priceUsd", moneyJson);
                 sink.success(orderJson);
 
