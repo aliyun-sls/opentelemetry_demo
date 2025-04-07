@@ -66,7 +66,7 @@ export default function AdvancedView() {
           validate = ajv.addSchema(schemas[1]).compile(schemas[0]);
         }
       } catch (error) {
-        console.error("Error loading schemas:", error);
+        console.warn("Error loading schemas:", error);
       }
 
       return null;
@@ -135,24 +135,24 @@ export default function AdvancedView() {
     <>
       {flagData && (
         <div>
-          <FileEditor
-            flagConfig={flagData}
-            textAreaRef={textAreaRef as React.RefObject<HTMLTextAreaElement>}
-            handleTextAreaChange={handleTextAreaChange}
-          />
           <div className="p-2 pl-8 text-gray-300 shadow-md">
             <div className="mb-8 flex flex-auto items-center gap-2">
               <button
                 className="rounded bg-blue-500 px-8 py-4 font-medium text-white transition-colors duration-200 hover:bg-blue-600"
                 onClick={update}
               >
-                save
+                保存
               </button>
               {!flagDataIsSynced && (
-                <p className="text-red-600">Unsaved changes</p>
+                <p className="text-red-600">有未保存的项目</p>
               )}
             </div>
           </div>
+          <FileEditor
+            flagConfig={flagData}
+            textAreaRef={textAreaRef as React.RefObject<HTMLTextAreaElement>}
+            handleTextAreaChange={handleTextAreaChange}
+          />
         </div>
       )}
     </>

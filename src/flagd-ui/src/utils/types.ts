@@ -4,6 +4,7 @@ export interface FlagConfig {
   description: string;
   state: FlagState;
   variants: {};
+  category: string;
   defaultVariant: string;
 }
 
@@ -13,6 +14,11 @@ export type Flags = {
 
 export type ConfigFile = {
   $schema: string;
+  flags: Flags;
+};
+
+export type FlagGroup = {
+  category: string;
   flags: Flags;
 };
 

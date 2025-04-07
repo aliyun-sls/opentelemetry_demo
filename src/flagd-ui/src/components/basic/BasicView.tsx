@@ -1,9 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import FeatureFlag from "./FeatureFlag";
-import { ConfigFile, FlagConfig } from "@/utils/types";
+import { ConfigFile, FlagConfig, FlagGroup } from "@/utils/types";
 import { useLoading } from "../Layout";
 
 const BasicView = () => {
@@ -14,6 +14,27 @@ const BasicView = () => {
   const [reloadData, setReloadData] = useState(false);
 
   const { setIsLoading } = useLoading();
+
+  const flagGroup = useMemo(() => {
+    if (!flagData) return new Map<string, FlagGroup>();
+    const categoryMaps = new Map<string, FlagGroup>();
+    Object.keys(flagData.flags).map((flagId) => {
+      const flagConfig: FlagConfig = flagData.flags[flagId];
+      const category = flagConfig.category;
+      if (categoryMaps.has(category)) {
+        const groups = categoryMaps.get(category);
+        if (groups) {
+          groups.flags[flagId] = flagConfig;
+        }
+      } else {
+        categoryMaps.set(category, {
+          category,
+          flags: { [flagId]: flagConfig },
+        });
+      }
+    });
+    return categoryMaps;
+  }, [flagData]);
 
   useEffect(() => {
     const readFile = async () => {
@@ -80,24 +101,29 @@ const BasicView = () => {
           className="rounded bg-blue-500 px-8 py-4 font-medium text-white transition-colors duration-200 hover:bg-blue-600"
           onClick={save}
         >
-          save
+          保存
         </button>
-        {!flagDataIsSynced && <p className="text-red-600">Unsaved changes</p>}
+        {!flagDataIsSynced && <p className="text-red-600">有未保存的项目</p>}
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {flagData &&
-          Object.keys(flagData.flags).map((flagId) => {
-            const flagConfig: FlagConfig = flagData.flags[flagId];
-            return (
-              <FeatureFlag
-                flagId={flagId}
-                key={flagId}
-                flagConfig={flagConfig}
-                updateFlagData={updateFlagData}
-              />
-            );
-          })}
-      </div>
+      {flagGroup &&
+        Array.from(flagGroup.entries()).map(([key, flagGroup]) => (
+          <>
+            <h2 className="mb-4 text-2xl font-bold">{flagGroup.category ?? '未分类'}</h2>
+            <div key={key} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {Object.keys(flagGroup.flags).map((flagId) => {
+                const flagConfig: FlagConfig = flagGroup.flags[flagId];
+                return (
+                  <FeatureFlag
+                    flagId={flagId}
+                    key={flagId}
+                    flagConfig={flagConfig}
+                    updateFlagData={updateFlagData}
+                  />
+                );
+              })}
+            </div>
+          </>
+        ))}
     </div>
   );
 };
