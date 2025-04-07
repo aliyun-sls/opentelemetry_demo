@@ -158,8 +158,8 @@ func processProduct(ctx context.Context, client *openfeature.Client) error {
 func PutProducts(c *gin.Context) {
 	openfeature.AddHooks(otelhooks.NewTracesHook())
 	err := openfeature.SetProvider(flagd.NewProvider(
-		flagd.WithHost("flagd"),
-		flagd.WithPort(8013)))
+		flagd.WithHost("192.168.247.17"),
+		flagd.WithPort(8013))) // 将端口号从整数改为字符串
 	if err != nil {
 		log.Fatal(err)
 	}
