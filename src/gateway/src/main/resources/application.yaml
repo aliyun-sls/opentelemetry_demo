@@ -20,15 +20,15 @@ spring:
               args:
                 productAddr: ${PRODUCT_ADDR:localhost:50051}
                 currencyAddr: ${CURRENCY_ADDR:localhost:50052}
-#        - id: listProduct
-#          uri: no://op
-#          predicates:
-#            - Path=/api/products
-#          filters:
-#            - name: ListProduct
-#              args:
-#                productAddr: ${PRODUCT_ADDR:localhost:50051}
-#                currencyAddr: ${CURRENCY_ADDR:localhost:50052}
+        - id: listProduct
+          uri: no://op
+          predicates:
+            - Path=/api/products
+          filters:
+            - name: ListProduct
+              args:
+                productAddr: ${PRODUCT_ADDR:localhost:50051}
+                currencyAddr: ${CURRENCY_ADDR:localhost:50052}
         - id: ads
           uri: http://ads:8080
           predicates:
