@@ -127,7 +127,7 @@ public class GetProductFilter implements GatewayFilter {
         }).flatMap(responseBody -> {
             try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = objectMapper.writeValueAsBytes(responseBody.toString());
+                byte[] bytes = objectMapper.writeValueAsBytes(responseBody);
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
