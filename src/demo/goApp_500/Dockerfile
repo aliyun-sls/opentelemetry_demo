@@ -21,6 +21,7 @@ FROM alpine
 WORKDIR /usr/src/app/
 
 COPY --from=builder /go/bin/refuse/ /usr/src/app/refuse
+RUN chmod +x /usr/src/app/refuse
 
 EXPOSE 8080
 ENTRYPOINT [ "./refuse" ]
