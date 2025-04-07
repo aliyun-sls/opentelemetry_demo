@@ -15,6 +15,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.PathContainer;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
@@ -23,7 +24,11 @@ import oteldemo.Demo;
 import oteldemo.ProductCatalogServiceGrpc;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
 
 public class GetProductFilter implements GatewayFilter {
     private static final Logger log = LoggerFactory.getLogger(GetProductFilter.class);
@@ -74,13 +79,14 @@ public class GetProductFilter implements GatewayFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
         // query: currencyCode productId
-        if (!exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
+        if (!exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
             exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);
             return exchange.getResponse().setComplete();
         }
 
+        Map<String, String> uriVariables = exchange.getAttribute(URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        String productId = uriVariables.get("productId");
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
-        String productId = queryParams.getFirst("productId");
         String currencyCode = queryParams.getFirst("currencyCode");
 
         if (productId == null || productId.isEmpty()) {
@@ -111,19 +117,22 @@ public class GetProductFilter implements GatewayFilter {
                 Demo.Money money = DoCurrencyConvert(request.build());
 
                 JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                moneyJson.addProperty("units", Integer.valueOf(moneyJson.get("units").getAsString()));
                 orderJson.add("priceUsd", moneyJson);
                 sink.success(orderJson);
 
             } catch (Exception e) {
+                log.error("Failed to get product", e);
                 sink.error(e);
             }
         }).flatMap(responseBody -> {
             try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = objectMapper.writeValueAsBytes(responseBody.toString());
+                byte[] bytes = responseBody.toString().getBytes();
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
+                log.error("Failed to get product", e);
                 return Mono.error(e);
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
