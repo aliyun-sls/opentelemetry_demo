@@ -1,6 +1,6 @@
 package com.example;
 
-import com.example.service.ScenarioConfig;
+import com.example.config.ScenarioConfig;
 import dev.openfeature.contrib.providers.flagd.FlagdOptions;
 import dev.openfeature.contrib.providers.flagd.FlagdProvider;
 import dev.openfeature.sdk.OpenFeatureAPI;
