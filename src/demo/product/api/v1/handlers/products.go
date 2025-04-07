@@ -158,14 +158,16 @@ func processProduct(ctx context.Context, client *openfeature.Client) error {
 func PutProducts(c *gin.Context) {
 	openfeature.AddHooks(otelhooks.NewTracesHook())
 	err := openfeature.SetProvider(flagd.NewProvider(
-		flagd.WithHost("192.168.247.17")))
+		flagd.WithHost("flagd"),
+		flagd.WithPort(8013)))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// 获取 productDelay flag 的值
-	client := openfeature.NewClient("products")
+	client := openfeature.NewClient("product")
 	processProduct(context.Background(), client)
+
 	image, err := c.FormFile("products_pic")
 	if image != nil {
 		err = PushOSS(image, image.Filename)
