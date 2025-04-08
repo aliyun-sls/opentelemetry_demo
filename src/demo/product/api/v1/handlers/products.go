@@ -133,6 +133,7 @@ func initFeatureFlag() {
 }
 
 func PutProducts(c *gin.Context) {
+	ctx := c.Request.Context()
 	// 初始化flag客户端(只执行一次)
 	initFeatureFlag()
 
@@ -170,6 +171,11 @@ func PutProducts(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
 			return
 		}
+	}
+
+	product := model.Product{}
+	if err := util.MDB.WithContext(ctx).Create(&product).Error; err != nil {
+		return
 	}
 
 	util.Status200(c, "Put Products complete.")
