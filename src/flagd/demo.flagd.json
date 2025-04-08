@@ -2,7 +2,8 @@
   "$schema": "https://flagd.dev/schema/v0/flags.json",
   "flags": {
     "productCatalogFailure": {
-      "description": "Fail product catalog service on a specific product",
+      "description": "特定产品的产品目录服务失败。Fail product catalog service on a specific product",
+      "category": "商品服务相关",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -11,7 +12,8 @@
       "defaultVariant": "off"
     },
     "recommendationCacheFailure": {
-      "description": "Fail recommendation service cache",
+      "description": "推荐服务缓存失败。Fail recommendation service cache",
+      "category": "商品服务相关",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -20,7 +22,8 @@
       "defaultVariant": "off"
     },
     "adManualGc": {
-      "description": "Triggers full manual garbage collections in the ad service",
+      "description": "在广告服务中触发完整的手动垃圾收集。Triggers full manual garbage collections in the ad service",
+      "category": "广告服务相关",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -29,7 +32,8 @@
       "defaultVariant": "off"
     },
     "adHighCpu": {
-      "description": "Triggers high cpu load in the ad service",
+      "description": "触发广告服务中的高 CPU 负载。Triggers high cpu load in the ad service",
+      "category": "广告服务相关",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -38,8 +42,9 @@
       "defaultVariant": "off"
     },
     "adFailure": {
-      "description": "Fail ad service",
+      "description": "广告服务失败。Fail ad service",
       "state": "ENABLED",
+      "category": "广告服务相关",
       "variants": {
         "on": true,
         "off": false
@@ -47,7 +52,8 @@
       "defaultVariant": "off"
     },
     "kafkaQueueProblems": {
-      "description": "Overloads Kafka queue while simultaneously introducing a consumer side delay leading to a lag spike",
+      "description": "导致 Kafka 队列超载，同时导致消费者端延迟，进而导致延迟峰值。Overloads Kafka queue while simultaneously introducing a consumer side delay leading to a lag spike",
+      "category": "商品服务相关",
       "state": "ENABLED",
       "variants": {
         "on": 100,
@@ -56,7 +62,8 @@
       "defaultVariant": "off"
     },
     "cartFailure": {
-      "description": "Fail cart service",
+      "description": "购物车服务失败。Fail cart service",
+      "category": "支付相关",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -65,7 +72,8 @@
       "defaultVariant": "off"
     },
     "paymentFailure": {
-      "description": "Fail payment service charge requests n%",
+      "description": "支付服务费请求失败 n%。Fail payment service charge requests n%",
+      "category": "支付相关",
       "state": "ENABLED",
       "variants": {
         "100%": 1,
@@ -79,7 +87,8 @@
       "defaultVariant": "off"
     },
     "paymentUnreachable": {
-      "description": "Payment service is unavailable",
+      "description": "支付服务不可用。Payment service is unavailable",
+      "category": "支付相关",
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -88,7 +97,8 @@
       "defaultVariant": "off"
     },
     "loadGeneratorFloodHomepage": {
-      "description": "Flood the frontend with a large amount of requests.",
+      "description": "用大量请求淹没前端。Flood the frontend with a large amount of requests.",
+      "category": "前端控制",
       "state": "ENABLED",
       "variants": {
         "on": 100,
@@ -97,7 +107,8 @@
       "defaultVariant": "off"
     },
     "imageSlowLoad": {
-      "description": "slow loading images in the frontend",
+      "description": "前端图片加载缓慢。slow loading images in the frontend",
+      "category": "前端控制",
       "state": "ENABLED",
       "variants": {
         "10sec": 10000,
@@ -106,20 +117,38 @@
       },
       "defaultVariant": "off"
     },
-    "adsFlag": {
-      "description": "ads flag",
+    "adsTableNotExistFlag": {
+      "description": "广告服务查询表不存在。ads service table not exist",
+      "category": "广告服务相关",
       "state": "ENABLED",
       "variants": {
-        "normal": "normal",
-        "delay": "delay",
-        "table_not_exist": "table_not_exist",
-        "sql_complex": "sql_complex",
-        "mass_insert": "mass_insert"
+        "on": true,
+        "off": false
       },
-      "defaultVariant": "normal"
+      "defaultVariant": "off"
+    },
+    "adsSqlComplexFlag": {
+      "description": "广告服务查询复杂SQL。ads service sql complex",
+      "category": "广告服务相关",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "adsMassInsertFlag": {
+      "description": "广告服务大量插入。ads service mass insert",
+      "category": "广告服务相关",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     },
     "productDelay": {
-      "description": "product put product and put image to oss",
+      "description": "将产品和图片放入oss。product put product and put image to oss",
       "state": "ENABLED",
       "variants": {
         "10sec": 10000,
