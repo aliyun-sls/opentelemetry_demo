@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -24,11 +25,9 @@ import (
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -126,6 +125,10 @@ type checkout struct {
 	shippingSvcAddr       string
 	emailSvcAddr          string
 	paymentSvcAddr        string
+	adsSvcAddr            string
+	marketingSvcAddr      string
+	notificationSvcAddr   string
+	promotionSvcAddr      string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
 	KafkaProducerClient     sarama.AsyncProducer
@@ -197,6 +200,11 @@ func main() {
 	svc.paymentSvcClient = pb.NewPaymentServiceClient(c)
 	defer c.Close()
 
+	mustMapEnv(&svc.adsSvcAddr, "ADS_ADDR")
+	mustMapEnv(&svc.marketingSvcAddr, "MARKETING_ADDR")
+	mustMapEnv(&svc.notificationSvcAddr, "NOTIFICATION_ADDR")
+	mustMapEnv(&svc.promotionSvcAddr, "PROMOTION_ADDR")
+
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
 	if svc.kafkaBrokerSvcAddr != "" {
@@ -214,13 +222,30 @@ func main() {
 	}
 
 	var srv = grpc.NewServer(
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		//grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
 	log.Infof("starting to listen on tcp: %q", lis.Addr().String())
 	err = srv.Serve(lis)
 	log.Fatal(err)
+}
+
+func httpCall(addr, path string) error {
+	resp, err := http.Get("http://" + addr + path)
+	if err != nil {
+		log.Fatalf("Error %q %q", err, addr+path)
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Error %q %q", err, addr+path)
+		return err
+	}
+	log.Infof("Response: %q", string(body))
+	return nil
 }
 
 func mustMapEnv(target *string, envKey string) {
@@ -240,12 +265,27 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	if err := httpCall(cs.marketingSvcAddr, "/listMarketing"); err != nil {
+		return nil, err
+	}
+
+	if err := httpCall(cs.promotionSvcAddr, "/listPromotion"); err != nil {
+		return nil, err
+	}
+
+	if err := httpCall(cs.notificationSvcAddr, "/listNotification"); err != nil {
+		return nil, err
+	}
+
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
 		attribute.String("app.user.currency", req.UserCurrency),
 	)
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
+
+	spanContext := span.SpanContext()
+	log.Infof("Span ID: %s, Trace ID: %s", spanContext.SpanID(), spanContext.TraceID())
 
 	var err error
 	defer func() {
@@ -363,9 +403,9 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 	for _, ci := range cartItems {
 		totalCart += ci.Quantity
 	}
-	/*shippingCostFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", shippingPrice.GetUnits(), shippingPrice.GetNanos()/1000000000), 64)
+	//shippingCostFloat, _ := strconv.ParseFloat(fmt.Sprintf("%d.%02d", shippingPrice.GetUnits(), shippingPrice.GetNanos()/1000000000), 64)
 
-	span.SetAttributes(
+	/*span.SetAttributes(
 		attribute.Float64("app.shipping.amount", shippingCostFloat),
 		attribute.Int("app.cart.items.count", int(totalCart)),
 		attribute.Int("app.order.items.count", len(orderItems)),
@@ -376,7 +416,7 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 func mustCreateClient(svcAddr string) *grpc.ClientConn {
 	c, err := grpc.NewClient(svcAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+		//grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		log.Fatalf("could not connect to %s service, err: %+v", svcAddr, err)
@@ -502,11 +542,11 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 	}
 
 	// Inject tracing info into message
-	span := createProducerSpan(ctx, &msg)
-	defer span.End()
+	//span := createProducerSpan(ctx, &msg)
+	//defer span.End()
 
 	// Send message and handle response
-	startTime := time.Now()
+	/*startTime := time.Now()
 	select {
 	case cs.KafkaProducerClient.Input() <- &msg:
 		log.Infof("Message sent to Kafka: %v", msg)
@@ -541,7 +581,7 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 		span.SetStatus(otelcodes.Error, "Failed to send: "+ctx.Err().Error())
 		log.Errorf("Failed to send message to Kafka within context deadline: %v", ctx.Err())
 		return
-	}
+	}*/
 
 	ffValue := cs.getIntFeatureFlag(ctx, "kafkaQueueProblems")
 	if ffValue > 0 {
