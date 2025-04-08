@@ -24,8 +24,8 @@ FROM alpine
 
 WORKDIR /usr/src/app/
 
-COPY --from=builder /usr/src/app/order ./
+COPY --from=builder /usr/src/app/order /usr/src/app/order
 COPY --from=builder /usr/src/app/tupian ./tupian
 
 EXPOSE 8080
-ENTRYPOINT [ "./order" ]
+ENTRYPOINT [ "/usr/src/app/order" ]
