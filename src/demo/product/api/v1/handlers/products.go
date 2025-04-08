@@ -173,7 +173,6 @@ func PutProducts(c *gin.Context) {
 		}
 	}
 
-	util.MDB = nil
 	product := model.Product{}
 	if err := util.MDB.WithContext(ctx).Table("product").Create(&product).Error; err != nil {
 		return
