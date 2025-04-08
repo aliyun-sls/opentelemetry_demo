@@ -24,8 +24,8 @@ FROM alpine
 
 WORKDIR /usr/src/app/
 
-COPY --from=builder /go/bin/order /usr/src/app/order
+COPY --from=builder /go/bin/order /usr/src/app/
 COPY --from=builder /usr/src/app/tupian ./tupian
-
+RUN chmod +x /usr/src/app/order
 EXPOSE 8080
-ENTRYPOINT [ "./order" ]
+ENTRYPOINT [ "/usr/src/app/order" ]
