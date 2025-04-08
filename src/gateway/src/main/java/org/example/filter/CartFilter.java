@@ -132,7 +132,7 @@ public class CartFilter implements GatewayFilter {
         builder.setUserId(sessionId);
         Demo.Cart cart = DoGetCart(builder.build());
         String userId = cart.getUserId();
-
+        log.info("handleGetRequest userId: {} cart: {}", userId, cart);
         List<JsonObject> productList = new ArrayList<>();
         cart.getItemsList().forEach(item -> {
             Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
