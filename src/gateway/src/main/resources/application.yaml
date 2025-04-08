@@ -36,7 +36,9 @@ spring:
           filters:
             - name: Cart
               args:
-                productAddr: ${PRODUCT_ADDR:localhost:50051}
+                cartAddr: ${CART_ADDR}
+                productAddr: ${PRODUCT_ADDR}
+                currencyAddr: ${CURRENCY_ADDR}
         - id: ads
           uri: http://ads:8080
           predicates:

@@ -32,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 public class CartFilter implements GatewayFilter {
     private static final Logger log = LoggerFactory.getLogger(GetProductFilter.class);
     public static ObjectMapper objectMapper = new ObjectMapper();
-    private ManagedChannel cartChannel;
-    private ManagedChannel productCatalogChannel;
-    private ManagedChannel currencyChannel;
+    private final ManagedChannel cartChannel;
+    private final ManagedChannel productCatalogChannel;
+    private final ManagedChannel currencyChannel;
 
     public CartFilter(Config config) {
         cartChannel = ManagedChannelBuilder.forTarget(config.cartAddr).usePlaintext() // 明文通信（仅限开发环境）
@@ -171,7 +171,6 @@ public class CartFilter implements GatewayFilter {
                     });
                     String body = bodyBuilder.toString();
                     try {
-                        // 解析请求体以获取 userId
                         JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
                         String userId = jsonObject.get("userId").getAsString();
                         JsonObject itemJson = jsonObject.getAsJsonObject("item");
@@ -181,9 +180,14 @@ public class CartFilter implements GatewayFilter {
                         Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
                         builder.setUserId(userId);
                         builder.setItem(cartItemBuilder.build());
-                        DoAddCartItem(builder.build());
+                        Demo.Empty addItemResponse = DoAddCartItem(builder.build());
+                        log.info("AddItem response: {}", addItemResponse);
 
-                        // 继续处理请求
+                        Demo.GetCartRequest.Builder getCartBuilder = Demo.GetCartRequest.newBuilder();
+                        builder.setUserId(userId);
+                        Demo.Cart cart = DoGetCart(getCartBuilder.build());
+                        JsonObject cartObj = objectMapper.convertValue(cart, JsonObject.class);
+                        sink.success(cartObj);
                         return chain.filter(exchange);
                     } catch (Exception e) {
                         log.error("Failed to parse request body", e);
@@ -205,16 +209,16 @@ public class CartFilter implements GatewayFilter {
                     });
                     String body = bodyBuilder.toString();
                     try {
-                        // 解析请求体以获取 userId
                         JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
                         String userId = jsonObject.get("userId").getAsString();
-
-                        // 设置 userId 到 EmptyCartRequest.Builder
                         Demo.EmptyCartRequest.Builder builder = Demo.EmptyCartRequest.newBuilder();
                         builder.setUserId(userId);
                         DoEmptyCart(builder.build());
+                        Demo.Empty response = DoEmptyCart(builder.build());
+                        log.info("EmptyCart response: {}", response);
+                        exchange.getResponse().setStatusCode(HttpStatus.NO_CONTENT);
 
-                        // 继续处理请求
+                        // 返回空响应体
                         return chain.filter(exchange);
                     } catch (Exception e) {
                         log.error("Failed to parse request body", e);
@@ -223,5 +227,4 @@ public class CartFilter implements GatewayFilter {
                     }
                 });
     }
-
 }
