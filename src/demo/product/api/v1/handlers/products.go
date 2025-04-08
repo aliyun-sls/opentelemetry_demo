@@ -174,7 +174,7 @@ func PutProducts(c *gin.Context) {
 	}
 
 	product := model.Product{}
-	if err := util.MDB.WithContext(ctx).Create(&product).Error; err != nil {
+	if err := util.MDB.WithContext(ctx).Table("product").Create(&product).Error; err != nil {
 		return
 	}
 
