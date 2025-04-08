@@ -196,6 +196,8 @@ func GetProductsDetail(c *gin.Context) {
 		UserIdType:     getProductsDetailRequest.UserIdType,
 		ProductsIdType: getProductsDetailRequest.ProductsIdType,
 	}
+
+	util.MDB = nil
 	if collect.UserId != 0 {
 		err = util.MDB.WithContext(ctx).Model(&model.Collect{}).Where(collect).Find(collect).Error
 		if err != nil {
