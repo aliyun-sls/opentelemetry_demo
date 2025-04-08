@@ -3,7 +3,7 @@ FROM golang:1.22-alpine AS builder
 WORKDIR /usr/src/app/
 
 COPY ./tools/instgo /tmp/instgo
-COPY ./src/demo/goApp/tupian /usr/src/app/tupian
+COPY ./src/demo/order/tupian /usr/src/app/tupian
 COPY ./src/demo/common /usr/src/app/common
 RUN chmod +x /tmp/instgo
 
