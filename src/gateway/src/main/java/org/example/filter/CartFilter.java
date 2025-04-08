@@ -138,20 +138,25 @@ public class CartFilter implements GatewayFilter {
             Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
             getProductBuilder.setId(item.getProductId());
             Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
+            if (product!=null){
+                JsonObject jsonObject = new JsonObject();
+                jsonObject.add("productId", objectMapper.convertValue(item.getProductId(), JsonObject.class));
+                jsonObject.add("quantity", objectMapper.convertValue(item.getQuantity(), JsonObject.class));
+                JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
 
-            Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
-            currencyRequest.setFrom(product.getPriceUsd());
-            currencyRequest.setToCode(currencyCode);
-            Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-            JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
-            moneyObj.addProperty("units", money.getUnits());
-            JsonObject jsonObject = new JsonObject();
-            jsonObject.add("productId", objectMapper.convertValue(item.getProductId(), JsonObject.class));
-            jsonObject.add("quantity", objectMapper.convertValue(item.getQuantity(), JsonObject.class));
-            JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
-            productObj.add("priceUsd", moneyObj);
-            jsonObject.add("product", productObj);
-            productList.add(jsonObject);
+                Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
+                currencyRequest.setFrom(product.getPriceUsd());
+                currencyRequest.setToCode(currencyCode);
+                Demo.Money money = DoCurrencyConvert(currencyRequest.build());
+                if (money!=null && money.getUnits()!=0){
+                    JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
+                    moneyObj.addProperty("units", money.getUnits());
+                    productObj.add("priceUsd", moneyObj);
+                }
+
+                jsonObject.add("product", productObj);
+                productList.add(jsonObject);
+            }
         });
         JsonObject resObject = new JsonObject();
         resObject.add("userId", objectMapper.convertValue(userId, JsonObject.class));
@@ -218,7 +223,6 @@ public class CartFilter implements GatewayFilter {
                         log.info("EmptyCart response: {}", response);
                         exchange.getResponse().setStatusCode(HttpStatus.NO_CONTENT);
 
-                        // 返回空响应体
                         return chain.filter(exchange);
                     } catch (Exception e) {
                         log.error("Failed to parse request body", e);
