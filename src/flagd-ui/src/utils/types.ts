@@ -5,6 +5,7 @@ export interface FlagConfig {
   state: FlagState;
   variants: {};
   category: string;
+  tags: string[];
   defaultVariant: string;
 }
 

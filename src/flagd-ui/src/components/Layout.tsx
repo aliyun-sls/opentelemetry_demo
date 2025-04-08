@@ -12,6 +12,10 @@ type LoadingContextType = {
 
 const LoadingContext = createContext<LoadingContextType | undefined>(undefined);
 
+export const sleep = (ms: number) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
 export const useLoading = () => {
   const context = useContext(LoadingContext);
   if (context === undefined) {
