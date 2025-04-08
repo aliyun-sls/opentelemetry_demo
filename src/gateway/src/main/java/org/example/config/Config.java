@@ -4,6 +4,7 @@ public class Config {
     public String checkoutAddr;
     public String productAddr;
     public String currencyAddr;
+    public String cartAddr;
 
     public String getCheckoutAddr() {
         return checkoutAddr;
@@ -27,5 +28,13 @@ public class Config {
 
     public void setCurrencyAddr(String currencyAddr) {
         this.currencyAddr = currencyAddr;
+    }
+
+    public String getCartAddr() {
+        return cartAddr;
+    }
+
+    public void setCartAddr(String cartAddr) {
+        this.cartAddr = cartAddr;
     }
 }

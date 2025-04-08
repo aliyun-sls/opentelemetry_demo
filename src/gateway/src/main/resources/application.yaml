@@ -29,6 +29,14 @@ spring:
               args:
                 productAddr: ${PRODUCT_ADDR:localhost:50051}
                 currencyAddr: ${CURRENCY_ADDR:localhost:50052}
+        - id: cart
+          uri: no://op
+          predicates:
+            - Path=/api/cart
+          filters:
+            - name: Cart
+              args:
+                productAddr: ${PRODUCT_ADDR:localhost:50051}
         - id: ads
           uri: http://ads:8080
           predicates:

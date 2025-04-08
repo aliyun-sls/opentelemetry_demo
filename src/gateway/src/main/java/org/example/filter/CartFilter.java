@@ -1,0 +1,216 @@
+package org.example.filter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.example.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.server.ServerWebExchange;
+import oteldemo.ProductCatalogServiceGrpc;
+import oteldemo.Demo;
+import oteldemo.CartServiceGrpc;
+import reactor.core.publisher.Mono;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.URI_TEMPLATE_VARIABLES_ATTRIBUTE;
+
+public class CartFilter implements GatewayFilter {
+    private static final Logger log = LoggerFactory.getLogger(GetProductFilter.class);
+    public static ObjectMapper objectMapper = new ObjectMapper();
+    private ManagedChannel cartChannel;
+    private ManagedChannel productCatalogChannel;
+    private ManagedChannel currencyChannel;
+
+    public CartFilter(Config config) {
+        cartChannel = ManagedChannelBuilder.forTarget(config.cartAddr).usePlaintext() // 明文通信（仅限开发环境）
+                .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
+                .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
+                .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .enableRetry() // 启用重试
+                .build();
+
+        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
+                .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
+                .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
+                .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .enableRetry() // 启用重试
+                .build();
+
+        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
+                .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
+                .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
+                .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .enableRetry() // 启用重试
+                .build();
+    }
+
+
+    private Demo.Cart DoGetCart(Demo.GetCartRequest request) {
+        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel);
+        return cartServiceStub.getCart(request);
+    }
+
+    private Demo.Empty DoAddCartItem(Demo.AddItemRequest request) {
+        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel);
+        return cartServiceStub.addItem(request);
+    }
+
+    private Demo.Empty DoEmptyCart(Demo.EmptyCartRequest request) {
+        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel);
+        return cartServiceStub.emptyCart(request);
+    }
+
+    private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
+        return productCatalogStub.getProduct(request);
+    }
+
+    private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
+        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel);
+        return currencyServiceBlockingStub.convert(request);
+    }
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info("Filtering request {}", exchange.getRequest().getPath());
+
+        return Mono.<JsonObject>create(sink -> {
+            try {
+                if (exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
+                    MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
+                    String sessionId = queryParams.getFirst("sessionId");
+                    String currencyCode = queryParams.getFirst("currencyCode");
+
+                    Demo.GetCartRequest.Builder builder = Demo.GetCartRequest.newBuilder();
+                    builder.setUserId(sessionId);
+                    Demo.Cart cart = DoGetCart(builder.build());
+                    String userId = cart.getUserId();
+
+                    List<JsonObject> productList = new ArrayList<>();
+                    cart.getItemsList().forEach(item -> {
+                        Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
+                        getProductBuilder.setId(item.getProductId());
+                        Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
+
+                        Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
+                        currencyRequest.setFrom(product.getPriceUsd());
+                        currencyRequest.setToCode(currencyCode);
+                        Demo.Money money = DoCurrencyConvert(currencyRequest.build());
+                        JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
+                        moneyObj.addProperty("units", money.getUnits());
+                        JsonObject jsonObject = new JsonObject();
+                        jsonObject.add("productId", objectMapper.convertValue(item.getProductId(), JsonObject.class));
+                        jsonObject.add("quantity", objectMapper.convertValue(item.getQuantity(), JsonObject.class));
+                        JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
+                        productObj.add("priceUsd", moneyObj);
+                        jsonObject.add("product", productObj);
+                        productList.add(jsonObject);
+                    });
+                    JsonObject resObject = new JsonObject();
+                    resObject.add("userId", objectMapper.convertValue(userId, JsonObject.class));
+                    resObject.add("items", objectMapper.convertValue(productList, JsonObject.class));
+                    sink.success(resObject);
+                }else if (exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
+                    exchange.getRequest().getBody()
+                            .collectList()
+                            .flatMap(dataBuffers -> {
+                                StringBuilder bodyBuilder = new StringBuilder();
+                                dataBuffers.forEach(dataBuffer -> {
+                                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                                    dataBuffer.read(bytes);
+                                    bodyBuilder.append(new String(bytes));
+                                });
+                                String body = bodyBuilder.toString();
+                                try {
+                                    // 解析请求体以获取 userId
+                                    JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
+                                    String userId = jsonObject.get("userId").getAsString();
+                                    JsonObject itemJson = jsonObject.getAsJsonObject("item");
+                                    Demo.CartItem.Builder cartItemBuilder = Demo.CartItem.newBuilder();
+                                    JsonFormat.parser().merge(itemJson.toString(), cartItemBuilder);
+
+                                    Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
+                                    builder.setUserId(userId);
+                                    builder.setItem(cartItemBuilder.build());
+                                    DoAddCartItem(builder.build());
+
+                                    // 继续处理请求
+                                    return chain.filter(exchange);
+                                } catch (Exception e) {
+                                    log.error("Failed to parse request body", e);
+                                    sink.error(e);
+                                    return Mono.error(e);
+                                }
+                            });
+                }else if (exchange.getRequest().getMethod().equals(HttpMethod.DELETE)) {
+                    exchange.getRequest().getBody()
+                            .collectList()
+                            .flatMap(dataBuffers -> {
+                                StringBuilder bodyBuilder = new StringBuilder();
+                                dataBuffers.forEach(dataBuffer -> {
+                                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                                    dataBuffer.read(bytes);
+                                    bodyBuilder.append(new String(bytes));
+                                });
+                                String body = bodyBuilder.toString();
+                                try {
+                                    // 解析请求体以获取 userId
+                                    JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
+                                    String userId = jsonObject.get("userId").getAsString();
+
+                                    // 设置 userId 到 EmptyCartRequest.Builder
+                                    Demo.EmptyCartRequest.Builder builder = Demo.EmptyCartRequest.newBuilder();
+                                    builder.setUserId(userId);
+                                    DoEmptyCart(builder.build());
+
+                                    // 继续处理请求
+                                    return chain.filter(exchange);
+                                } catch (Exception e) {
+                                    log.error("Failed to parse request body", e);
+                                    sink.error(e);
+                                    return Mono.error(e);
+                                }
+                            });
+                }
+            } catch (Exception e) {
+                log.error("Failed Cart ", e);
+                sink.error(e);
+            }
+        }).flatMap(responseBody -> {
+            try {
+                exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                byte[] bytes = responseBody.toString().getBytes();
+                DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
+                return exchange.getResponse().writeWith(Mono.just(buffer));
+            } catch (Exception e) {
+                log.error("Failed Cart", e);
+                return Mono.error(e);
+            }
+        }).onErrorResume(ResponseStatusException.class, e -> {
+            exchange.getResponse().setStatusCode(e.getStatusCode());
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            String errorJson = String.format("{\"error\":\"%s\"}", e.getReason());
+            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(errorJson.getBytes());
+            return exchange.getResponse().writeWith(Mono.just(buffer));
+        }).then(chain.filter(exchange));
+    }
+
+}
