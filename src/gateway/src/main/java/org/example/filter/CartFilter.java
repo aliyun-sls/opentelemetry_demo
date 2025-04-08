@@ -127,7 +127,7 @@ public class CartFilter implements GatewayFilter {
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
         String sessionId = queryParams.getFirst("sessionId");
         String currencyCode = queryParams.getFirst("currencyCode");
-
+        log.info("handleGetRequest sessionId: {} currencyCode: {}", sessionId, currencyCode);
         Demo.GetCartRequest.Builder builder = Demo.GetCartRequest.newBuilder();
         builder.setUserId(sessionId);
         Demo.Cart cart = DoGetCart(builder.build());
@@ -140,8 +140,8 @@ public class CartFilter implements GatewayFilter {
             Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
             if (product!=null){
                 JsonObject jsonObject = new JsonObject();
-                jsonObject.add("productId", objectMapper.convertValue(item.getProductId(), JsonObject.class));
-                jsonObject.add("quantity", objectMapper.convertValue(item.getQuantity(), JsonObject.class));
+                jsonObject.addProperty("productId", item.getProductId());
+                jsonObject.addProperty("quantity", item.getQuantity());
                 JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
 
                 Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
@@ -159,7 +159,7 @@ public class CartFilter implements GatewayFilter {
             }
         });
         JsonObject resObject = new JsonObject();
-        resObject.add("userId", objectMapper.convertValue(sessionId, JsonObject.class));
+        resObject.addProperty("userId", userId);
         resObject.add("items", objectMapper.convertValue(productList, JsonObject.class));
         sink.success(resObject);
     }
