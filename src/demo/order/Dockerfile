@@ -18,14 +18,14 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=bind,rw,source=./src/demo/order,target=order \
     cd order && \
-    /tmp/instgo go build -ldflags "-s -w" -o /usr/src/app/order ./
+    /tmp/instgo go build -ldflags "-s -w" -o /go/bin/order/ ./
 
 FROM alpine
 
 WORKDIR /usr/src/app/
 
-COPY --from=builder /usr/src/app/order /usr/src/app/order
+COPY --from=builder /go/bin/order ./
 COPY --from=builder /usr/src/app/tupian ./tupian
 
 EXPOSE 8080
-ENTRYPOINT [ "/usr/src/app/order" ]
+ENTRYPOINT [ "./go/bin/order" ]
