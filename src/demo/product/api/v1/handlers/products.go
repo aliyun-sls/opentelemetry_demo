@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"sls-mall-go/common/config"
@@ -132,6 +133,13 @@ func initFeatureFlag() {
 	})
 }
 
+type User struct {
+	gorm.Model
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     int    `json:"role"` // 添加角色字段
+}
+
 func PutProducts(c *gin.Context) {
 	ctx := c.Request.Context()
 	// 初始化flag客户端(只执行一次)
@@ -145,13 +153,6 @@ func PutProducts(c *gin.Context) {
 		openfeature.EvaluationContext{},
 	)
 	log.Printf("获取feature : %v", details)
-	//if err != nil {
-	//	log.Printf("获取feature flag失败: %v", err)
-	//	c.JSON(http.StatusInternalServerError, gin.H{"error": "feature flag服务不可用"})
-	//	return
-	//}
-
-	// 解析延迟时间
 
 	// 应用延迟
 	if details > 0 {
@@ -173,8 +174,9 @@ func PutProducts(c *gin.Context) {
 		}
 	}
 
-	product := model.Product{}
-	if err := util.MDB.WithContext(ctx).Table("product").Create(&product).Error; err != nil {
+	var User []User
+	if err := util.MDB.WithContext(ctx).Table("users").Limit(10).Find(&User).Error; err != nil {
+		util.Status500(c, err)
 		return
 	}
 
