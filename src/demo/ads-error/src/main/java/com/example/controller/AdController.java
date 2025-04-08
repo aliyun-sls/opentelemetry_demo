@@ -52,12 +52,18 @@ public class AdController {
     @GetMapping("/listAds")
     public ResponseEntity<?> listAds(HttpServletRequest request) {
         List ads = new ArrayList();
-
+//        String selectedScenario = scenarioSelector.selectScenario();
         final Client client = openFeatureAPI.getClient();
+        boolean tableFlag = client.getBooleanValue(ADS_TABLE_FLAG, false);
         boolean sqlFlag = client.getBooleanValue(ADS_SQL_FLAG, false);
         boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
 
-        scenarioHandler.handleNormal();
+        if (tableFlag) {
+            scenarioHandler.handleTableNotExist();
+        } else {
+            scenarioHandler.handleNormal();
+        }
+
         try {
             if(sqlFlag){
                 scenarioHandler.handleSQLComplex();
