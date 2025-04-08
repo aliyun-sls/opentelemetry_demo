@@ -18,11 +18,11 @@ type APP struct {
 
 func (a *APP) GetApp01(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Hello from /getapp01"))
-	urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
+	w.Write([]byte("order"))
+	//urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
 	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
 
-	cpu(urlCpu)
+	//cpu(urlCpu)
 	PutProducts(urlShelve)
 }
 
@@ -34,7 +34,7 @@ type User struct {
 func main() {
 	app := &APP{}
 	fmt.Println("开启监听。。。。。")
-	http.HandleFunc("/getapp01", app.GetApp01)
+	http.HandleFunc("/order", app.GetApp01)
 
 	// 将监听服务放在一个独立的goroutine中运行
 	http.ListenAndServe(":8080", nil)
