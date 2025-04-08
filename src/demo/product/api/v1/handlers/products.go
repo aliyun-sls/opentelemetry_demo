@@ -121,7 +121,7 @@ var (
 func initFeatureFlag() {
 	once.Do(func() {
 		provider := flagd.NewProvider(
-			flagd.WithHost("localhost"),
+			flagd.WithHost("flagd"),
 			flagd.WithPort(8013),
 		)
 		if err := openfeature.SetProvider(provider); err != nil {
