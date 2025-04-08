@@ -68,7 +68,7 @@ function FeatureFlag({ flagId, flagConfig, updateFlagData }: FeatureFlagProps) {
           <div className="text-lg font-semibold">{`${flagId}`}</div>
           <div className="flex flex-wrap gap-0.5">
             {flagConfig.tags && flagConfig.tags.map((tag) => (
-              <Tag bordered={false} color={getColorOnText(tag)}>{tag}</Tag>
+              <Tag key={tag} bordered={false} color={getColorOnText(tag)}>{tag}</Tag>
             ))}
           </div>
         </div>
