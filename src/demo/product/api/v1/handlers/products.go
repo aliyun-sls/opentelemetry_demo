@@ -137,32 +137,24 @@ func PutProducts(c *gin.Context) {
 	initFeatureFlag()
 
 	// 获取feature flag值
-	details, err := flagClient.ObjectValue(
+	details := flagClient.Int(
 		context.Background(),
 		"productDelay",
-		map[string]interface{}{},
+		0,
 		openfeature.EvaluationContext{},
 	)
-	if err != nil {
-		log.Printf("获取feature flag失败: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "feature flag服务不可用"})
-		return
-	}
+	log.Printf("获取feature : %v", details)
+	//if err != nil {
+	//	log.Printf("获取feature flag失败: %v", err)
+	//	c.JSON(http.StatusInternalServerError, gin.H{"error": "feature flag服务不可用"})
+	//	return
+	//}
 
 	// 解析延迟时间
-	var delay time.Duration
-	if flagData, ok := details.(map[string]interface{}); ok {
-		if variants, ok := flagData["variants"].(map[string]interface{}); ok {
-			if tenSec, ok := variants["10sec"].(float64); ok {
-				delay = time.Duration(tenSec) * time.Millisecond
-				log.Printf("使用feature flag延迟: %v", delay)
-			}
-		}
-	}
 
 	// 应用延迟
-	if delay > 0 {
-		time.Sleep(delay)
+	if details > 0 {
+		time.Sleep(time.Duration(details) * time.Millisecond)
 		log.Println("延迟执行完成")
 	}
 
