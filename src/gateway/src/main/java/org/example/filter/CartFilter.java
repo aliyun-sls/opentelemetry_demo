@@ -13,6 +13,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,6 +22,7 @@ import oteldemo.ProductCatalogServiceGrpc;
 import oteldemo.Demo;
 import oteldemo.CartServiceGrpc;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,103 +92,16 @@ public class CartFilter implements GatewayFilter {
         return Mono.<JsonObject>create(sink -> {
             try {
                 if (exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
-                    MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
-                    String sessionId = queryParams.getFirst("sessionId");
-                    String currencyCode = queryParams.getFirst("currencyCode");
-
-                    Demo.GetCartRequest.Builder builder = Demo.GetCartRequest.newBuilder();
-                    builder.setUserId(sessionId);
-                    Demo.Cart cart = DoGetCart(builder.build());
-                    String userId = cart.getUserId();
-
-                    List<JsonObject> productList = new ArrayList<>();
-                    cart.getItemsList().forEach(item -> {
-                        Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
-                        getProductBuilder.setId(item.getProductId());
-                        Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
-
-                        Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
-                        currencyRequest.setFrom(product.getPriceUsd());
-                        currencyRequest.setToCode(currencyCode);
-                        Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-                        JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
-                        moneyObj.addProperty("units", money.getUnits());
-                        JsonObject jsonObject = new JsonObject();
-                        jsonObject.add("productId", objectMapper.convertValue(item.getProductId(), JsonObject.class));
-                        jsonObject.add("quantity", objectMapper.convertValue(item.getQuantity(), JsonObject.class));
-                        JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
-                        productObj.add("priceUsd", moneyObj);
-                        jsonObject.add("product", productObj);
-                        productList.add(jsonObject);
-                    });
-                    JsonObject resObject = new JsonObject();
-                    resObject.add("userId", objectMapper.convertValue(userId, JsonObject.class));
-                    resObject.add("items", objectMapper.convertValue(productList, JsonObject.class));
-                    sink.success(resObject);
-                }else if (exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
-                    exchange.getRequest().getBody()
-                            .collectList()
-                            .flatMap(dataBuffers -> {
-                                StringBuilder bodyBuilder = new StringBuilder();
-                                dataBuffers.forEach(dataBuffer -> {
-                                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                                    dataBuffer.read(bytes);
-                                    bodyBuilder.append(new String(bytes));
-                                });
-                                String body = bodyBuilder.toString();
-                                try {
-                                    // 解析请求体以获取 userId
-                                    JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
-                                    String userId = jsonObject.get("userId").getAsString();
-                                    JsonObject itemJson = jsonObject.getAsJsonObject("item");
-                                    Demo.CartItem.Builder cartItemBuilder = Demo.CartItem.newBuilder();
-                                    JsonFormat.parser().merge(itemJson.toString(), cartItemBuilder);
-
-                                    Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
-                                    builder.setUserId(userId);
-                                    builder.setItem(cartItemBuilder.build());
-                                    DoAddCartItem(builder.build());
-
-                                    // 继续处理请求
-                                    return chain.filter(exchange);
-                                } catch (Exception e) {
-                                    log.error("Failed to parse request body", e);
-                                    sink.error(e);
-                                    return Mono.error(e);
-                                }
-                            });
-                }else if (exchange.getRequest().getMethod().equals(HttpMethod.DELETE)) {
-                    exchange.getRequest().getBody()
-                            .collectList()
-                            .flatMap(dataBuffers -> {
-                                StringBuilder bodyBuilder = new StringBuilder();
-                                dataBuffers.forEach(dataBuffer -> {
-                                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                                    dataBuffer.read(bytes);
-                                    bodyBuilder.append(new String(bytes));
-                                });
-                                String body = bodyBuilder.toString();
-                                try {
-                                    // 解析请求体以获取 userId
-                                    JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
-                                    String userId = jsonObject.get("userId").getAsString();
-
-                                    // 设置 userId 到 EmptyCartRequest.Builder
-                                    Demo.EmptyCartRequest.Builder builder = Demo.EmptyCartRequest.newBuilder();
-                                    builder.setUserId(userId);
-                                    DoEmptyCart(builder.build());
-
-                                    // 继续处理请求
-                                    return chain.filter(exchange);
-                                } catch (Exception e) {
-                                    log.error("Failed to parse request body", e);
-                                    sink.error(e);
-                                    return Mono.error(e);
-                                }
-                            });
+                    handleGetRequest(exchange, sink);
+                } else if (exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
+                    handlePostRequest(exchange, sink, chain);
+                } else if (exchange.getRequest().getMethod().equals(HttpMethod.DELETE)) {
+                    handleDeleteRequest(exchange, sink, chain);
+                } else {
+                    throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Unsupported HTTP method");
                 }
             } catch (Exception e) {
-                log.error("Failed Cart ", e);
+                log.error("Failed Cart", e);
                 sink.error(e);
             }
         }).flatMap(responseBody -> {
@@ -206,6 +121,107 @@ public class CartFilter implements GatewayFilter {
             DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(errorJson.getBytes());
             return exchange.getResponse().writeWith(Mono.just(buffer));
         }).then(chain.filter(exchange));
+    }
+
+    private void handleGetRequest(ServerWebExchange exchange, MonoSink<JsonObject> sink) {
+        MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
+        String sessionId = queryParams.getFirst("sessionId");
+        String currencyCode = queryParams.getFirst("currencyCode");
+
+        Demo.GetCartRequest.Builder builder = Demo.GetCartRequest.newBuilder();
+        builder.setUserId(sessionId);
+        Demo.Cart cart = DoGetCart(builder.build());
+        String userId = cart.getUserId();
+
+        List<JsonObject> productList = new ArrayList<>();
+        cart.getItemsList().forEach(item -> {
+            Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
+            getProductBuilder.setId(item.getProductId());
+            Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
+
+            Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
+            currencyRequest.setFrom(product.getPriceUsd());
+            currencyRequest.setToCode(currencyCode);
+            Demo.Money money = DoCurrencyConvert(currencyRequest.build());
+            JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
+            moneyObj.addProperty("units", money.getUnits());
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.add("productId", objectMapper.convertValue(item.getProductId(), JsonObject.class));
+            jsonObject.add("quantity", objectMapper.convertValue(item.getQuantity(), JsonObject.class));
+            JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
+            productObj.add("priceUsd", moneyObj);
+            jsonObject.add("product", productObj);
+            productList.add(jsonObject);
+        });
+        JsonObject resObject = new JsonObject();
+        resObject.add("userId", objectMapper.convertValue(userId, JsonObject.class));
+        resObject.add("items", objectMapper.convertValue(productList, JsonObject.class));
+        sink.success(resObject);
+    }
+
+    private void handlePostRequest(ServerWebExchange exchange, MonoSink<JsonObject> sink, GatewayFilterChain chain) {
+        exchange.getRequest().getBody()
+                .collectList()
+                .flatMap(dataBuffers -> {
+                    StringBuilder bodyBuilder = new StringBuilder();
+                    dataBuffers.forEach(dataBuffer -> {
+                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                        dataBuffer.read(bytes);
+                        bodyBuilder.append(new String(bytes));
+                    });
+                    String body = bodyBuilder.toString();
+                    try {
+                        // 解析请求体以获取 userId
+                        JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
+                        String userId = jsonObject.get("userId").getAsString();
+                        JsonObject itemJson = jsonObject.getAsJsonObject("item");
+                        Demo.CartItem.Builder cartItemBuilder = Demo.CartItem.newBuilder();
+                        JsonFormat.parser().merge(itemJson.toString(), cartItemBuilder);
+
+                        Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
+                        builder.setUserId(userId);
+                        builder.setItem(cartItemBuilder.build());
+                        DoAddCartItem(builder.build());
+
+                        // 继续处理请求
+                        return chain.filter(exchange);
+                    } catch (Exception e) {
+                        log.error("Failed to parse request body", e);
+                        sink.error(e);
+                        return Mono.error(e);
+                    }
+                });
+    }
+
+    private void handleDeleteRequest(ServerWebExchange exchange, MonoSink<JsonObject> sink, GatewayFilterChain chain) {
+        exchange.getRequest().getBody()
+                .collectList()
+                .flatMap(dataBuffers -> {
+                    StringBuilder bodyBuilder = new StringBuilder();
+                    dataBuffers.forEach(dataBuffer -> {
+                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                        dataBuffer.read(bytes);
+                        bodyBuilder.append(new String(bytes));
+                    });
+                    String body = bodyBuilder.toString();
+                    try {
+                        // 解析请求体以获取 userId
+                        JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
+                        String userId = jsonObject.get("userId").getAsString();
+
+                        // 设置 userId 到 EmptyCartRequest.Builder
+                        Demo.EmptyCartRequest.Builder builder = Demo.EmptyCartRequest.newBuilder();
+                        builder.setUserId(userId);
+                        DoEmptyCart(builder.build());
+
+                        // 继续处理请求
+                        return chain.filter(exchange);
+                    } catch (Exception e) {
+                        log.error("Failed to parse request body", e);
+                        sink.error(e);
+                        return Mono.error(e);
+                    }
+                });
     }
 
 }
