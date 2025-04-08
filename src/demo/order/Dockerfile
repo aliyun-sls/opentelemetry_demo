@@ -28,4 +28,4 @@ COPY --from=builder /go/bin/order/ ./
 COPY --from=builder /usr/src/app/tupian ./tupian
 
 EXPOSE 8080
-ENTRYPOINT [ "./order" ]
+ENTRYPOINT [ "/usr/src/app/order" ]
