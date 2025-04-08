@@ -18,7 +18,7 @@ public class GetProductGatewayFilterFactory extends AbstractGatewayFilterFactory
 
     @Override
     public GatewayFilter apply(Config config) {
-        log.info("CheckFilterGatewayFilterFactory apply");
+        log.info("ProductGatewayFilterFactory apply");
         return new GetProductFilter(config);
     }
 }

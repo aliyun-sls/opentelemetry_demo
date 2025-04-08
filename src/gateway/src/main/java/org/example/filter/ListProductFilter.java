@@ -66,7 +66,7 @@ public class ListProductFilter implements GatewayFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
         // query: currencyCode productId
-        if (!exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
+        if (!exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
             exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);
             return exchange.getResponse().setComplete();
         }
@@ -96,6 +96,7 @@ public class ListProductFilter implements GatewayFilter {
 
                     Demo.Money money = DoCurrencyConvert(request.build());
                     JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                    moneyJson.addProperty("units", Integer.valueOf(moneyJson.get("units").getAsString()));
                     productJson.add("priceUsd", moneyJson);
 
                     rst.add(productJson);
@@ -108,7 +109,7 @@ public class ListProductFilter implements GatewayFilter {
         }).map(f -> new Gson().toJson(f)).flatMap(responseBody -> {
             try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = objectMapper.writeValueAsBytes(responseBody.toString());
+                byte[] bytes = responseBody.toString().getBytes();
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
