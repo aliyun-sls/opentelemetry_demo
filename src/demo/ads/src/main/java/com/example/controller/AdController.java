@@ -27,7 +27,9 @@ import java.util.List;
 public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
-    private static final String ADS_FEATURE_FLAG = "adsFlag";
+    private static final String ADS_TABLE_FLAG = "adsTableNotExistFlag";
+    private static final String ADS_SQL_FLAG = "adsSqlComplexFlag";
+    private static final String ADS_INSERT_FLAG = "adsMassInsertFlag";
     @Autowired
     private AdService adService;
 
@@ -52,14 +54,31 @@ public class AdController {
         List ads = new ArrayList();
 //        String selectedScenario = scenarioSelector.selectScenario();
         final Client client = openFeatureAPI.getClient();
-        String selectedScenario = client.getStringValue(ADS_FEATURE_FLAG, "normal");
+        boolean tableFlag = client.getBooleanValue(ADS_TABLE_FLAG, false);
+        boolean sqlFlag = client.getBooleanValue(ADS_SQL_FLAG, false);
+        boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
         try {
-            scenarioHandler.handleScenario(selectedScenario);
+            if(tableFlag){
+                scenarioHandler.handleTableNotExist();
+            }
         } catch (Exception e) {
-            logger.error("Error handling scenario: {}, Headers: {}, Exception: ", selectedScenario, logRequestHeaders(request), e);
-            return ResponseEntity.status(500).body(e.getMessage());
+            logger.error("Error handling scenario: table not exist, Headers: {}, Exception: ", logRequestHeaders(request), e);
         }
-        logger.info("Selected scenario: {}, Headers: {}", selectedScenario, logRequestHeaders(request));
+        try {
+            if(sqlFlag){
+                scenarioHandler.handleSQLComplex();
+            }
+        } catch (Exception e) {
+            logger.error("Error handling scenario: sql complex, Headers: {}, Exception: ", logRequestHeaders(request), e);
+        }
+        try {
+            if(insertFlag){
+                scenarioHandler.handleMassInsert();
+            }
+        } catch (Exception e) {
+            logger.error("Error handling scenario: mass insert, Headers: {}, Exception: ", logRequestHeaders(request), e);
+        }
+        logger.info("Headers: {}", logRequestHeaders(request));
         return ResponseEntity.ok(ads);
     }
 
