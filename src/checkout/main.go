@@ -537,8 +537,8 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 	//defer span.End()
 
 	// Send message and handle response
-	//startTime := time.Now()
-	/*select {
+	/*startTime := time.Now()
+	select {
 	case cs.KafkaProducerClient.Input() <- &msg:
 		log.Infof("Message sent to Kafka: %v", msg)
 		select {
