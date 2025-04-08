@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -534,11 +533,11 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 	}
 
 	// Inject tracing info into message
-	span := createProducerSpan(ctx, &msg)
-	defer span.End()
+	//span := createProducerSpan(ctx, &msg)
+	//defer span.End()
 
 	// Send message and handle response
-	startTime := time.Now()
+	/*startTime := time.Now()
 	select {
 	case cs.KafkaProducerClient.Input() <- &msg:
 		log.Infof("Message sent to Kafka: %v", msg)
@@ -573,7 +572,7 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 		span.SetStatus(otelcodes.Error, "Failed to send: "+ctx.Err().Error())
 		log.Errorf("Failed to send message to Kafka within context deadline: %v", ctx.Err())
 		return
-	}
+	}*/
 
 	ffValue := cs.getIntFeatureFlag(ctx, "kafkaQueueProblems")
 	if ffValue > 0 {
