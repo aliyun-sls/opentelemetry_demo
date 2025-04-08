@@ -173,6 +173,7 @@ func PutProducts(c *gin.Context) {
 		}
 	}
 
+	util.MDB = nil
 	product := model.Product{}
 	if err := util.MDB.WithContext(ctx).Table("product").Create(&product).Error; err != nil {
 		return
@@ -197,7 +198,6 @@ func GetProductsDetail(c *gin.Context) {
 		ProductsIdType: getProductsDetailRequest.ProductsIdType,
 	}
 
-	util.MDB = nil
 	if collect.UserId != 0 {
 		err = util.MDB.WithContext(ctx).Model(&model.Collect{}).Where(collect).Find(collect).Error
 		if err != nil {
