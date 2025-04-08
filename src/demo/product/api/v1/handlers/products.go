@@ -3,18 +3,22 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"log"
 	"net/http"
 	"sls-mall-go/common/config"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/util"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -109,67 +113,61 @@ func ModifyProducts(c *gin.Context) {
 //}
 
 // PutProducts 保存
+var (
+	flagClient *openfeature.Client
+	once       sync.Once
+)
 
-func processProduct(ctx context.Context, client *openfeature.Client) error {
-	// 获取当前配置的 variant
-	delayVariant, err := client.StringValue(
-		ctx,
-		"productDelay",
-		"off", // 默认值
-		openfeature.EvaluationContext{},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to get feature flag value: %w", err)
-	}
-	fmt.Println(delayVariant)
-	// 根据 variant 确定延迟时间
-	var delay time.Duration
-	switch delayVariant {
-	case "10sec":
-		delay = 10 * time.Second
-	case "5sec":
-		delay = 5 * time.Second
-	case "off":
-		delay = 0
-	default:
-		delay = 0
-	}
-
-	// 应用延迟
-	if delay > 0 {
-		fmt.Printf("Applying product delay: %v\n", delay)
-		time.Sleep(delay)
-	} else {
-		fmt.Println("Product delay is disabled")
-	}
-
-	// 这里放置你的产品处理逻辑
-	fmt.Println("Processing product...")
-	// 模拟产品处理
-	time.Sleep(1 * time.Second)
-	fmt.Println("Product processing complete")
-
-	return nil
+func initFeatureFlag() {
+	once.Do(func() {
+		provider := flagd.NewProvider(
+			flagd.WithHost("flagd"),
+			flagd.WithPort(8013),
+		)
+		if err := openfeature.SetProvider(provider); err != nil {
+			log.Printf("设置provider失败: %v", err)
+			return
+		}
+		flagClient = openfeature.NewClient("product")
+	})
 }
 
 func PutProducts(c *gin.Context) {
-	/*openfeature.AddHooks(otelhooks.NewTracesHook())
-	err := openfeature.SetProvider(flagd.NewProvider(
-		flagd.WithHost("192.168.247.17"),
-		flagd.WithPort(8013)))
-	if err != nil {
-		log.Fatal(err)
+	// 初始化flag客户端(只执行一次)
+	initFeatureFlag()
+
+	// 获取feature flag值
+	details := flagClient.Int(
+		context.Background(),
+		"productDelay",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature : %v", details)
+	//if err != nil {
+	//	log.Printf("获取feature flag失败: %v", err)
+	//	c.JSON(http.StatusInternalServerError, gin.H{"error": "feature flag服务不可用"})
+	//	return
+	//}
+
+	// 解析延迟时间
+
+	// 应用延迟
+	if details > 0 {
+		time.Sleep(time.Duration(details) * time.Millisecond)
+		log.Println("延迟执行完成")
 	}
 
-	// 获取 productDelay flag 的值
-	client := openfeature.NewClient("product")
-	processProduct(context.Background(), client)*/
-
+	// 处理文件上传
 	image, err := c.FormFile("products_pic")
+	if err != nil && !errors.Is(err, http.ErrMissingFile) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "文件参数错误"})
+		return
+	}
+
 	if image != nil {
-		err = PushOSS(image, image.Filename)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image file"})
+		if err := PushOSS(image, image.Filename); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
 			return
 		}
 	}
