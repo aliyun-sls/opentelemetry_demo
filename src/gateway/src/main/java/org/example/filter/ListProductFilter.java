@@ -104,6 +104,7 @@ public class ListProductFilter implements GatewayFilter {
 
                 return Mono.just(rst);
             }catch (Exception e) {
+                log.info("ListProductFilter", e);
                 return Mono.error(e);
             }
         }).map(f -> new Gson().toJson(f)).flatMap(responseBody -> {
@@ -113,6 +114,7 @@ public class ListProductFilter implements GatewayFilter {
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
+                log.info("ListProductFilter", e);
                 return Mono.error(e);
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
