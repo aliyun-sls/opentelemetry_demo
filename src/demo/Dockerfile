@@ -6,6 +6,9 @@ COPY pom.xml .
 COPY ads/pom.xml ads/
 COPY ads/src ads/src/
 
+COPY ads-error/pom.xml ads-error/
+COPY ads-error/src ads-error/src/
+
 COPY marketing/pom.xml marketing/
 COPY marketing/src marketing/src/
 
