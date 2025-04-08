@@ -159,7 +159,7 @@ public class CartFilter implements GatewayFilter {
             }
         });
         JsonObject resObject = new JsonObject();
-        resObject.add("userId", objectMapper.convertValue(userId, JsonObject.class));
+        resObject.add("userId", objectMapper.convertValue(sessionId, JsonObject.class));
         resObject.add("items", objectMapper.convertValue(productList, JsonObject.class));
         sink.success(resObject);
     }
