@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -238,6 +239,11 @@ func httpCall(addr, path string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Error %q %q", err, addr+path)
+		return errors.New("status code " + strconv.Itoa(resp.StatusCode))
+	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
