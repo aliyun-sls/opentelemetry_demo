@@ -7,12 +7,19 @@ package oteldemo;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterables;
-import io.grpc.*;
+import dev.openfeature.contrib.providers.flagd.FlagdOptions;
+import dev.openfeature.contrib.providers.flagd.FlagdProvider;
+import dev.openfeature.sdk.Client;
+import dev.openfeature.sdk.MutableContext;
+import dev.openfeature.sdk.OpenFeatureAPI;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
-import io.grpc.protobuf.services.*;
+import io.grpc.protobuf.services.HealthStatusManager;
 import io.grpc.stub.StreamObserver;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -25,29 +32,19 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import oteldemo.Demo.Ad;
 import oteldemo.Demo.AdRequest;
 import oteldemo.Demo.AdResponse;
+import oteldemo.problempattern.CPULoad;
 import oteldemo.problempattern.DatabaseCaller;
 import oteldemo.problempattern.GarbageCollectionTrigger;
-import oteldemo.problempattern.CPULoad;
-import dev.openfeature.contrib.providers.flagd.FlagdOptions;
-import dev.openfeature.contrib.providers.flagd.FlagdProvider;
-import dev.openfeature.sdk.Client;
-import dev.openfeature.sdk.EvaluationContext;
-import dev.openfeature.sdk.MutableContext;
-import dev.openfeature.sdk.OpenFeatureAPI;
-import java.util.UUID;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.*;
 
 
 public final class AdService {
@@ -137,6 +134,7 @@ public final class AdService {
     private static final String AD_FAILURE = "adFailure";
     private static final String AD_MANUAL_GC_FEATURE_FLAG = "adManualGc";
     private static final String AD_HIGH_CPU_FEATURE_FLAG = "adHighCpu";
+    private static final String AD_EXECUTE_WITH_IGNORE_FLAG = "with_ignore_table_flag";
     private static final Client ffClient = OpenFeatureAPI.getInstance().getClient();
     
     private AdServiceImpl() {}
@@ -215,12 +213,12 @@ public final class AdService {
         }
 
         try {
-          DatabaseCaller.INSTANCE.execute(false);
-        } catch (SQLException e) {
-          throw new StatusRuntimeException(Status.INTERNAL);
-        }
+              DatabaseCaller.INSTANCE.execute(ffClient.getBooleanValue(AD_EXECUTE_WITH_IGNORE_FLAG, false));
+          } catch (SQLException e) {
+            throw new StatusRuntimeException(Status.INTERNAL);
+          }
 
-        AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
+          AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
         responseObserver.onNext(reply);
         responseObserver.onCompleted();
       } catch (StatusRuntimeException e) {
