@@ -272,15 +272,15 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
 	if err := httpCall(cs.marketingSvcAddr, "/listMarketing"); err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to list marketing")
 	}
 
 	if err := httpCall(cs.promotionSvcAddr, "/listPromotion"); err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to list promotion")
 	}
 
 	if err := httpCall(cs.notificationSvcAddr, "/listNotification"); err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to list notification")
 	}
 
 	span := trace.SpanFromContext(ctx)
