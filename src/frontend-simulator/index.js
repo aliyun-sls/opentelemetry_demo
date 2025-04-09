@@ -25,7 +25,7 @@ app.get("/heartbeat", function (request, response) {
 
 function run() {
   console.info(`Add task -------------`);
-  for (let index = 0; index < 3; index++) {
+  for (let index = 0; index < 6; index++) {
     scriptQueue.push({});
   }
 }
@@ -34,4 +34,4 @@ run();
 
 setInterval(() => {
   run();
-}, 200000);
+}, 150000);

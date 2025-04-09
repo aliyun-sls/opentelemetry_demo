@@ -18,12 +18,11 @@ async function visitProducts(page) {
     );
 //    await page.waitForNetworkIdle();
     await sleep(5);
-    const array = new Array(9);
-    let j = 0;
+    const array = new Array(3);
     for (let i of array) {
-      j += 1;
-      await page.click(`div[data-cy="product-list"] a:nth-of-type(${j})`);
-      await sleep(5);
+      const randomIndex = Math.floor(Math.random() * 10) + 1;
+      await page.click(`div[data-cy="product-list"] a:nth-of-type(${randomIndex})`);
+      await sleep(3);
       await page.goBack();
       await sleep(5);
     }
@@ -37,7 +36,7 @@ async function cartList(page) {
     await page.goto(
       `${FRONTEND_URL}/cart`
     );
-    await sleep(5);
+    await sleep(3);
   } catch (error) {
     console.error(`${new Date().toISOString()}:`, error);
   }
@@ -145,11 +144,12 @@ const runScript = async (callback) => {
 //        console.log('Response Status:', response.status());
 //    });
     await order(page);
-    await order(page);
+    await visitProducts(page);
     await order(page);
     await visitProducts(page);
     await cartList(page);
-    await sleep(10);
+    await order(page);
+    await sleep(3);
     await page.close();
     await browser.close();
     callback();
