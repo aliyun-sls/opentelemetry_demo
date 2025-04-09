@@ -34,6 +34,8 @@ public class MarketingController {
                 Thread.currentThread().interrupt();
             }
         }
+
+        List<MarketingEntity> marketingEntities = marketingService.listMarketingEntity();
         List<AdEntity> ads = adsService.listAds().block();
         return ResponseEntity.ok(ads);
     }

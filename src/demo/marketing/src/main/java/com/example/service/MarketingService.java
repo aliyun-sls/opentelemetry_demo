@@ -5,7 +5,7 @@ import com.example.entity.MarketingEntity;
 import java.util.List;
 
 public interface MarketingService {
-    List<MarketingEntity> listAds();
+    List<MarketingEntity> listMarketingEntity();
 
     MarketingEntity getAdById(Long id);
 }

@@ -18,11 +18,10 @@ public class MarketingServiceImpl implements MarketingService {
     private HighCPUExecutor highCPUExecutor;
 
     @Override
-    public List<MarketingEntity> listAds() {
+    public List<MarketingEntity> listMarketingEntity() {
         List<MarketingEntity> all = marketingRepository.findAll();
-
         highCPUExecutor.execute();
-        return Collections.emptyList();
+        return all;
     }
 
     @Override
