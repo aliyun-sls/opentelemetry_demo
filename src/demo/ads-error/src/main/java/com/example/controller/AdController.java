@@ -78,7 +78,7 @@ public class AdController {
         } catch (Exception e) {
             logger.error("Error handling scenario: mass insert, Headers: {}, Exception: ", logRequestHeaders(request), e);
         }
-        logger.info("Headers: {}", logRequestHeaders(request));
+        logger.info("Headers: {} tableFlag: {} sqlFlag: {} insertFlag: {}", logRequestHeaders(request), tableFlag, sqlFlag, insertFlag);
         return ResponseEntity.ok(ads);
     }
 
