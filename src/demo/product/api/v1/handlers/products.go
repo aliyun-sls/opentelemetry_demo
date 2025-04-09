@@ -175,7 +175,7 @@ func PutProducts(c *gin.Context) {
 	}
 
 	var User []User
-	if err := util.MDB.WithContext(ctx).Table("users").Limit(10).Find(&User).Error; err != nil {
+	if err := util.MDB.WithContext(ctx).Table("users").Limit(1).Find(&User).Error; err != nil {
 		util.Status500(c, err)
 		return
 	}

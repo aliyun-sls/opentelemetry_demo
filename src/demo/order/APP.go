@@ -16,13 +16,11 @@ import (
 type APP struct {
 }
 
-func (a *APP) GetApp01(w http.ResponseWriter, r *http.Request) {
+func (a *APP) Order(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("order"))
-	//urlCpu := "http://gocpu." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/cpu"
-	urlShelve := "http://product." + os.Getenv("NAMESPACE") + ".svc.cluster.local:8080/api/v1/products/put_products"
+	urlShelve := "http://product:8080/api/v1/products/put_products"
 
-	//cpu(urlCpu)
 	PutProducts(urlShelve)
 }
 
@@ -33,12 +31,12 @@ type User struct {
 
 func main() {
 	app := &APP{}
-	fmt.Println("开启监听。。。。。")
-	http.HandleFunc("/order", app.GetApp01)
 
-	// 将监听服务放在一个独立的goroutine中运行
-	http.ListenAndServe(":8080", nil)
-
+	http.HandleFunc("/order", app.Order)
+	log.Println("监听端口: 8080")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatalf("无法启动服务器: %v", err)
+	}
 }
 
 func cpu(urlCpu string) {
@@ -104,16 +102,6 @@ func PutProducts(urlShelve string) {
 	writer := multipart.NewWriter(body)
 
 	//创建文件表单字段
-	writer.WriteField("products_name", "Test Product")
-	writer.WriteField("products_price", "100")
-	writer.WriteField("products_unit", "1")
-	writer.WriteField("products_desc", "This is a test product")
-	writer.WriteField("products_category", "1")
-	writer.WriteField("products_status", "1")
-	writer.WriteField("seller_id", "1")
-	writer.WriteField("brand_id", "1")
-	writer.WriteField("inventory_name", "Test Inventory")
-	writer.WriteField("inventory_address", "Test Address")
 	writer.WriteField("inventory_num", "10")
 	part, err := writer.CreateFormFile("products_pic", filepath.Base(data.Name()))
 	if err != nil {

@@ -128,6 +128,7 @@ type checkout struct {
 	adsSvcAddr            string
 	marketingSvcAddr      string
 	notificationSvcAddr   string
+	orderSvcAddr          string
 	promotionSvcAddr      string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
@@ -267,6 +268,8 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	httpCall(cs.marketingSvcAddr, "/listMarketing")
 	httpCall(cs.promotionSvcAddr, "/listPromotion")
 	httpCall(cs.notificationSvcAddr, "/listNotification")
+	httpCall(cs.orderSvcAddr, "/order")
+
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
