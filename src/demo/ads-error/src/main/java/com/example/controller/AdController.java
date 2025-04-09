@@ -57,7 +57,7 @@ public class AdController {
         boolean tableFlag = client.getBooleanValue(ADS_TABLE_FLAG, false);
         boolean sqlFlag = client.getBooleanValue(ADS_SQL_FLAG, false);
         boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
-
+        logger.info("Headers: {} tableFlag: {} sqlFlag: {} insertFlag: {}", logRequestHeaders(request), tableFlag, sqlFlag, insertFlag);
         if (tableFlag) {
             scenarioHandler.handleTableNotExist();
         } else {
@@ -78,7 +78,6 @@ public class AdController {
         } catch (Exception e) {
             logger.error("Error handling scenario: mass insert, Headers: {}, Exception: ", logRequestHeaders(request), e);
         }
-        logger.info("Headers: {} tableFlag: {} sqlFlag: {} insertFlag: {}", logRequestHeaders(request), tableFlag, sqlFlag, insertFlag);
         return ResponseEntity.ok(ads);
     }
 
