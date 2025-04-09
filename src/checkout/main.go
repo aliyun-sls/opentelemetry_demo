@@ -235,19 +235,19 @@ func main() {
 func httpCall(addr, path string) error {
 	resp, err := http.Get("http://" + addr + path)
 	if err != nil {
-		log.Fatalf("Error %q %q", err, addr+path)
+		log.Warnf("Error %q %q", err, addr+path)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Error %q %q", err, addr+path)
+		log.Warnf("Error %q %q", err, addr+path)
 		return errors.New("status code " + strconv.Itoa(resp.StatusCode))
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error %q %q", err, addr+path)
+		log.Warnf("Error %q %q", err, addr+path)
 		return err
 	}
 	log.Infof("Response: %q", string(body))
