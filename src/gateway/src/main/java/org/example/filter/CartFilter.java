@@ -42,6 +42,7 @@ public class CartFilter implements GatewayFilter {
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .enableRetry() // 启用重试
+                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
         productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
@@ -49,6 +50,7 @@ public class CartFilter implements GatewayFilter {
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .enableRetry() // 启用重试
+                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
         currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
@@ -56,6 +58,7 @@ public class CartFilter implements GatewayFilter {
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .enableRetry() // 启用重试
+                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
     }
 
@@ -138,7 +141,7 @@ public class CartFilter implements GatewayFilter {
             Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
             getProductBuilder.setId(item.getProductId());
             Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
-            if (product!=null){
+            if (product != null) {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("productId", item.getProductId());
                 jsonObject.addProperty("quantity", item.getQuantity());
@@ -148,7 +151,7 @@ public class CartFilter implements GatewayFilter {
                 currencyRequest.setFrom(product.getPriceUsd());
                 currencyRequest.setToCode(currencyCode);
                 Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-                if (money!=null && money.getUnits()!=0){
+                if (money != null && money.getUnits() != 0) {
                     JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
                     moneyObj.addProperty("units", money.getUnits());
                     productObj.add("priceUsd", moneyObj);
