@@ -205,6 +205,7 @@ func main() {
 	mustMapEnv(&svc.marketingSvcAddr, "MARKETING_ADDR")
 	mustMapEnv(&svc.notificationSvcAddr, "NOTIFICATION_ADDR")
 	mustMapEnv(&svc.promotionSvcAddr, "PROMOTION_ADDR")
+	mustMapEnv(&svc.orderSvcAddr, "ORDER_ADDR")
 
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
