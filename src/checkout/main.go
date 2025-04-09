@@ -266,10 +266,18 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
-	httpCall(cs.marketingSvcAddr, "/listMarketing")
-	httpCall(cs.promotionSvcAddr, "/listPromotion")
-	httpCall(cs.notificationSvcAddr, "/listNotification")
-	httpCall(cs.orderSvcAddr, "/order")
+	if cs.marketingSvcAddr != "" {
+		httpCall(cs.marketingSvcAddr, "/listMarketing")
+	}
+	if cs.promotionSvcAddr != "" {
+		httpCall(cs.promotionSvcAddr, "/listPromotion")
+	}
+	if cs.notificationSvcAddr != "" {
+		httpCall(cs.notificationSvcAddr, "/listNotification")
+	}
+	if cs.orderSvcAddr != "" {
+		httpCall(cs.orderSvcAddr, "/order")
+	}
 
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
