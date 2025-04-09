@@ -10,10 +10,6 @@ import java.util.List;
 
 @Service
 public class AdsService {
-    @Bean
-    public WebClient webClient(WebClient.Builder webClientBuilder) {
-        return webClientBuilder.baseUrl("http://ads:8080").build();
-    }
 
     @Autowired
     private WebClient webClient;
