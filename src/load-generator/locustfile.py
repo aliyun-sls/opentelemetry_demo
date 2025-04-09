@@ -104,7 +104,7 @@ people_file = open('people.json')
 people = json.load(people_file)
 
 class WebsiteUser(HttpUser):
-    wait_time = between(1, 10)
+    wait_time = between(0.5, 1)
 
     @task(1)
     def index(self):
