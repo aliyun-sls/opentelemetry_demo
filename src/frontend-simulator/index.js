@@ -24,8 +24,9 @@ app.get("/heartbeat", function (request, response) {
 });
 
 function run() {
-  console.info(`Add task -------------`);
-  for (let index = 0; index < 6; index++) {
+  const taskCount = process.env.TASK_COUNT || 6; // 从环境变量中获取任务数量，默认值为6
+  console.info(`Add task ------------- Task count: ${taskCount}`);
+  for (let index = 0; index < taskCount; index++) {
     scriptQueue.push({});
   }
 }
