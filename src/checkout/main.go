@@ -130,6 +130,7 @@ type checkout struct {
 	marketingSvcAddr      string
 	notificationSvcAddr   string
 	promotionSvcAddr      string
+	orderSvcAddr          string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
 	KafkaProducerClient     sarama.AsyncProducer
@@ -205,6 +206,7 @@ func main() {
 	mustMapEnv(&svc.marketingSvcAddr, "MARKETING_ADDR")
 	mustMapEnv(&svc.notificationSvcAddr, "NOTIFICATION_ADDR")
 	mustMapEnv(&svc.promotionSvcAddr, "PROMOTION_ADDR")
+	mustMapEnv(&svc.orderSvcAddr, "ORDER_ADDR")
 
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
@@ -223,7 +225,7 @@ func main() {
 	}
 
 	var srv = grpc.NewServer(
-		//grpc.StatsHandler(otelgrpc.NewServerHandler()),
+	//grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
@@ -283,6 +285,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to list notification")
 	}
 
+	if err := httpCall(cs.notificationSvcAddr, "/order"); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list order")
+	}
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
