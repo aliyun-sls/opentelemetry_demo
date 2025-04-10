@@ -23,16 +23,8 @@ public class MarketingController {
     private AdsService adsService;
 
     @GetMapping("/listMarketing")
-    public ResponseEntity<List<AdEntity>> listMarketing() {
-        Random random = new Random();
-        if (random.nextDouble() < 0.1) {
-            try {
-                TimeUnit.SECONDS.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        List<AdEntity> ads = adsService.listAds().block();
+    public ResponseEntity<List> listMarketing() {
+        List ads = adsService.listAds().block();
         return ResponseEntity.ok(ads);
     }
 
