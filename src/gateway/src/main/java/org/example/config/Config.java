@@ -5,6 +5,8 @@ public class Config {
     public String productAddr;
     public String currencyAddr;
     public String cartAddr;
+    public String dataAddr;
+    public String recommendationAddr;
 
     public String getCheckoutAddr() {
         return checkoutAddr;
@@ -37,4 +39,21 @@ public class Config {
     public void setCartAddr(String cartAddr) {
         this.cartAddr = cartAddr;
     }
+
+    public String getDataAddr() {
+        return dataAddr;
+    }
+
+    public void setDataAddr(String dataAddr) {
+        this.dataAddr = dataAddr;
+    }
+
+    public String getRecommendationAddr() {
+        return recommendationAddr;
+    }
+
+    public void setRecommendationAddr(String recommendationAddr) {
+        this.recommendationAddr = recommendationAddr;
+    }
+
 }

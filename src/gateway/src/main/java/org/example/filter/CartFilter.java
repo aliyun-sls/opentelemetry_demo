@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class CartFilter implements GatewayFilter {
-    private static final Logger log = LoggerFactory.getLogger(GetProductFilter.class);
+    private static final Logger log = LoggerFactory.getLogger(CartFilter.class);
     public static ObjectMapper objectMapper = new ObjectMapper();
     private final ManagedChannel cartChannel;
     private final ManagedChannel productCatalogChannel;
