@@ -1,6 +1,7 @@
 package org.example.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -118,7 +119,7 @@ public class RecommendationFilter implements GatewayFilter {
                         productListObj.add(jsonObject);
                     }
                 }
-                sink.success(objectMapper.convertValue(productListObj, JsonObject.class));
+                sink.success(new Gson().toJsonTree(productListObj).getAsJsonObject());
             } catch (Exception e) {
                 log.error("Failed Recommendation", e);
                 sink.error(e);

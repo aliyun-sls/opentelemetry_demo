@@ -1,6 +1,7 @@
 package org.example.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -56,8 +57,7 @@ public class DataFilter implements GatewayFilter {
                     builder.addContextKeys(key);
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
-                JsonObject ads = objectMapper.convertValue(ad.getAdsList(), JsonObject.class);
-                sink.success(ads);
+                sink.success(new Gson().toJsonTree(ad.getAdsList()).getAsJsonObject());
             } catch (Exception e) {
                 log.error("Failed Data", e);
                 sink.error(e);

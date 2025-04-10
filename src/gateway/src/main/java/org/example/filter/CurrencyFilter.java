@@ -18,6 +18,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import oteldemo.Demo;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
@@ -50,8 +51,8 @@ public class CurrencyFilter implements GatewayFilter {
             try {
                 Demo.Empty.Builder builder = Demo.Empty.newBuilder();
                 Demo.GetSupportedCurrenciesResponse currencyCodes = DoGetSupportedCurrencies(builder.build());
-                JsonObject codeJson = new Gson().fromJson(JsonFormat.printer().print(currencyCodes), JsonObject.class);
-                sink.success(codeJson);
+                List<String> currencyList = currencyCodes.getCurrencyCodesList();
+                sink.success(new Gson().toJsonTree(currencyList).getAsJsonObject());
             } catch (Exception e) {
                 log.error("Failed Currency", e);
                 sink.error(e);
