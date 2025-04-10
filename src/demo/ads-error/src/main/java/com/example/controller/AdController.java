@@ -28,6 +28,7 @@ public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
     private static final String ADS_TABLE_FLAG = "adsTableNotExistFlag";
+    private static final String ADS_TABLE_NOT_EXIST_CALL_FLAG = "adsWithTableNotExistCall";
     private static final String ADS_SQL_FLAG = "adsSqlComplexFlag";
     private static final String ADS_INSERT_FLAG = "adsMassInsertFlag";
     @Autowired
@@ -57,12 +58,20 @@ public class AdController {
         boolean tableFlag = client.getBooleanValue(ADS_TABLE_FLAG, false);
         boolean sqlFlag = client.getBooleanValue(ADS_SQL_FLAG, false);
         boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
+        boolean tableNotExistCall = client.getBooleanValue(ADS_TABLE_NOT_EXIST_CALL_FLAG, false);
         logger.info("Headers: {} tableFlag: {} sqlFlag: {} insertFlag: {}", logRequestHeaders(request), tableFlag, sqlFlag, insertFlag);
         if (tableFlag) {
             scenarioHandler.handleTableNotExist();
         } else {
             scenarioHandler.handleNormal();
         }
+
+        if (tableNotExistCall) {
+            scenarioHandler.handleTableNotExist();
+        } else {
+            scenarioHandler.handleNormal();
+        }
+
 
         try {
             if(sqlFlag){

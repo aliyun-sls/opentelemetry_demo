@@ -30,6 +30,8 @@ public class AdController {
     private static final String ADS_TABLE_FLAG = "adsTableNotExistFlag";
     private static final String ADS_SQL_FLAG = "adsSqlComplexFlag";
     private static final String ADS_INSERT_FLAG = "adsMassInsertFlag";
+    private static final String ADS_TABLE_NOT_EXIST_CALL_FLAG = "adsWithTableNotExistCall";
+
     @Autowired
     private AdService adService;
 
@@ -56,8 +58,15 @@ public class AdController {
         final Client client = openFeatureAPI.getClient();
         boolean sqlFlag = client.getBooleanValue(ADS_SQL_FLAG, false);
         boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
+        boolean tableNotExistCall = client.getBooleanValue(ADS_TABLE_NOT_EXIST_CALL_FLAG, false);
 
         scenarioHandler.handleNormal();
+
+        if (tableNotExistCall) {
+            scenarioHandler.handleTableNotExist();
+        } else {
+            scenarioHandler.handleNormal();
+        }
         try {
             if(sqlFlag){
                 scenarioHandler.handleSQLComplex();
