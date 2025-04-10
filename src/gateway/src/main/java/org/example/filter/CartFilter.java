@@ -3,6 +3,7 @@ package org.example.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -145,14 +146,23 @@ public class CartFilter implements GatewayFilter {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("productId", item.getProductId());
                 jsonObject.addProperty("quantity", item.getQuantity());
-                JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
-
+                JsonObject productObj = null;
+                try {
+                    productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
+                } catch (InvalidProtocolBufferException e) {
+                    throw new RuntimeException(e);
+                }
                 Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
                 currencyRequest.setFrom(product.getPriceUsd());
                 currencyRequest.setToCode(currencyCode);
                 Demo.Money money = DoCurrencyConvert(currencyRequest.build());
                 if (money != null && money.getUnits() != 0) {
-                    JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
+                    JsonObject moneyObj = null;
+                    try {
+                        moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
                     moneyObj.addProperty("units", money.getUnits());
                     productObj.add("priceUsd", moneyObj);
                 }

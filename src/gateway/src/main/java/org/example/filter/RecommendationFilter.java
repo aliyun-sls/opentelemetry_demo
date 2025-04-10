@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -104,14 +105,13 @@ public class RecommendationFilter implements GatewayFilter {
                     if (product != null) {
                         JsonObject jsonObject = new JsonObject();
                         jsonObject.addProperty("productId", productId);
-                        JsonObject productObj = objectMapper.convertValue(product, JsonObject.class);
-
+                        JsonObject productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
                         Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
                         currencyRequest.setFrom(product.getPriceUsd());
                         currencyRequest.setToCode(currencyCode);
                         Demo.Money money = DoCurrencyConvert(currencyRequest.build());
                         if (money != null && money.getUnits() != 0) {
-                            JsonObject moneyObj = objectMapper.convertValue(money, JsonObject.class);
+                            JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
                             moneyObj.addProperty("units", money.getUnits());
                             productObj.add("priceUsd", moneyObj);
                         }

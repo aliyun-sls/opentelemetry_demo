@@ -20,6 +20,7 @@ import oteldemo.Demo;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 public class CurrencyFilter implements GatewayFilter {
@@ -52,8 +53,7 @@ public class CurrencyFilter implements GatewayFilter {
                 Demo.Empty.Builder builder = Demo.Empty.newBuilder();
                 Demo.GetSupportedCurrenciesResponse currencyCodes = DoGetSupportedCurrencies(builder.build());
                 List<String> currencyList = currencyCodes.getCurrencyCodesList();
-                String result = "[" + String.join(",", currencyList) + "]";
-                sink.success(result);
+                String result = "[" + currencyList.stream().map(code -> "\"" + code + "\"").collect(Collectors.joining(",")) + "]";                sink.success(result);
             } catch (Exception e) {
                 log.error("Failed Currency", e);
                 sink.error(e);
