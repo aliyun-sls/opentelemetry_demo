@@ -134,7 +134,8 @@ public final class AdService {
     private static final String AD_FAILURE = "adFailure";
     private static final String AD_MANUAL_GC_FEATURE_FLAG = "adManualGc";
     private static final String AD_HIGH_CPU_FEATURE_FLAG = "adHighCpu";
-    private static final String AD_EXECUTE_WITH_IGNORE_FLAG = "with_ignore_table_flag";
+    private static final String ADS_WITH_TABLE_NOT_EXIST = "adsWithTableNotExist";
+    private static final String ADS_WITH_TABLE_NOT_EXIST_CALL = "adsWithTableNotExistCall";
     private static final Client ffClient = OpenFeatureAPI.getInstance().getClient();
     
     private AdServiceImpl() {}
@@ -213,10 +214,16 @@ public final class AdService {
         }
 
         try {
-              DatabaseCaller.INSTANCE.execute(ffClient.getBooleanValue(AD_EXECUTE_WITH_IGNORE_FLAG, false));
+              DatabaseCaller.INSTANCE.execute(ffClient.getBooleanValue(ADS_WITH_TABLE_NOT_EXIST, false));
           } catch (SQLException e) {
             throw new StatusRuntimeException(Status.INTERNAL);
           }
+
+        try {
+          DatabaseCaller.INSTANCE.execute(ffClient.getBooleanValue(ADS_WITH_TABLE_NOT_EXIST_CALL, false));
+        } catch (SQLException e) {
+          throw new StatusRuntimeException(Status.INTERNAL);
+        }
 
           AdResponse reply = AdResponse.newBuilder().addAllAds(allAds).build();
         responseObserver.onNext(reply);
