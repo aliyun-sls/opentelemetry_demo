@@ -132,7 +132,7 @@ if __name__ == "__main__":
     api.add_hooks([TracingHook()])
 
     # # Initialize Traces and Metrics
-    # tracer = trace.get_tracer_provider().get_tracer(service_name)
+    tracer = trace.get_tracer_provider().get_tracer(service_name)
     # meter = metrics.get_meter_provider().get_meter(service_name)
     # rec_svc_metrics = init_metrics(meter)
     #
