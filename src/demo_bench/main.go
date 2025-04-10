@@ -71,7 +71,7 @@ func init() {
 		"recommendations": 5,
 		"ads":             5,
 		"view_cart":       5,
-		"add_to_cart":     5,
+		"add_to_cart":     2,
 		"checkout":        3,
 		"checkout_multi":  2,
 	}
@@ -87,11 +87,37 @@ func main() {
 	targeter := vegeta.NewStaticTargeter(generateTargets()...)
 	metrics := &vegeta.Metrics{}
 
+	reporter := vegeta.NewJSONReporter(metrics)
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				// 输出当前的指标
+				fmt.Println("Current Metrics:")
+				vegeta.NewTextReporter(metrics).Report(os.Stdout)
+			}
+		}
+	}()
+
 	for res := range attacker.Attack(targeter, vegeta.Rate{Freq: cfg.Rate, Per: time.Millisecond}, 0, "Load Test") {
 		metrics.Add(res)
+
+		if err := reporter.Report(os.Stdout); err != nil {
+			log.Fatalf("Error reporting results: %v", err)
+		}
 	}
+	done <- true
 	metrics.Close()
 
+	fmt.Println("Final Metrics:")
 	vegeta.NewTextReporter(metrics).Report(os.Stdout)
 }
 
