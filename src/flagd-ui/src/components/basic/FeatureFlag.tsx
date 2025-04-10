@@ -5,7 +5,7 @@ import React, { ChangeEvent, useCallback, useEffect } from "react";
 import { useState } from "react";
 import DefaultVariantSelect from "./DefaultVariantSelect";
 import { FlagConfig } from "@/utils/types";
-import { Tag } from "antd";
+import { Button, Tag, Typography } from "antd";
 
 type FeatureFlagProps = {
   flagId: string;
@@ -64,13 +64,15 @@ function FeatureFlag({ flagId, flagConfig, updateFlagData }: FeatureFlagProps) {
   return (
     <div className="mb-4 flex flex-auto flex-col justify-between rounded-md bg-gray-800 p-6 text-gray-300 shadow-md">
       <div>
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-semibold">{`${flagId}`}</div>
-          <div className="flex flex-wrap gap-0.5">
-            {flagConfig.tags && flagConfig.tags.map((tag) => (
-              <Tag key={tag} bordered={false} color={getColorOnText(tag)}>{tag}</Tag>
-            ))}
-          </div>
+        <div className="flex items-center justify-between">
+          <div className="mb-1 text-lg font-semibold">{`${flagId}`}</div>
+          <Typography.Text copyable={{ text: `${flagId}` }} />
+        </div>
+        <hr  className="mb-3 text-gray-600"/>
+        <div className="mb-2 flex flex-wrap gap-0.5">
+          {flagConfig.tags && flagConfig.tags.map((tag) => (
+            <Tag key={tag} bordered={false} color={getColorOnText(tag)}>{tag}</Tag>
+          ))}
         </div>
         <p className="mb-4 text-sm">{`${flagConfig.description}`}</p>
       </div>

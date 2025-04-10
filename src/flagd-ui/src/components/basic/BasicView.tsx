@@ -49,18 +49,13 @@ const BasicView = () => {
       const category = flagConfig.category;
       const config_tags = flagConfig.tags;
       if (selectedTags.length !== 0) {
-        let find = false;
         if (!config_tags) {
           return;
         }
-        for (const tag of config_tags) {
-          if (selectedTags.includes(tag)) {
-            find = true;
-            break;
+        for (const tag of selectedTags) {
+          if (!config_tags.includes(tag)) {
+            return;
           }
-        }
-        if (!find) {
-          return;
         }
       }
       if (categoryMaps.has(category)) {
