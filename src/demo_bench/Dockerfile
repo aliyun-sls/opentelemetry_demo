@@ -21,6 +21,6 @@ FROM alpine
 WORKDIR /usr/src/app/
 
 COPY --from=builder /go/bin/demo_bench/ ./
-COPY people.json ./
+COPY ./src/demo_bench/people.json ./
 
 ENTRYPOINT [ "./demo_bench" ]
