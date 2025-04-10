@@ -150,7 +150,7 @@ if __name__ == "__main__":
     # handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
 
     # Attach OTLP handler to logger
-    # logger = logging.getLogger('main')
+    logger = logging.getLogger('main')
     # logger.addHandler(handler)
 
     catalog_addr = must_map_env('PRODUCT_CATALOG_ADDR')
