@@ -49,7 +49,7 @@ spring:
           filters:
             - name: Data
               args:
-                cartAddr: ${AD_ADDR}
+                dataAddr: ${AD_ADDR}
         - id: recommendation
           uri: no://op
           predicates:
