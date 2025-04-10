@@ -19,10 +19,14 @@ import java.util.concurrent.TimeUnit;
 @Controller
 public class MarketingController {
 
+    private final MarketingService marketingService;
+    private final AdsService adsService;
+
     @Autowired
-    private MarketingService marketingService;
-    @Autowired
-    private AdsService adsService;
+    public MarketingController(MarketingService marketingService, AdsService adsService) {
+        this.marketingService = marketingService;
+        this.adsService = adsService;
+    }
 
     @GetMapping("/listMarketing")
     public ResponseEntity<List<AdEntity>> listMarketing() {
