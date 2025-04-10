@@ -105,6 +105,32 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "adsWithTableNotExistCall": {
+      "description": "ads with table not exist call",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "表不存在引起的错误率升高"
+      ],
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "adsWithTableNotExist": {
+      "description": "ads with table not exist",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "版本升级引起的表不存在导致服务方法错误率上升"
+      ],
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
     }
   }
 }
