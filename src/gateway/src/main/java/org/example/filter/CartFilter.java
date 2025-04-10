@@ -173,7 +173,7 @@ public class CartFilter implements GatewayFilter {
         });
         JsonObject resObject = new JsonObject();
         resObject.addProperty("userId", userId);
-        resObject.add("items", objectMapper.convertValue(productList, JsonObject.class));
+        resObject.add("items", new Gson().toJsonTree(productList));
         sink.success(resObject);
     }
 
