@@ -12,13 +12,13 @@ from concurrent import futures
 # Pip
 import grpc
 from opentelemetry import trace, metrics
-from opentelemetry._logs import set_logger_provider
-from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
-    OTLPLogExporter,
-)
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-from opentelemetry.sdk.resources import Resource
+# from opentelemetry._logs import set_logger_provider
+# from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+#     OTLPLogExporter,
+# )
+# from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+# from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+# from opentelemetry.sdk.resources import Resource
 
 from openfeature import api
 from openfeature.contrib.provider.flagd import FlagdProvider
@@ -32,9 +32,9 @@ import demo_pb2_grpc
 from grpc_health.v1 import health_pb2
 from grpc_health.v1 import health_pb2_grpc
 
-from metrics import (
-    init_metrics
-)
+# from metrics import (
+#     init_metrics
+# )
 
 cached_ids = []
 first_run = True
@@ -51,7 +51,7 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         response.product_ids.extend(prod_list)
 
         # Collect metrics for this service
-        rec_svc_metrics["app_recommendations_counter"].add(len(prod_list), {'recommendation.type': 'catalog'})
+        # rec_svc_metrics["app_recommendations_counter"].add(len(prod_list), {'recommendation.type': 'catalog'})
 
         return response
 
@@ -131,23 +131,23 @@ if __name__ == "__main__":
     api.set_provider(FlagdProvider(host=os.environ.get('FLAGD_HOST', 'flagd'), port=os.environ.get('FLAGD_PORT', 8013)))
     api.add_hooks([TracingHook()])
 
-    # Initialize Traces and Metrics
-    tracer = trace.get_tracer_provider().get_tracer(service_name)
-    meter = metrics.get_meter_provider().get_meter(service_name)
-    rec_svc_metrics = init_metrics(meter)
-
-    # Initialize Logs
-    logger_provider = LoggerProvider(
-        resource=Resource.create(
-            {
-                'service.name': service_name,
-            }
-        ),
-    )
-    set_logger_provider(logger_provider)
-    log_exporter = OTLPLogExporter(insecure=True)
-    logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
-    handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
+    # # Initialize Traces and Metrics
+    # tracer = trace.get_tracer_provider().get_tracer(service_name)
+    # meter = metrics.get_meter_provider().get_meter(service_name)
+    # rec_svc_metrics = init_metrics(meter)
+    #
+    # # Initialize Logs
+    # logger_provider = LoggerProvider(
+    #     resource=Resource.create(
+    #         {
+    #             'service.name': service_name,
+    #         }
+    #     ),
+    # )
+    # set_logger_provider(logger_provider)
+    # log_exporter = OTLPLogExporter(insecure=True)
+    # logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
+    # handler = LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider)
 
     # Attach OTLP handler to logger
     logger = logging.getLogger('main')
