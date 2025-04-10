@@ -47,12 +47,13 @@ public class CurrencyFilter implements GatewayFilter {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
 
-        return Mono.<JsonObject>create(sink -> {
+        return Mono.<String>create(sink -> {
             try {
                 Demo.Empty.Builder builder = Demo.Empty.newBuilder();
                 Demo.GetSupportedCurrenciesResponse currencyCodes = DoGetSupportedCurrencies(builder.build());
                 List<String> currencyList = currencyCodes.getCurrencyCodesList();
-                sink.success(new Gson().toJsonTree(currencyList).getAsJsonObject());
+                String result = "[" + String.join(",", currencyList) + "]";
+                sink.success(result);
             } catch (Exception e) {
                 log.error("Failed Currency", e);
                 sink.error(e);
@@ -60,7 +61,7 @@ public class CurrencyFilter implements GatewayFilter {
         }).flatMap(responseBody -> {
             try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = responseBody.toString().getBytes();
+                byte[] bytes = responseBody.getBytes();
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {

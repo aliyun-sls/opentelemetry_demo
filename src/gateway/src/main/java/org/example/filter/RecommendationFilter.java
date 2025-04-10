@@ -2,6 +2,7 @@ package org.example.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -83,7 +84,7 @@ public class RecommendationFilter implements GatewayFilter {
         String currencyCode = queryParams.getFirst("currencyCode");
         log.info("handleGetRequest sessionId: {} currencyCode: {} productIds:{}", sessionId, currencyCode, productIds);
 
-        return Mono.<JsonObject>create(sink -> {
+        return Mono.<JsonArray>create(sink -> {
             try {
                 Demo.ListRecommendationsRequest.Builder listRecommendationsBuilder = Demo.ListRecommendationsRequest.newBuilder();
                 listRecommendationsBuilder.setUserId(sessionId);
@@ -119,7 +120,7 @@ public class RecommendationFilter implements GatewayFilter {
                         productListObj.add(jsonObject);
                     }
                 }
-                sink.success(new Gson().toJsonTree(productListObj).getAsJsonObject());
+                sink.success(new Gson().toJsonTree(productListObj).getAsJsonArray());
             } catch (Exception e) {
                 log.error("Failed Recommendation", e);
                 sink.error(e);

@@ -2,7 +2,7 @@ package org.example.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -50,14 +50,14 @@ public class DataFilter implements GatewayFilter {
         contextKeys = contextKeys.replaceAll("\\[", "");
         contextKeys = contextKeys.replaceAll("]", "");
         String[] keys = contextKeys.split(",");
-        return Mono.<JsonObject>create(sink -> {
+        return Mono.<JsonArray>create(sink -> {
             try {
                 Demo.AdRequest.Builder builder = Demo.AdRequest.newBuilder();
                 for (String key : keys) {
                     builder.addContextKeys(key);
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
-                sink.success(new Gson().toJsonTree(ad.getAdsList()).getAsJsonObject());
+                sink.success(new Gson().toJsonTree(ad.getAdsList()).getAsJsonArray());
             } catch (Exception e) {
                 log.error("Failed Data", e);
                 sink.error(e);
