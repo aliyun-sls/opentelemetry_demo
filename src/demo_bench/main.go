@@ -63,7 +63,7 @@ func getEnvStr(key string, defaultValue string) string {
 func init() {
 	flag.StringVar(&cfg.TargetURL, "target", getEnvStr("REQUEST_URL", "http://gateway:8085"), "Target base URL")
 	flag.IntVar(&cfg.Rate, "rate", getEnvI("REQUEST_RATE", 1000), "Requests per ms")
-	flag.IntVar(&cfg.Workers, "workers", getEnvI("REQUEST_WORKER_NUM", 10), "Number of workers")
+	flag.IntVar(&cfg.Workers, "workers", getEnvI("REQUEST_WORKER_NUM", 1), "Number of workers")
 
 	cfg.ProbabilityTable = map[string]int{
 		"index":           1,
@@ -89,7 +89,7 @@ func main() {
 
 	reporter := vegeta.NewJSONReporter(metrics)
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	done := make(chan bool)
