@@ -156,6 +156,20 @@
         "off": 0
       },
       "defaultVariant": "off"
+    },
+    "marketingHighCpuCostLoopCountFlag": {
+      "description": "高CPU消耗循环次数。high cpu cost loop count",
+      "category": "广告服务相关",
+      "tags": [
+        "应用层异常",
+        "埋点稀疏导致无法排障"
+      ],
+      "state": "ENABLED",
+      "variants": {
+        "on": 1000,
+        "off": 0
+      },
+      "defaultVariant": "off"
     }
   }
 }
