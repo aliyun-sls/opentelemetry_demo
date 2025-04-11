@@ -62,7 +62,6 @@ public class DataFilter implements GatewayFilter {
                     }
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
-                JsonFormat.Printer jsonPrinter = JsonFormat.printer();
                 JsonArray jsonArray = new JsonArray();
                 for (Demo.Ad adItem : ad.getAdsList()) {
                     JsonObject jsonObject = new JsonObject();
