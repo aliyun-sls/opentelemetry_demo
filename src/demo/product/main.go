@@ -10,7 +10,8 @@ import (
 func main() {
 	util.InitInTimeZone()
 	util.InitDB()
-	err := util.MDB.AutoMigrate(model.Product{})
+	// 修改为使用指针传递模型，并确保模型字段类型正确
+	err := util.MDB.AutoMigrate(&model.Product{})
 	util.Chk(err)
 	//err := util.MDB.AutoMigrate(&model.Product{})
 	//util.Chk(err)
@@ -23,7 +24,6 @@ func main() {
 	/*r := util.InitGin()*/
 	r := gin.Default()
 	apiv1.Routers(r)
-	//err := r.Run(":" + config.ServicePort)
 	err = r.Run(":8080")
 	util.Chk(err)
 
