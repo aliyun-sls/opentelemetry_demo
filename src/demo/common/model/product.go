@@ -16,11 +16,11 @@ type Trouble struct {
 
 // Product 商品
 type Product struct {
-	ID            uint   `json:"id" gorm:"primaryKey"`
-	ProductsName  string `json:"products_name"`
-	ProductsPrice string `json:"products_price" form:"products_price"` // 将 Price 字段类型从 float64 改为 int
-	ProductsCate  string `json:"products_cate" gorm:"index:ProductsCateIndex;comment:'商品类别'"`
-	ProductBasicType
+	ID              uint             `json:"id" gorm:"primaryKey"`
+	ProductsName    string           `json:"products_name"`
+	ProductsPrice   string           `json:"products_price" form:"products_price"`
+	ProductsCate    string           `json:"products_cate" gorm:"index:ProductsCateIndex;comment:'商品类别'"`
+	ProductsPic     string           `json:"products_pic" form:"products_pic" `
 	ProductsDesc    string           `json:"products_desc" form:"products_desc" gorm:"size:1000;not null;default:'';comment:'商品简介'"`
 	BrandId         string           `json:"brand_id" form:"brand_id" gorm:"not null;default:0;comment:'品牌ID'"`
 	SellerId        string           `json:"seller_id" form:"seller_id" gorm:"not null;default:0;comment:'商家ID'"`
@@ -33,7 +33,7 @@ type ProductsIdType struct {
 	ProductsId uint `json:"products_id" form:"products_id" gorm:"not null;index:ProductsIdIdx;comment:'商品ID'"`
 }
 
-type ProductBasicType struct {
+type ProductUpload struct {
 	ProductsName string                `json:"products_name" from:"products_name" gorm:"size:200;not null;default:'';index:ProductsNameIndex;comment:'商品名称'"`
 	ProductsUnit int                   `json:"products_unit" gorm:"size:10;not null;default:0;comment:'商品单位'"`
 	UnitPrice    float64               `json:"unit_price" gorm:"decimal(10,2);not null;default:0;comment:'商品单价'"`
