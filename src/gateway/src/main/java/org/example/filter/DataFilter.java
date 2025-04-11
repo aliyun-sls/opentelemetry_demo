@@ -47,6 +47,7 @@ public class DataFilter implements GatewayFilter {
         log.info("Filtering request {}", exchange.getRequest().getPath());
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
         String contextKeys = queryParams.getFirst("contextKeys");
+        contextKeys=contextKeys==null?"":contextKeys;
         contextKeys = contextKeys.replaceAll("\\[", "");
         contextKeys = contextKeys.replaceAll("]", "");
         String[] keys = contextKeys.split(",");
@@ -54,7 +55,9 @@ public class DataFilter implements GatewayFilter {
             try {
                 Demo.AdRequest.Builder builder = Demo.AdRequest.newBuilder();
                 for (String key : keys) {
-                    builder.addContextKeys(key);
+                    if (!key.isEmpty()) {
+                        builder.addContextKeys(key);
+                    }
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
                 sink.success(new Gson().toJsonTree(ad.getAdsList()).getAsJsonArray());

@@ -132,6 +132,9 @@ public class CartFilter implements GatewayFilter {
         String sessionId = queryParams.getFirst("sessionId");
         String currencyCode = queryParams.getFirst("currencyCode");
         log.info("handleGetRequest sessionId: {} currencyCode: {}", sessionId, currencyCode);
+        if (sessionId == null){
+            return;
+        }
         Demo.GetCartRequest.Builder builder = Demo.GetCartRequest.newBuilder();
         builder.setUserId(sessionId);
         Demo.Cart cart = DoGetCart(builder.build());
@@ -146,29 +149,25 @@ public class CartFilter implements GatewayFilter {
                 JsonObject jsonObject = new JsonObject();
                 jsonObject.addProperty("productId", item.getProductId());
                 jsonObject.addProperty("quantity", item.getQuantity());
-                JsonObject productObj = null;
+                JsonObject productObj;
                 try {
                     productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
+                    if (currencyCode!=null){
+                        Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
+                        currencyRequest.setFrom(product.getPriceUsd());
+                        currencyRequest.setToCode(currencyCode);
+                        Demo.Money money = DoCurrencyConvert(currencyRequest.build());
+                        if (money != null && money.getUnits() != 0) {
+                            JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                            moneyObj.addProperty("units", money.getUnits());
+                            productObj.add("priceUsd", moneyObj);
+                        }
+                    }
+                    jsonObject.add("product", productObj);
+                    productList.add(jsonObject);
                 } catch (InvalidProtocolBufferException e) {
                     throw new RuntimeException(e);
                 }
-                Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
-                currencyRequest.setFrom(product.getPriceUsd());
-                currencyRequest.setToCode(currencyCode);
-                Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-                if (money != null && money.getUnits() != 0) {
-                    JsonObject moneyObj = null;
-                    try {
-                        moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-                    } catch (InvalidProtocolBufferException e) {
-                        throw new RuntimeException(e);
-                    }
-                    moneyObj.addProperty("units", money.getUnits());
-                    productObj.add("priceUsd", moneyObj);
-                }
-
-                jsonObject.add("product", productObj);
-                productList.add(jsonObject);
             }
         });
         JsonObject resObject = new JsonObject();

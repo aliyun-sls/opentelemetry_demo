@@ -84,15 +84,18 @@ public class RecommendationFilter implements GatewayFilter {
         String sessionId = queryParams.getFirst("sessionId");
         String currencyCode = queryParams.getFirst("currencyCode");
         log.info("handleGetRequest sessionId: {} currencyCode: {} productIds:{}", sessionId, currencyCode, productIds);
-
         return Mono.<JsonArray>create(sink -> {
             try {
                 Demo.ListRecommendationsRequest.Builder listRecommendationsBuilder = Demo.ListRecommendationsRequest.newBuilder();
-                listRecommendationsBuilder.setUserId(sessionId);
+                if(sessionId != null){
+                    listRecommendationsBuilder.setUserId(sessionId);
+                }
                 if (productIds != null) {
                     String[] ids = productIds.split(",");
                     for (String id : ids) {
-                        listRecommendationsBuilder.addProductIds(id);
+                        if (!id.isEmpty()) {
+                            listRecommendationsBuilder.addProductIds(id);
+                        }
                     }
                 }
                 Demo.ListRecommendationsResponse recommendationsResponse = DoListRecommendations(listRecommendationsBuilder.build());
@@ -106,16 +109,17 @@ public class RecommendationFilter implements GatewayFilter {
                         JsonObject jsonObject = new JsonObject();
                         jsonObject.addProperty("productId", productId);
                         JsonObject productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
-                        Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
-                        currencyRequest.setFrom(product.getPriceUsd());
-                        currencyRequest.setToCode(currencyCode);
-                        Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-                        if (money != null && money.getUnits() != 0) {
-                            JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-                            moneyObj.addProperty("units", money.getUnits());
-                            productObj.add("priceUsd", moneyObj);
+                        if (currencyCode!=null){
+                            Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
+                            currencyRequest.setFrom(product.getPriceUsd());
+                            currencyRequest.setToCode(currencyCode);
+                            Demo.Money money = DoCurrencyConvert(currencyRequest.build());
+                            if (money != null && money.getUnits() != 0) {
+                                JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                                moneyObj.addProperty("units", money.getUnits());
+                                productObj.add("priceUsd", moneyObj);
+                            }
                         }
-
                         jsonObject.add("product", productObj);
                         productListObj.add(jsonObject);
                     }
