@@ -107,17 +107,18 @@ public class RecommendationFilter implements GatewayFilter {
                     Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
                     if (product != null) {
                         JsonObject productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
-//                        if (currencyCode!=null){
-//                            Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
-//                            currencyRequest.setFrom(product.getPriceUsd());
-//                            currencyRequest.setToCode(currencyCode);
-//                            Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-//                            if (money != null && money.getUnits() != 0) {
-//                                JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-//                                moneyObj.addProperty("units", money.getUnits());
-//                                productObj.add("priceUsd", moneyObj);
-//                            }
-//                        }
+                        if (currencyCode!=null){
+                            Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
+                            currencyRequest.setFrom(product.getPriceUsd());
+                            currencyRequest.setToCode(currencyCode);
+                            Demo.Money money = DoCurrencyConvert(currencyRequest.build());
+                            if (money != null && money.getUnits() != 0) {
+                                JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                                moneyObj.addProperty("units", money.getUnits());
+                                moneyObj.addProperty("nanos", money.getNanos());
+                                productObj.add("priceUsd", moneyObj);
+                            }
+                        }
                         productList.add(productObj);
                     }
                 }
