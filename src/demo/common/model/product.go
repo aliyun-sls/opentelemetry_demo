@@ -19,12 +19,12 @@ type Product struct {
 	ID              uint             `json:"id" gorm:"primaryKey"`
 	ProductsName    string           `json:"products_name"`
 	ProductsPrice   string           `json:"products_price" form:"products_price"`
-	ProductsCate    string           `json:"products_cate"`
+	ProductsCate    string           `json:"products_cate" form:"products_cate"`
 	ProductsPic     string           `json:"products_pic" form:"products_pic" `
 	ProductsDesc    string           `json:"products_desc" form:"products_desc" gorm:"size:1000;not null;default:'';comment:'商品简介'"`
 	BrandId         string           `json:"brand_id" form:"brand_id" gorm:"not null;default:0;comment:'品牌ID'"`
 	SellerId        string           `json:"seller_id" form:"seller_id" gorm:"not null;default:0;comment:'商家ID'"`
-	ProductsStatus  ProductsStatus   `json:"products_status" gorm:"size:10;index;not null;default:0;comment:'商品状态'"`
+	ProductsStatus  ProductsStatus   `json:"products_status" form:"products_status" gorm:"size:10;index;not null;default:0;comment:'商品状态'"`
 	Inventory       *Inventory       `json:"inventory,omitempty" gorm:"foreignKey:ProductsId;"`
 	ProductCategory *ProductCategory `json:"product_category,omitempty" gorm:"foreignKey:ProductsCate;"`
 }
