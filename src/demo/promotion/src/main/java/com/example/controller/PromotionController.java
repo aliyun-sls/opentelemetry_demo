@@ -28,14 +28,6 @@ public class PromotionController {
 
     @GetMapping("/listPromotion")
     public ResponseEntity<List> listPromotion() {
-//        Random random = new Random();
-//        if (random.nextDouble() < 0.1) {
-//            try {
-//                TimeUnit.SECONDS.sleep(10);
-//            } catch (InterruptedException e) {
-//                Thread.currentThread().interrupt();
-//            }
-//        }
         List ads = adsService.listAds().block();
         return ResponseEntity.ok(ads);
     }
