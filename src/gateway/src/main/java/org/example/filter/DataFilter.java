@@ -61,8 +61,7 @@ public class DataFilter implements GatewayFilter {
                     }
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
-                JsonFormat.Printer jsonPrinter = JsonFormat.printer();
-                String json = jsonPrinter.print(ad);
+                String json = new Gson().toJson(ad.getAdsList());
                 sink.success(json);
             } catch (Exception e) {
                 log.error("Failed Data", e);
