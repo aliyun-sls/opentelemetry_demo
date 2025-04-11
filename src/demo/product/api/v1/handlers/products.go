@@ -179,6 +179,23 @@ func PutProducts(c *gin.Context) {
 		ProductsCate = model.Clothing
 	}
 
+	// 检查 product_categories 表中是否存在对应的 product_category_id
+	var existingCategory model.ProductCategory
+	err = util.MDB.WithContext(ctx).Where("product_category_id = ?", ProductsCate).First(&existingCategory).Error
+	if err != nil {
+		// 如果不存在，则插入新的记录
+		existingCategory = model.ProductCategory{
+			ProductCategoryId: ProductsCate,
+			Name:              "服装",
+			Description:       "",
+			Status:            0,
+		}
+		if err := util.MDB.WithContext(ctx).Create(&existingCategory).Error; err != nil {
+			util.Status500(c, err)
+			return
+		}
+	}
+
 	products = model.Product{
 		ID:           0,
 		ProductsPic:  image.Filename,
