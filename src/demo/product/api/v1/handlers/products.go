@@ -180,9 +180,15 @@ func PutProducts(c *gin.Context) {
 	}
 
 	products = model.Product{
-		ID:             0,
-		ProductsPic:    image.Filename,
-		ProductsCate:   ProductsCate,
+		ID:           0,
+		ProductsPic:  image.Filename,
+		ProductsCate: &ProductsCate,
+		ProductCategory: &model.ProductCategory{
+			ProductCategoryId: ProductsCate,
+			Name:              "服装",
+			Description:       "",
+			Status:            0,
+		},
 		BrandId:        c.Request.FormValue("brand_id"),
 		SellerId:       c.Request.FormValue("seller_id"),
 		ProductsStatus: ProductsStatus,

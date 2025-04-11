@@ -21,7 +21,7 @@ type Product struct {
 	ID              uint             `json:"id" gorm:"primaryKey"`
 	ProductsName    string           `json:"products_name"`
 	ProductsPrice   string           `json:"products_price" form:"products_price"`
-	ProductsCate    Category         `json:"products_cate" form:"products_cate"`
+	ProductsCate    *Category        `json:"products_cate" form:"products_cate"`
 	ProductsPic     string           `json:"products_pic" form:"products_pic" `
 	ProductsDesc    string           `json:"products_desc" form:"products_desc" gorm:"size:1000;not null;default:'';comment:'商品简介'"`
 	BrandId         string           `json:"brand_id" form:"brand_id" gorm:"not null;default:0;comment:'品牌ID'"`
