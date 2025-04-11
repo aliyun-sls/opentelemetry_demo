@@ -3,6 +3,7 @@ package org.example.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -51,7 +52,7 @@ public class DataFilter implements GatewayFilter {
         contextKeys = contextKeys.replaceAll("\\[", "");
         contextKeys = contextKeys.replaceAll("]", "");
         String[] keys = contextKeys.split(",");
-        return Mono.<JsonArray>create(sink -> {
+        return Mono.<String>create(sink -> {
             try {
                 Demo.AdRequest.Builder builder = Demo.AdRequest.newBuilder();
                 for (String key : keys) {
@@ -60,7 +61,9 @@ public class DataFilter implements GatewayFilter {
                     }
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
-                sink.success(new Gson().toJsonTree(ad.getAdsList()).getAsJsonArray());
+                JsonFormat.Printer jsonPrinter = JsonFormat.printer();
+                String json = jsonPrinter.print(ad);
+                sink.success(json);
             } catch (Exception e) {
                 log.error("Failed Data", e);
                 sink.error(e);
@@ -68,7 +71,7 @@ public class DataFilter implements GatewayFilter {
         }).flatMap(responseBody -> {
             try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = responseBody.toString().getBytes();
+                byte[] bytes = responseBody.getBytes();
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
