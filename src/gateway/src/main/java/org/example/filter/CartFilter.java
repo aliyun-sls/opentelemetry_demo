@@ -192,56 +192,13 @@ public class CartFilter implements GatewayFilter {
                 Demo.AddItemRequest.Builder requestBuilder = Demo.AddItemRequest.newBuilder();
                 JsonFormat.parser().ignoringUnknownFields().merge(json.toString(), requestBuilder);
 
-
-                return Mono.<JsonObject>create(sink -> {
+                return Mono.<JsonArray>create(sink -> {
                     Demo.Empty addItemResponse = DoAddCartItem(requestBuilder.build());
                     log.info("AddItem response: {}", addItemResponse);
-
-                    String currencyCode = queryParams.getFirst("currencyCode");
-                    log.info("handleGetRequest sessionId: {} currencyCode: {}", sessionId, currencyCode);
-                    if (sessionId == null){
-                        return;
-                    }
-                    Demo.GetCartRequest.Builder builder = Demo.GetCartRequest.newBuilder();
-                    builder.setUserId(sessionId);
-                    Demo.Cart cart = DoGetCart(builder.build());
-                    String userId = cart.getUserId();
-                    log.info("handleGetRequest userId: {} cart: {}", userId, cart);
-                    List<JsonObject> productList = new ArrayList<>();
-                    cart.getItemsList().forEach(item -> {
-                        Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
-                        getProductBuilder.setId(item.getProductId());
-                        Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
-                        if (product != null) {
-                            JsonObject jsonObject = new JsonObject();
-                            jsonObject.addProperty("productId", item.getProductId());
-                            jsonObject.addProperty("quantity", item.getQuantity());
-                            JsonObject productObj;
-                            try {
-                                productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
-                                if (currencyCode!=null){
-                                    Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
-                                    currencyRequest.setFrom(product.getPriceUsd());
-                                    currencyRequest.setToCode(currencyCode);
-                                    Demo.Money money = DoCurrencyConvert(currencyRequest.build());
-                                    if (money != null && money.getUnits() != 0) {
-                                        JsonObject moneyObj = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-                                        moneyObj.addProperty("units", money.getUnits());
-                                        productObj.add("priceUsd", moneyObj);
-                                    }
-                                }
-                                jsonObject.add("product", productObj);
-                                productList.add(jsonObject);
-                            } catch (InvalidProtocolBufferException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    });
-                    JsonObject resObject = new JsonObject();
-                    resObject.addProperty("userId", userId);
-                    resObject.add("items", new Gson().toJsonTree(productList));
-                    sink.success(resObject);
-
+                    Demo.GetCartRequest.Builder getCartBuilder = Demo.GetCartRequest.newBuilder();
+                    getCartBuilder.setUserId(sessionId);
+                    Demo.Cart cart = DoGetCart(getCartBuilder.build());
+                    sink.success(new Gson().toJsonTree(cart).getAsJsonArray());
                 });
             } catch (IOException e) {
                 return Mono.error(e);
