@@ -1,8 +1,11 @@
 package org.example.filter;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,6 +29,7 @@ import oteldemo.CartServiceGrpc;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -92,15 +97,16 @@ public class CartFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
-
+        if (exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
+            return handlePostRequest(exchange, chain);
+        }
+        if (exchange.getRequest().getMethod().equals(HttpMethod.DELETE)) {
+            return handleDeleteRequest(exchange, chain);
+        }
         return Mono.<JsonObject>create(sink -> {
             try {
                 if (exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
                     handleGetRequest(exchange, sink);
-                } else if (exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
-                    handlePostRequest(exchange, sink, chain);
-                } else if (exchange.getRequest().getMethod().equals(HttpMethod.DELETE)) {
-                    handleDeleteRequest(exchange, sink, chain);
                 } else {
                     throw new ResponseStatusException(HttpStatus.METHOD_NOT_ALLOWED, "Unsupported HTTP method");
                 }
@@ -176,71 +182,84 @@ public class CartFilter implements GatewayFilter {
         sink.success(resObject);
     }
 
-    private void handlePostRequest(ServerWebExchange exchange, MonoSink<JsonObject> sink, GatewayFilterChain chain) {
-        exchange.getRequest().getBody()
-                .collectList()
-                .flatMap(dataBuffers -> {
-                    StringBuilder bodyBuilder = new StringBuilder();
-                    dataBuffers.forEach(dataBuffer -> {
-                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                        dataBuffer.read(bytes);
-                        bodyBuilder.append(new String(bytes));
-                    });
-                    String body = bodyBuilder.toString();
-                    try {
-                        JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
-                        String userId = jsonObject.get("userId").getAsString();
-                        JsonObject itemJson = jsonObject.getAsJsonObject("item");
-                        Demo.CartItem.Builder cartItemBuilder = Demo.CartItem.newBuilder();
-                        JsonFormat.parser().merge(itemJson.toString(), cartItemBuilder);
+    private Mono<Void> handlePostRequest(ServerWebExchange exchange, GatewayFilterChain chain) {
+        return DataBufferUtils.join(exchange.getRequest().getBody()).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body cannot be empty"))).flatMap(dataBuffer -> {
+            try {
+                MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
+                String sessionId = queryParams.getFirst("sessionId");
 
-                        Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
-                        builder.setUserId(userId);
-                        builder.setItem(cartItemBuilder.build());
-                        Demo.Empty addItemResponse = DoAddCartItem(builder.build());
-                        log.info("AddItem response: {}", addItemResponse);
+                JsonNode json = objectMapper.readTree(dataBuffer.asInputStream());
+                Demo.AddItemRequest.Builder requestBuilder = Demo.AddItemRequest.newBuilder();
+                JsonFormat.parser().ignoringUnknownFields().merge(json.toString(), requestBuilder);
 
+
+                return Mono.<JsonArray>create(sink -> {
+                    Demo.Empty addItemResponse = DoAddCartItem(requestBuilder.build());
+                    log.info("AddItem response: {}", addItemResponse);
+                    if (sessionId!=null){
                         Demo.GetCartRequest.Builder getCartBuilder = Demo.GetCartRequest.newBuilder();
-                        builder.setUserId(userId);
+                        getCartBuilder.setUserId(sessionId);
                         Demo.Cart cart = DoGetCart(getCartBuilder.build());
-                        JsonObject cartObj = objectMapper.convertValue(cart, JsonObject.class);
-                        sink.success(cartObj);
-                        return chain.filter(exchange);
-                    } catch (Exception e) {
-                        log.error("Failed to parse request body", e);
-                        sink.error(e);
-                        return Mono.error(e);
+                        sink.success(new Gson().toJsonTree(cart).getAsJsonArray());
                     }
                 });
+            } catch (IOException e) {
+                return Mono.error(e);
+            }
+        }).flatMap(responseBody -> {
+            try {
+                exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                byte[] bytes = objectMapper.writeValueAsBytes(responseBody.toString());
+                DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
+                return exchange.getResponse().writeWith(Mono.just(buffer));
+            } catch (Exception e) {
+                return Mono.error(e);
+            }
+        }).onErrorResume(ResponseStatusException.class, e -> {
+            exchange.getResponse().setStatusCode(e.getStatusCode());
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            String errorJson = String.format("{\"error\":\"%s\"}", e.getReason());
+            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(errorJson.getBytes());
+            return exchange.getResponse().writeWith(Mono.just(buffer));
+        }).then(chain.filter(exchange));
     }
 
-    private void handleDeleteRequest(ServerWebExchange exchange, MonoSink<JsonObject> sink, GatewayFilterChain chain) {
-        exchange.getRequest().getBody()
-                .collectList()
-                .flatMap(dataBuffers -> {
-                    StringBuilder bodyBuilder = new StringBuilder();
-                    dataBuffers.forEach(dataBuffer -> {
-                        byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                        dataBuffer.read(bytes);
-                        bodyBuilder.append(new String(bytes));
-                    });
-                    String body = bodyBuilder.toString();
-                    try {
-                        JsonObject jsonObject = new Gson().fromJson(body, JsonObject.class);
-                        String userId = jsonObject.get("userId").getAsString();
-                        Demo.EmptyCartRequest.Builder builder = Demo.EmptyCartRequest.newBuilder();
-                        builder.setUserId(userId);
+    private Mono<Void> handleDeleteRequest(ServerWebExchange exchange, GatewayFilterChain chain) {
+        return DataBufferUtils.join(exchange.getRequest().getBody()).switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body cannot be empty"))).flatMap(dataBuffer -> {
+            try {
+                MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
+                String sessionId = queryParams.getFirst("sessionId");
+
+                JsonNode json = objectMapper.readTree(dataBuffer.asInputStream());
+                Demo.EmptyCartRequest.Builder builder = Demo.EmptyCartRequest.newBuilder();
+                JsonFormat.parser().ignoringUnknownFields().merge(json.toString(), builder);
+                return Mono.<JsonObject>create(sink -> {
+                    if (sessionId!=null){
+                        builder.setUserId(sessionId);
                         DoEmptyCart(builder.build());
                         Demo.Empty response = DoEmptyCart(builder.build());
                         log.info("EmptyCart response: {}", response);
                         exchange.getResponse().setStatusCode(HttpStatus.NO_CONTENT);
-
-                        return chain.filter(exchange);
-                    } catch (Exception e) {
-                        log.error("Failed to parse request body", e);
-                        sink.error(e);
-                        return Mono.error(e);
                     }
                 });
+            } catch (IOException e) {
+                return Mono.error(e);
+            }
+        }).flatMap(responseBody -> {
+            try {
+                exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                byte[] bytes = objectMapper.writeValueAsBytes(responseBody.toString());
+                DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
+                return exchange.getResponse().writeWith(Mono.just(buffer));
+            } catch (Exception e) {
+                return Mono.error(e);
+            }
+        }).onErrorResume(ResponseStatusException.class, e -> {
+            exchange.getResponse().setStatusCode(e.getStatusCode());
+            exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+            String errorJson = String.format("{\"error\":\"%s\"}", e.getReason());
+            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(errorJson.getBytes());
+            return exchange.getResponse().writeWith(Mono.just(buffer));
+        }).then(chain.filter(exchange));
     }
 }
