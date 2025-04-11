@@ -17,10 +17,14 @@ import java.util.concurrent.TimeUnit;
 @Controller
 public class NotificationController {
 
+    private final NotificationService notificationService;
+    private final AdsService adsService;
+
     @Autowired
-    private NotificationService notificationService;
-    @Autowired
-    private AdsService adsService;
+    public NotificationController(NotificationService notificationService, AdsService adsService) {
+        this.notificationService = notificationService;
+        this.adsService = adsService;
+    }
 
     @GetMapping("/listNotification")
     public ResponseEntity<List> listNotification() {

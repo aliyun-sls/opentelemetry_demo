@@ -17,10 +17,14 @@ import java.util.concurrent.TimeUnit;
 @Controller
 public class PromotionController {
 
+    private final PromotionService promotionService;
+    private final AdsService adsService;
+
     @Autowired
-    private PromotionService promotionService;
-    @Autowired
-    private AdsService adsService;
+    public PromotionController(PromotionService promotionService, AdsService adsService) {
+        this.promotionService = promotionService;
+        this.adsService = adsService;
+    }
 
     @GetMapping("/listPromotion")
     public ResponseEntity<List> listPromotion() {

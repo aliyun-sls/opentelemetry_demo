@@ -1,6 +1,5 @@
 package com.example.service;
 
-import com.example.entity.AdEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
@@ -11,13 +10,13 @@ import java.util.List;
 
 @Service
 public class AdsService {
-    @Bean
-    public WebClient webClient(WebClient.Builder webClientBuilder) {
-        return webClientBuilder.baseUrl("http://ads:8080").build();
-    }
+
+    private final WebClient webClient;
 
     @Autowired
-    private WebClient webClient;
+    public AdsService(WebClient webClient) {
+        this.webClient = webClient;
+    }
 
     public Mono<List> listAds() {
         return webClient.get()
