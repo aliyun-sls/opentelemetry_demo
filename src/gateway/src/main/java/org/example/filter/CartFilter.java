@@ -191,12 +191,16 @@ public class CartFilter implements GatewayFilter {
                 JsonNode json = objectMapper.readTree(dataBuffer.asInputStream());
                 Demo.AddItemRequest.Builder requestBuilder = Demo.AddItemRequest.newBuilder();
                 JsonFormat.parser().ignoringUnknownFields().merge(json.toString(), requestBuilder);
-
+                String userId = json.get("userId").asText();
+                if (sessionId==null){
+                    sessionId = userId;
+                }
+                String finalSessionId = sessionId;
                 return Mono.<JsonArray>create(sink -> {
                     Demo.Empty addItemResponse = DoAddCartItem(requestBuilder.build());
                     log.info("AddItem response: {}", addItemResponse);
                     Demo.GetCartRequest.Builder getCartBuilder = Demo.GetCartRequest.newBuilder();
-                    getCartBuilder.setUserId(sessionId);
+                    getCartBuilder.setUserId(finalSessionId);
                     Demo.Cart cart = DoGetCart(getCartBuilder.build());
                     sink.success(new Gson().toJsonTree(cart).getAsJsonArray());
                 });
