@@ -12,7 +12,7 @@
    @Table(name = "marketing")
    public class MarketingEntity {
        @Id
-       private String id;
+       private Long id;
        
        private String redirectUrl;
        private String text;

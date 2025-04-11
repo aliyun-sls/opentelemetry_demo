@@ -13,7 +13,7 @@
    @Table(name = "ads")
    public class AdEntity {
        @Id
-       private String id;
+       private Long id;
        
        private String redirectUrl;
        private String text;

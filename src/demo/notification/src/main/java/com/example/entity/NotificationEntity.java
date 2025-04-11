@@ -12,7 +12,7 @@
    @Table(name = "notification")
    public class NotificationEntity {
        @Id
-       private String id;
+       private Long id;
        
        private String redirectUrl;
        private String text;

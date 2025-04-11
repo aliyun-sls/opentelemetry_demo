@@ -12,7 +12,7 @@
    @Table(name = "promotion")
    public class PromotionEntity {
        @Id
-       private String id;
+       private Long id;
        
        private String redirectUrl;
        private String text;
