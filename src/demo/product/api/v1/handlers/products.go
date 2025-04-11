@@ -193,9 +193,22 @@ func PutProducts(c *gin.Context) {
 		SellerId:       c.Request.FormValue("seller_id"),
 		ProductsStatus: ProductsStatus,
 	}
-	if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
-		util.Status500(c, err)
-		return
+
+	// 检查是否已存在相同记录
+	var existingProduct model.Product
+	err = util.MDB.WithContext(ctx).Where("brand_id = ? AND seller_id = ?", products.BrandId, products.SellerId).First(&existingProduct).Error
+	if err == nil {
+		// 如果存在，则更新
+		if err := util.MDB.WithContext(ctx).Model(&existingProduct).Updates(&products).Error; err != nil {
+			util.Status500(c, err)
+			return
+		}
+	} else {
+		// 如果不存在，则插入
+		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
+			util.Status500(c, err)
+			return
+		}
 	}
 
 	util.Status200(c, "Put Products complete.")
