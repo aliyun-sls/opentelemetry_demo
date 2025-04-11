@@ -9,7 +9,7 @@ sudo docker build -f Dockerfile --no-cache --build-arg module=${module} --tag ${
 sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
 
 module=ads-error
-sudo docker build -f Dockerfile --no-cache --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
+sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
 sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
 
 module=notification
