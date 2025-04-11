@@ -174,17 +174,11 @@ func PutProducts(c *gin.Context) {
 	}
 
 	products = model.Product{
-		ID:              0,
-		ProductsName:    "",
-		ProductsPrice:   "",
-		ProductsCate:    "",
-		ProductsPic:     image.Filename,
-		ProductsDesc:    "",
-		BrandId:         c.Request.FormValue("brand_id"),
-		SellerId:        c.Request.FormValue("seller_id"),
-		ProductsStatus:  ProductsStatus,
-		Inventory:       nil,
-		ProductCategory: nil,
+		ID:             0,
+		ProductsPic:    image.Filename,
+		BrandId:        c.Request.FormValue("brand_id"),
+		SellerId:       c.Request.FormValue("seller_id"),
+		ProductsStatus: ProductsStatus,
 	}
 	if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
 		util.Status500(c, err)
