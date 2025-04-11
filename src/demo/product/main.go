@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"sls-mall-go/common/model"
 	"sls-mall-go/common/util"
 	apiv1 "sls-mall-go/product/api/v1"
 )
@@ -9,6 +10,8 @@ import (
 func main() {
 	util.InitInTimeZone()
 	util.InitDB()
+	err := util.MDB.AutoMigrate(model.Product{})
+	util.Chk(err)
 	//err := util.MDB.AutoMigrate(&model.Product{})
 	//util.Chk(err)
 	//err = util.MDB.AutoMigrate(&model.Collect{})
@@ -21,7 +24,7 @@ func main() {
 	r := gin.Default()
 	apiv1.Routers(r)
 	//err := r.Run(":" + config.ServicePort)
-	err := r.Run(":8080")
+	err = r.Run(":8080")
 	util.Chk(err)
 
 }
