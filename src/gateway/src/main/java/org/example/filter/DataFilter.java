@@ -3,6 +3,7 @@ package org.example.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -61,7 +62,15 @@ public class DataFilter implements GatewayFilter {
                     }
                 }
                 Demo.AdResponse ad = DoGetAds(builder.build());
-                String json = objectMapper.writeValueAsString(ad.getAdsList());
+                JsonFormat.Printer jsonPrinter = JsonFormat.printer();
+                JsonArray jsonArray = new JsonArray();
+                for (Demo.Ad adItem : ad.getAdsList()) {
+                    JsonObject jsonObject = new JsonObject();
+                    jsonObject.addProperty("redirectUrl", adItem.getRedirectUrl());
+                    jsonObject.addProperty("text", adItem.getText());
+                    jsonArray.add(jsonObject);
+                }
+                String json = jsonArray.toString();
                 sink.success(json);
             } catch (Exception e) {
                 log.error("Failed Data", e);
