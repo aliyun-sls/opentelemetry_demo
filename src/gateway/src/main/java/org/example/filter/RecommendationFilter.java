@@ -100,14 +100,12 @@ public class RecommendationFilter implements GatewayFilter {
                 }
                 Demo.ListRecommendationsResponse recommendationsResponse = DoListRecommendations(listRecommendationsBuilder.build());
                 List<String> productIdsList = recommendationsResponse.getProductIdsList();
-                List<JsonObject> productListObj = new ArrayList<>();
+                List<JsonObject> productList = new ArrayList<>();
                 for (String productId : productIdsList) {
                     Demo.GetProductRequest.Builder getProductBuilder = Demo.GetProductRequest.newBuilder();
                     getProductBuilder.setId(productId);
                     Demo.Product product = DoGetProductCatalog(getProductBuilder.build());
                     if (product != null) {
-                        JsonObject jsonObject = new JsonObject();
-                        jsonObject.addProperty("productId", productId);
                         JsonObject productObj = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
                         if (currencyCode!=null){
                             Demo.CurrencyConversionRequest.Builder currencyRequest = Demo.CurrencyConversionRequest.newBuilder();
@@ -120,11 +118,10 @@ public class RecommendationFilter implements GatewayFilter {
                                 productObj.add("priceUsd", moneyObj);
                             }
                         }
-                        jsonObject.add("product", productObj);
-                        productListObj.add(jsonObject);
+                        productList.add(productObj);
                     }
                 }
-                sink.success(new Gson().toJsonTree(productListObj).getAsJsonArray());
+                sink.success(new Gson().toJsonTree(productList).getAsJsonArray());
             } catch (Exception e) {
                 log.error("Failed Recommendation", e);
                 sink.error(e);
