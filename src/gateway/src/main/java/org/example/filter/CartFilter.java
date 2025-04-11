@@ -196,13 +196,19 @@ public class CartFilter implements GatewayFilter {
                     sessionId = userId;
                 }
                 String finalSessionId = sessionId;
-                return Mono.<JsonArray>create(sink -> {
+                return Mono.<JsonObject>create(sink -> {
                     Demo.Empty addItemResponse = DoAddCartItem(requestBuilder.build());
                     log.info("AddItem response: {}", addItemResponse);
                     Demo.GetCartRequest.Builder getCartBuilder = Demo.GetCartRequest.newBuilder();
                     getCartBuilder.setUserId(finalSessionId);
                     Demo.Cart cart = DoGetCart(getCartBuilder.build());
-                    sink.success(new Gson().toJsonTree(cart).getAsJsonArray());
+                    JsonObject cartObj;
+                    try {
+                        cartObj = new Gson().fromJson(JsonFormat.printer().print(cart), JsonObject.class);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new RuntimeException(e);
+                    }
+                    sink.success(cartObj);
                 });
             } catch (IOException e) {
                 return Mono.error(e);
