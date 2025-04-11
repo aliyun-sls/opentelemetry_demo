@@ -166,7 +166,26 @@ func PutProducts(c *gin.Context) {
 			return
 		}
 	}
+	var ProductsStatus model.ProductsStatus
+	if c.Request.FormValue("products_status") == "1" {
+		ProductsStatus = model.Shelve
+	} else {
+		ProductsStatus = model.Unshelve
+	}
 
+	products = model.Product{
+		ID:              0,
+		ProductsName:    "",
+		ProductsPrice:   "",
+		ProductsCate:    "",
+		ProductsPic:     image.Filename,
+		ProductsDesc:    "",
+		BrandId:         c.Request.FormValue("brand_id"),
+		SellerId:        c.Request.FormValue("seller_id"),
+		ProductsStatus:  ProductsStatus,
+		Inventory:       nil,
+		ProductCategory: nil,
+	}
 	if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
 		util.Status500(c, err)
 		return
