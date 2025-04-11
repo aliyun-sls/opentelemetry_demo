@@ -9,7 +9,6 @@ type Cart struct {
 	Model
 	UserIdType
 	ProductsIdType
-	ProductBasicType
 	ProductsPrice float64 `json:"products_price" gorm:"decimal(18,2);not null;comment:'商品价格'"`
 	ProductsNum   int     `json:"products_num" gorm:"not null;;comment:'数量'"`
 }

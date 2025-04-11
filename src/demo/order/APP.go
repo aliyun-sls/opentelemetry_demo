@@ -103,6 +103,9 @@ func PutProducts(urlShelve string) {
 
 	//创建文件表单字段
 	writer.WriteField("inventory_num", "10")
+	writer.WriteField("brand_id", "apple")
+	writer.WriteField("SellerId", "1")
+	writer.WriteField("products_status", "1")
 	part, err := writer.CreateFormFile("products_pic", filepath.Base(data.Name()))
 	if err != nil {
 		fmt.Println(err)

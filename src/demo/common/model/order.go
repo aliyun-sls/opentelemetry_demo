@@ -49,7 +49,6 @@ type OrderDetail struct {
 	OrderIdType
 	UserIdType
 	ProductsIdType
-	ProductBasicType
 	ProductsNum   int      `json:"products_num"`
 	ProductsPrice float64  `json:"products_price"`
 	CommentId     *uint    `json:"comment_id" gorm:"index"`

@@ -6,7 +6,6 @@ type Collect struct {
 	Model
 	UserIdType
 	ProductsIdType
-	ProductBasicType
 }
 
 type ListCollectRequest struct {

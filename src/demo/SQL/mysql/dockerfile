@@ -2,11 +2,16 @@ FROM mysql:5.7
 
 # 直接使用官方镜像
 ENV MYSQL_ROOT_PASSWORD="" \
-    MYSQL_DATABASE=demo \
-
+    MYSQL_DATABASE=demo
 
 # 设置时区
 ENV TZ=Asia/Shanghai
 RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
+
+# 增加 MySQL 最大连接数配置
+RUN echo "[mysqld]" >> /etc/mysql/mysql.conf.d/mysqld.cnf && \
+    echo "max_connections=1000" >> /etc/mysql/mysql.conf.d/mysqld.cnf &&  \
+    echo "character-set-server=utf8mb4" >> /etc/mysql/mysql.conf.d/mysqld.cnf &&  \
+    echo  "collation-server=utf8mb4_unicode_ci" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 
 CMD ["mysqld"]

@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"sls-mall-go/common/config"
@@ -133,15 +132,9 @@ func initFeatureFlag() {
 	})
 }
 
-type User struct {
-	gorm.Model
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     int    `json:"role"` // 添加角色字段
-}
-
 func PutProducts(c *gin.Context) {
 	ctx := c.Request.Context()
+	var products model.Product
 	// 初始化flag客户端(只执行一次)
 	initFeatureFlag()
 
@@ -173,9 +166,34 @@ func PutProducts(c *gin.Context) {
 			return
 		}
 	}
+	var ProductsStatus model.ProductsStatus
+	var ProductsCate model.Category
 
-	var User []User
-	if err := util.MDB.WithContext(ctx).Table("users").Limit(1).Find(&User).Error; err != nil {
+	if c.Request.FormValue("products_status") == "1" {
+		ProductsStatus = model.Shelve
+	} else {
+		ProductsStatus = model.Unshelve
+	}
+
+	if c.Request.FormValue("products_cate") == "1" {
+		ProductsCate = model.Clothing
+	}
+
+	products = model.Product{
+		ID:           0,
+		ProductsPic:  image.Filename,
+		ProductsCate: &ProductsCate,
+		ProductCategory: &model.ProductCategory{
+			ProductCategoryId: ProductsCate,
+			Name:              "服装",
+			Description:       "",
+			Status:            0,
+		},
+		BrandId:        c.Request.FormValue("brand_id"),
+		SellerId:       c.Request.FormValue("seller_id"),
+		ProductsStatus: ProductsStatus,
+	}
+	if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
 		util.Status500(c, err)
 		return
 	}
