@@ -20,15 +20,13 @@ func Collect(c *gin.Context) {
 		return
 	}
 	for _, productsId := range collectIdsRequest.Ids {
-		product, err := getProduct(ctx, uint(productsId))
 		if err != nil {
 			util.Status500(c, err)
 			return
 		}
 		collect := model.Collect{
-			UserIdType:       model.UserIdType{UserId: collectIdsRequest.UserId},
-			ProductsIdType:   model.ProductsIdType{ProductsId: uint(productsId)},
-			ProductBasicType: product.ProductBasicType,
+			UserIdType:     model.UserIdType{UserId: collectIdsRequest.UserId},
+			ProductsIdType: model.ProductsIdType{ProductsId: uint(productsId)},
 		}
 		collects = append(collects, collect)
 	}
