@@ -192,7 +192,7 @@ public class CartFilter implements GatewayFilter {
                 Demo.AddItemRequest.Builder requestBuilder = Demo.AddItemRequest.newBuilder();
                 JsonFormat.parser().ignoringUnknownFields().merge(json.toString(), requestBuilder);
                 String userId = json.get("userId").asText();
-                if (sessionId==null){
+                if (sessionId==null&&userId!=null&&userId.length()>0){
                     sessionId = userId;
                 }
                 String finalSessionId = sessionId;
