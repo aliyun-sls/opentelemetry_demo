@@ -4,9 +4,11 @@ FROM mysql:5.7
 ENV MYSQL_ROOT_PASSWORD="" \
     MYSQL_DATABASE=demo \
 
-
 # 设置时区
 ENV TZ=Asia/Shanghai
 RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
+
+# 增加 MySQL 最大连接数配置
+RUN echo "max_connections=1000" >> /etc/mysql/mysql.conf.d/mysqld.cnf
 
 CMD ["mysqld"]
