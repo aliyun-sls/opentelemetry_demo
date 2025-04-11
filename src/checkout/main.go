@@ -285,7 +285,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to list notification")
 	}
 
-	if err := httpCall(cs.notificationSvcAddr, "/order"); err != nil {
+	if err := httpCall(cs.orderSvcAddr, "/order"); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list order")
 	}
 	span := trace.SpanFromContext(ctx)
