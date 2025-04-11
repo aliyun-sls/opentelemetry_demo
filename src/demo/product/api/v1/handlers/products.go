@@ -167,16 +167,22 @@ func PutProducts(c *gin.Context) {
 		}
 	}
 	var ProductsStatus model.ProductsStatus
+	var ProductsCate model.Category
+
 	if c.Request.FormValue("products_status") == "1" {
 		ProductsStatus = model.Shelve
 	} else {
 		ProductsStatus = model.Unshelve
 	}
 
+	if c.Request.FormValue("products_cate") == "1" {
+		ProductsCate = model.Clothing
+	}
+
 	products = model.Product{
 		ID:             0,
 		ProductsPic:    image.Filename,
-		ProductsCate:   "",
+		ProductsCate:   ProductsCate,
 		BrandId:        c.Request.FormValue("brand_id"),
 		SellerId:       c.Request.FormValue("seller_id"),
 		ProductsStatus: ProductsStatus,
