@@ -97,7 +97,7 @@ public class CartFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
-        if (exchange.getRequest().getMethod().equals(HttpMethod.GET)) {
+        if (exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
             return handlePostRequest(exchange, chain);
         }
         if (exchange.getRequest().getMethod().equals(HttpMethod.DELETE)) {
