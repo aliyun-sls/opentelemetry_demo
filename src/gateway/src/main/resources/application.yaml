@@ -3,7 +3,7 @@ spring:
     gateway:
       httpclient:
         pool:
-          max-idle-time: 20
+          max-idle-time: ${MAX_IDLE_TIME:5s}
       routes:
         - id: check
           uri: no://op
