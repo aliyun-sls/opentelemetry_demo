@@ -27,7 +27,7 @@ import java.util.List;
 public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
-    private static final String ADS_TABLE_FLAG = "adsTableNotExistFlag";
+    private static final String ADS_TABLE_FLAG = "adsWithTableNotExist";
     private static final String ADS_TABLE_NOT_EXIST_CALL_FLAG = "adsWithTableNotExistCall";
     private static final String ADS_SQL_FLAG = "adsSqlComplexFlag";
     private static final String ADS_INSERT_FLAG = "adsMassInsertFlag";
