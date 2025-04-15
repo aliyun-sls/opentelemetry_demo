@@ -194,6 +194,10 @@ func PutProducts(c *gin.Context) {
 		ProductsStatus: ProductsStatus,
 	}
 
+	// 设置数据库操作超时时间为5秒
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	// 检查是否已存在相同记录
 	err = util.MDB.WithContext(ctx).Where("brand_id = ? AND seller_id = ?", products.BrandId, products.SellerId).First(&products).Error
 	if err == nil {
