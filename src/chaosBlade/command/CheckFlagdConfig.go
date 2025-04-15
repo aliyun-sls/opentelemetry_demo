@@ -95,7 +95,7 @@ func PodMemFlagd() {
 	)
 	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, podMemLastConfig)
 	if istrue != podMemLastConfig {
-		if podCpuLastConfig > 0 {
+		if podMemLastConfig > 0 {
 			fmt.Println("删除mem-load")
 			DeleteCRD(Dynamic, Gvr, "mem-load")
 			time.Sleep(5 * time.Second)
