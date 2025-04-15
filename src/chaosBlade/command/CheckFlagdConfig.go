@@ -23,10 +23,10 @@ func RDSLossFlagd() {
 		currentConfig = ""
 	}
 
-	if currentConfig != lastConfig {
+	if istrue != lastConfig {
 		// 如果配置发生变化，执行相应的操作
 		RDSLoss(currentConfig)
-		lastConfig = currentConfig
+		lastConfig = istrue
 	}
 }
 
@@ -47,10 +47,10 @@ func NodeLossFlagd() {
 		currentConfig = ""
 	}
 
-	if currentConfig != lastConfig {
+	if istrue != lastConfig {
 		// 如果配置发生变化，执行相应的操作
 		NodeNetLoss(currentConfig)
-		lastConfig = currentConfig
+		lastConfig = istrue
 	}
 }
 
@@ -107,9 +107,9 @@ func PodNetDelayFlagd() {
 		currentConfig = ""
 	}
 
-	if currentConfig != lastConfig {
+	if istrue != lastConfig {
 		// 如果配置发生变化，执行相应的操作
 		PodNetDelay(currentConfig)
-		lastConfig = currentConfig
+		lastConfig = istrue
 	}
 }
