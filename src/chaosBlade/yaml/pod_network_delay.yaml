@@ -1,7 +1,7 @@
 apiVersion: chaosblade.io/v1alpha1
 kind: ChaosBlade
 metadata:
-  name: pod-network-loss
+  name: pod-network-delay
 spec:
   experiments:
     - scope: pod

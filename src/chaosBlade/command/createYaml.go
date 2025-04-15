@@ -91,7 +91,7 @@ func PodNetDelayYaml(labels string) string {
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
-			if s == "chaosblade-rds-loss" {
+			if s == "pod-network-delay" {
 				DeleteCRD(Dynamic, Gvr, s)
 			}
 		}
