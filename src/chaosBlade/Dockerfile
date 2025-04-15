@@ -7,8 +7,8 @@ COPY ./src/chaosBlade/yaml /usr/src/app/yaml
 
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
-    --mount=type=bind,rw,source=./src/demo/order/go.sum,target=go.sum \
-    --mount=type=bind,rw,source=./src/demo/order/go.mod,target=go.mod \
+    --mount=type=bind,rw,source=./src/chaosBlade/go.sum,target=go.sum \
+    --mount=type=bind,rw,source=./src/chaosBlade/go.mod,target=go.mod \
     go mod download
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
