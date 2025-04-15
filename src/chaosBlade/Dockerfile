@@ -1,26 +1,28 @@
-FROM golang:1.20-alpine3.16 AS builder
+FROM golang:1.23.7-alpine AS builder
 
-WORKDIR /build
-
-ENV GOPROXY https://goproxy.cn
+WORKDIR /usr/src/app/
 
 
-FROM builder AS builder_chaosblade
-
-WORKDIR /build/chaosblade
-COPY chaosblade .
-RUN go mod tidy -compat=1.20
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o run .
-
-FROM alpine:3.16 AS chaosblade
-
-WORKDIR /app
-COPY --from=builder_chaosblade /build/chaosblade/run /app/run
-COPY yaml /app/chaosblade/yaml
-#RUN ls -l /app/chaosblade
+COPY .src/chaosBlade/yaml /usr/src/app/yaml
 
 
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,rw,source=./src/demo/order/go.sum,target=go.sum \
+    --mount=type=bind,rw,source=./src/demo/order/go.mod,target=go.mod \
+    go mod download
 
-CMD ["/app/run"]
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=bind,rw,source=./src/chaosBlade,target=chaosBlade \
+    go build -ldflags "-s -w" -o /go/bin/chaosBlade ./
+
+FROM alpine
+
+WORKDIR /usr/src/app/
 
 
+COPY --from=builder /go/bin/chaosBlade ./
+COPY --from=builder /usr/src/app/yaml ./yaml
+
+EXPOSE 8080
+ENTRYPOINT [ "./chaosBlade" ]
