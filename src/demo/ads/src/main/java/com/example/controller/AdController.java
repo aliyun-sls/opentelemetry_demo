@@ -27,7 +27,7 @@ import java.util.List;
 public class AdController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdController.class);
-    private static final String ADS_TABLE_FLAG = "adsTableNotExistFlag";
+    private static final String ADS_TABLE_FLAG = "adsWithTableNotExist";
     private static final String ADS_SQL_FLAG = "adsSqlComplexFlag";
     private static final String ADS_INSERT_FLAG = "adsMassInsertFlag";
     private static final String ADS_TABLE_NOT_EXIST_CALL_FLAG = "adsWithTableNotExistCall";
@@ -56,17 +56,18 @@ public class AdController {
         List ads = new ArrayList();
 
         final Client client = openFeatureAPI.getClient();
+        boolean tableFlag = client.getBooleanValue(ADS_TABLE_FLAG, false);
         boolean sqlFlag = client.getBooleanValue(ADS_SQL_FLAG, false);
         boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
-        boolean tableNotExistCall = client.getBooleanValue(ADS_TABLE_NOT_EXIST_CALL_FLAG, false);
+
+        if (tableFlag) {
+            scenarioHandler.handleNormal();
+        } else {
+            scenarioHandler.handleTableNotExist();
+        }
 
         scenarioHandler.handleNormal();
 
-        if (tableNotExistCall) {
-            scenarioHandler.handleTableNotExist();
-        } else {
-            scenarioHandler.handleNormal();
-        }
         try {
             if(sqlFlag){
                 scenarioHandler.handleSQLComplex();
