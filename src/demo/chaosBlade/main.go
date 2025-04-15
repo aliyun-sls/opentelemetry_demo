@@ -9,17 +9,14 @@ import (
 )
 
 func main() {
-	// 尝试创建集群内配置
+	// 创建集群内配置，并指定使用 system:controller:pod-garbage-collector 的 Token
 	config, err := rest.InClusterConfig()
-	/*if err != nil {
-		// 如果不是在集群内运行，尝试使用kubeconfig
-		home, _ := os.UserHomeDir()
-		kubeconfig := filepath.Join(home, ".kube", "config")
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
-	}*/
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// 设置使用 system:controller:pod-garbage-collector 的 Token
+	config.BearerTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 	// 创建clientset
 	clientset, err := kubernetes.NewForConfig(config)
