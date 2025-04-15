@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
+	"time"
 )
 
 // 将 lastConfig 提升为包级别的全局变量
@@ -74,6 +75,10 @@ func PodCpuFlagd() {
 	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, podCpuLastConfig)
 	if istrue != podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
+		if podCpuLastConfig > 0 {
+			DeleteCRD(Dynamic, Gvr, "cpu-load")
+			time.Sleep(5 * time.Second)
+		}
 		PodCpu(istrue)
 		podCpuLastConfig = istrue
 	}
@@ -89,6 +94,10 @@ func PodMemFlagd() {
 	)
 	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, podMemLastConfig)
 	if istrue != podMemLastConfig {
+		if podCpuLastConfig > 0 {
+			DeleteCRD(Dynamic, Gvr, "mem-load")
+			time.Sleep(5 * time.Second)
+		}
 		// 如果配置发生变化，执行相应的操作
 		PodMem(istrue)
 		podMemLastConfig = istrue
