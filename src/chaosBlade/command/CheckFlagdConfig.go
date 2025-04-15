@@ -6,8 +6,17 @@ import (
 	"log"
 )
 
+// 将 lastConfig 提升为包级别的全局变量
+var (
+	rdsLossLastConfig     string
+	nodeLossLastConfig    string
+	podCpuLastConfig      int64
+	podMemLastConfig      int64
+	podNetDelayLastConfig string
+)
+
 func RDSLossFlagd() {
-	var lastConfig, currentConfig string
+	var currentConfig string
 
 	// 获取feature flag值
 	istrue := FlagClient.String(
@@ -16,22 +25,22 @@ func RDSLossFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 RDSLossFlagd feature : %v,last flagd: %v", istrue, lastConfig)
+	log.Printf("获取 RDSLossFlagd feature : %v,last flagd: %v", istrue, rdsLossLastConfig)
 	if istrue == "on" {
 		currentConfig = "app.kubernetes.io/name=product"
 	} else {
 		currentConfig = ""
 	}
 
-	if istrue != lastConfig {
+	if istrue != rdsLossLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		RDSLoss(currentConfig)
-		lastConfig = istrue
+		rdsLossLastConfig = istrue
 	}
 }
 
 func NodeLossFlagd() {
-	var lastConfig, currentConfig string
+	var currentConfig string
 
 	// 获取feature flag值
 	istrue := FlagClient.String(
@@ -40,23 +49,21 @@ func NodeLossFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, lastConfig)
+	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, nodeLossLastConfig)
 	if istrue == "on" {
 		currentConfig = "topology.kubernetes.io/zone=cn-guangzhou-a"
 	} else {
 		currentConfig = ""
 	}
 
-	if istrue != lastConfig {
+	if istrue != nodeLossLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		NodeNetLoss(currentConfig)
-		lastConfig = istrue
+		nodeLossLastConfig = istrue
 	}
 }
 
 func PodCpuFlagd() {
-	var lastConfig int64
-
 	// 获取feature flag值
 	istrue := FlagClient.Int(
 		context.Background(),
@@ -64,17 +71,15 @@ func PodCpuFlagd() {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, lastConfig)
-	if istrue != lastConfig {
+	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, podCpuLastConfig)
+	if istrue != podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		PodCpu(istrue)
-		lastConfig = istrue
+		podCpuLastConfig = istrue
 	}
 }
 
 func PodMemFlagd() {
-	var lastConfig int64
-
 	// 获取feature flag值
 	istrue := FlagClient.Int(
 		context.Background(),
@@ -82,16 +87,16 @@ func PodMemFlagd() {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, lastConfig)
-	if istrue != lastConfig {
+	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, podMemLastConfig)
+	if istrue != podMemLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		PodMem(istrue)
-		lastConfig = istrue
+		podMemLastConfig = istrue
 	}
 }
 
 func PodNetDelayFlagd() {
-	var lastConfig, currentConfig string
+	var currentConfig string
 
 	// 获取feature flag值
 	istrue := FlagClient.String(
@@ -100,16 +105,16 @@ func PodNetDelayFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", istrue, lastConfig)
+	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", istrue, podNetDelayLastConfig)
 	if istrue == "on" {
 		currentConfig = "app.kubernetes.io/name=product"
 	} else {
 		currentConfig = ""
 	}
 
-	if istrue != lastConfig {
+	if istrue != podNetDelayLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		PodNetDelay(currentConfig)
-		lastConfig = istrue
+		podNetDelayLastConfig = istrue
 	}
 }
