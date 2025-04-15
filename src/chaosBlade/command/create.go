@@ -10,7 +10,7 @@ func NodeNetLoss(labels string) {
 	nodeNetLoss := NodeNetLossYaml(labels)
 	// 根据 yaml 文件创建资源
 	data := createCRD(Dynamic, Gvr, nodeNetLoss)
-	fmt.Println("创建资源:", data)
+	fmt.Println("创建NodeNetLoss资源:", data)
 }
 
 // ------------RDS断连---------------
@@ -19,7 +19,7 @@ func RDSLoss(labels string) {
 	RDSloss := RDSlossYaml(labels)
 	// 根据 yaml 文件创建资源
 	data := createCRD(Dynamic, Gvr, RDSloss)
-	fmt.Println("创建资源:", data)
+	fmt.Println("创建RDSLoss资源:", data)
 }
 
 func PodNetDelay(labels string) {
@@ -27,17 +27,17 @@ func PodNetDelay(labels string) {
 	podNetDelay := PodNetDelayYaml(labels)
 	// 根据 yaml 文件创建资源
 	data := createCRD(Dynamic, Gvr, podNetDelay)
-	fmt.Println("创建资源:", data)
+	fmt.Println("创建PodNetDelay资源:", data)
 }
 
 func PodCpu(percent int64) {
 	podCpu := PodCpuYaml(percent)
 	data := createCRD(Dynamic, Gvr, podCpu)
-	fmt.Println("创建资源:", data)
+	fmt.Println("创建PodCpu资源:", data)
 }
 
 func PodMem(percent int64) {
 	podCpu := PodMemYaml(percent)
 	data := createCRD(Dynamic, Gvr, podCpu)
-	fmt.Println("创建资源:", data)
+	fmt.Println("创建PodMem资源:", data)
 }

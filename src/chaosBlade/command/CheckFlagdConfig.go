@@ -16,7 +16,7 @@ func RDSLossFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", istrue)
+	log.Printf("获取 RDSLossFlagd feature : %v,last flagd: %v", istrue, lastConfig)
 	if istrue == "on" {
 		currentConfig = "app.kubernetes.io/name=product"
 	} else {
@@ -40,7 +40,7 @@ func NodeLossFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", istrue)
+	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, lastConfig)
 	if istrue == "on" {
 		currentConfig = "topology.kubernetes.io/zone=cn-guangzhou-a"
 	} else {
@@ -64,7 +64,7 @@ func PodCpuFlagd() {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", istrue)
+	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, lastConfig)
 	if istrue != lastConfig {
 		// 如果配置发生变化，执行相应的操作
 		PodCpu(istrue)
@@ -82,7 +82,7 @@ func PodMemFlagd() {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", istrue)
+	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, lastConfig)
 	if istrue != lastConfig {
 		// 如果配置发生变化，执行相应的操作
 		PodMem(istrue)
@@ -100,7 +100,7 @@ func PodNetDelayFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", istrue)
+	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", istrue, lastConfig)
 	if istrue == "on" {
 		currentConfig = "app.kubernetes.io/name=product"
 	} else {
