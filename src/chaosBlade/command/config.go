@@ -32,6 +32,6 @@ type CpuAndMem struct {
 var Dynamic *dynamic.DynamicClient
 var Gvr schema.GroupVersionResource
 var (
-	flagClient *openfeature.Client
-	once       sync.Once
+	FlagClient *openfeature.Client
+	Once       sync.Once
 )

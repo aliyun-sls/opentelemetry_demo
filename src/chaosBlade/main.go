@@ -4,6 +4,9 @@ import (
 	"chaosBlade/client"
 	"chaosBlade/command"
 	"fmt"
+	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
+	"github.com/open-feature/go-sdk/openfeature"
+	"log"
 	"time"
 )
 
@@ -20,6 +23,18 @@ func main() {
 		}
 	}
 	fmt.Println("清理环境")
+
+	command.Once.Do(func() {
+		provider := flagd.NewProvider(
+			flagd.WithHost("flagd"),
+			flagd.WithPort(8013),
+		)
+		if err := openfeature.SetProvider(provider); err != nil {
+			log.Printf("设置provider失败: %v", err)
+			return
+		}
+		command.FlagClient = openfeature.NewClient("product")
+	})
 
 	for {
 		command.RDSLossFlagd()

@@ -10,7 +10,7 @@ func RDSLossFlagd() {
 	var lastConfig, currentConfig string
 
 	// 获取feature flag值
-	istrue := flagClient.String(
+	istrue := FlagClient.String(
 		context.Background(),
 		"RDSLoss",
 		"",
@@ -34,7 +34,7 @@ func NodeLossFlagd() {
 	var lastConfig, currentConfig string
 
 	// 获取feature flag值
-	istrue := flagClient.String(
+	istrue := FlagClient.String(
 		context.Background(),
 		"NodeLoss",
 		"",
@@ -58,7 +58,7 @@ func PodCpuFlagd() {
 	var lastConfig int64
 
 	// 获取feature flag值
-	istrue := flagClient.Int(
+	istrue := FlagClient.Int(
 		context.Background(),
 		"PodCPULoad",
 		0,
@@ -76,7 +76,7 @@ func PodMemFlagd() {
 	var lastConfig int64
 
 	// 获取feature flag值
-	istrue := flagClient.Int(
+	istrue := FlagClient.Int(
 		context.Background(),
 		"PodMEMLoad",
 		0,
@@ -94,7 +94,7 @@ func PodNetDelayFlagd() {
 	var lastConfig, currentConfig string
 
 	// 获取feature flag值
-	istrue := flagClient.String(
+	istrue := FlagClient.String(
 		context.Background(),
 		"PodNetDelay",
 		"",
