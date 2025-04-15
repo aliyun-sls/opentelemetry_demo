@@ -67,7 +67,7 @@ func RDSlossYaml(labels string) string {
 
 		// 解析模板文件
 		path, _ := os.Getwd()
-		tmpl, err := template.ParseFiles(path + "/yaml/node_network_loss.yaml")
+		tmpl, err := template.ParseFiles(path + "/yaml/pod_network_loss.yaml")
 		if err != nil {
 			fmt.Println("模版error")
 			panic(err)

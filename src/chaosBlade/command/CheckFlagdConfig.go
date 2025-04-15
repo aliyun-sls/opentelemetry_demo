@@ -29,7 +29,7 @@ func CheckRDSFlagdConfig() string {
 	istrue := flagClient.String(
 		context.Background(),
 		"RDSLoss",
-		"off",
+		"",
 		openfeature.EvaluationContext{},
 	)
 	log.Printf("获取feature : %v", istrue)
@@ -38,5 +38,4 @@ func CheckRDSFlagdConfig() string {
 	} else {
 		return ""
 	}
-
 }

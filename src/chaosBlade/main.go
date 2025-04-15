@@ -22,17 +22,22 @@ func main() {
 	fmt.Println("清理环境")
 
 	// 持续运行并等待flagd配置触发操作
+	var lastConfig string
 	for {
 		// 检查flagd配置是否发生变化
-		if command.CheckRDSFlagdConfig() != "" {
+		currentConfig := command.CheckRDSFlagdConfig()
+		if currentConfig != "" && currentConfig != lastConfig {
 			// 如果配置发生变化，执行相应的操作
-			// command.NodeNetLoss()
-			command.RDSloss(command.CheckRDSFlagdConfig())
+			command.RDSloss(currentConfig)
+			lastConfig = currentConfig
+		} else if currentConfig == "" && currentConfig != lastConfig {
+			command.RDSloss(currentConfig)
+			lastConfig = currentConfig
 		}
-
-		// 等待一段时间后再次检查
-		time.Sleep(10 * time.Second)
 	}
+
+	// 等待一段时间后再次检查
+	time.Sleep(10 * time.Second)
 }
 
 // checkFlagdConfig 检查flagd配置是否发生变化
