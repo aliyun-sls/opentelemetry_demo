@@ -34,7 +34,7 @@ func CheckRDSFlagdConfig() string {
 	)
 	log.Printf("获取feature : %v", istrue)
 	if istrue == "on" {
-		return "app.kubernetes.io/name:product"
+		return "app.kubernetes.io/name=product"
 	} else {
 		return ""
 	}
