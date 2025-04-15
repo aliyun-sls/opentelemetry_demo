@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
 	"time"
@@ -95,8 +96,10 @@ func PodMemFlagd() {
 	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, podMemLastConfig)
 	if istrue != podMemLastConfig {
 		if podCpuLastConfig > 0 {
+			fmt.Println("删除mem-load")
 			DeleteCRD(Dynamic, Gvr, "mem-load")
 			time.Sleep(5 * time.Second)
+			fmt.Println("删除mem-load完成")
 		}
 		// 如果配置发生变化，执行相应的操作
 		PodMem(istrue)
