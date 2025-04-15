@@ -10,16 +10,14 @@ spec:
       desc: "delay pod network by labels"
       matchers:
         - name: labels
-          value: {{ .Labels }}
+          value: ["{{ .Labels }}"]
         - name: namespace
-          value: {{ .Namespace }}
+          value: ["{{ .Namespace }}"]
         - name: local-port
-          value: {{ .Port }}
+          value: ["{{ .Port }}"]
         - name: interface
           value: ["eth0"]
         - name: time
-          value: {{ .Time }}
+          value: ["{{ .Time }}"]
         - name: offset
-          value: {{ .Offset }}
-        - name: timeout
-          value: {{ .Timeout }}
+          value: ["{{ .Offset }}"]

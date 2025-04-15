@@ -83,7 +83,6 @@ func PodNetDelayYaml(labels string) string {
 			Port:      "8080",
 			Time:      "3000",
 			Offset:    "1000",
-			Timeout:   "500",
 		}
 
 		path, _ := os.Getwd()
