@@ -65,14 +65,25 @@ function FeatureFlag({ flagId, flagConfig, updateFlagData }: FeatureFlagProps) {
     <div className="mb-4 flex flex-auto flex-col justify-between rounded-md bg-gray-800 p-6 text-gray-300 shadow-md">
       <div>
         <div className="flex items-center justify-between">
-          <div className="mb-1 text-lg font-semibold">{`${flagId}`}</div>
-          <Typography.Text copyable={{ text: `${flagId}` }} />
+          <div className="mb-1 text-lg font-semibold">{`${flagConfig.displayName ?? flagId}`}</div>
+          <div className="flex items-center">
+            {flagConfig.displayName && (
+              <Typography.Text
+                style={{ fontSize: "11px", color: "#eee" }}
+                code
+              >{`${flagId}`}</Typography.Text>
+            )}
+            <Typography.Text copyable={{ text: `${flagId}` }} />
+          </div>
         </div>
-        <hr  className="mb-3 text-gray-600"/>
+        <hr className="mb-3 text-gray-600" />
         <div className="mb-2 flex flex-wrap gap-0.5">
-          {flagConfig.tags && flagConfig.tags.map((tag) => (
-            <Tag key={tag} bordered={false} color={getColorOnText(tag)}>{tag}</Tag>
-          ))}
+          {flagConfig.tags &&
+            flagConfig.tags.map((tag) => (
+              <Tag key={tag} bordered={false} color={getColorOnText(tag)}>
+                {tag}
+              </Tag>
+            ))}
         </div>
         <p className="mb-4 text-sm">{`${flagConfig.description}`}</p>
       </div>
