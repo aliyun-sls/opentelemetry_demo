@@ -3,7 +3,7 @@ FROM golang:1.23.7-alpine AS builder
 WORKDIR /usr/src/app/
 
 
-COPY .src/chaosBlade/yaml /usr/src/app/yaml
+COPY ./src/chaosBlade/yaml /usr/src/app/yaml
 
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
