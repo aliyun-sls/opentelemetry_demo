@@ -76,9 +76,11 @@ func PodCpuFlagd() {
 	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, podCpuLastConfig)
 	if istrue != podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
+		fmt.Println("删除cpu-load")
 		if podCpuLastConfig > 0 {
 			DeleteCRD(Dynamic, Gvr, "cpu-load")
 			time.Sleep(5 * time.Second)
+			fmt.Println("删除cpu-load完成")
 		}
 		PodCpu(istrue)
 		podCpuLastConfig = istrue
