@@ -1,4 +1,4 @@
-piVersion: chaosblade.io/v1alpha1
+apiVersion: chaosblade.io/v1alpha1
 kind: ChaosBlade
 metadata:
   name: cpu-load
