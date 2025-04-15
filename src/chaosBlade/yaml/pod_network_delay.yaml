@@ -7,7 +7,7 @@ spec:
     - scope: pod
       target: network
       action: delay
-      desc: "delay pod network by names"
+      desc: "delay pod network by labels"
       matchers:
         - name: labels
           value: {{ .Labels }}

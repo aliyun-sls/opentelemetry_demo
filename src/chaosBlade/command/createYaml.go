@@ -3,116 +3,14 @@ package command
 import (
 	"bytes"
 	"chaosBlade/client"
-	"context"
-	"fmt"
-	"github.com/open-feature/go-sdk/openfeature"
-	"log"
 	"os"
 	"text/template"
 )
 
-// 配置node网络丢包压测
-func NodeNetLossYaml() string {
-
-	// 获取feature flag值
-	labels := flagClient.String(
-		context.Background(),
-		"nodeLoss",
-		"",
-		openfeature.EvaluationContext{},
-	)
-	log.Printf("获取feature : %v", labels)
-	if labels != "" {
-		// 定义模板数据
-		data := &Netloss{
-			Name:    "chaosblade-node-loss",
-			Labels:  labels,
-			Percent: "100",
-			Port:    "8080",
-			Timeout: "500",
-		}
-
-		// 解析模板文件
-		path, _ := os.Getwd()
-		tmpl, err := template.ParseFiles(path + "/yaml/node_network_loss.yaml")
-		if err != nil {
-			panic(err)
-		}
-
-		// 渲染模板并保存到文件
-		var buf bytes.Buffer
-		err = tmpl.Execute(&buf, data)
-		if err != nil {
-			panic(err)
-		}
-		return buf.String()
-	} else {
-		DeleteCRD(Dynamic, Gvr, "chaosblade-node-loss")
-	}
-	return ""
-}
-
-// 配置RDS断连
-func RDSlossYaml(labels string) string {
-	if labels != "" {
-		fmt.Println(labels)
-		// 定义模板数据
-		data := &Netloss{
-			Name:    "chaosblade-rds-loss",
-			Labels:  labels,
-			Percent: "100",
-			Port:    "3306",
-			Timeout: "500",
-		}
-
-		// 解析模板文件
-		path, _ := os.Getwd()
-		tmpl, err := template.ParseFiles(path + "/yaml/pod_network_loss.yaml")
-		if err != nil {
-			fmt.Println("模版error")
-			panic(err)
-		}
-
-		// 渲染模板并保存到文件
-		var buf bytes.Buffer
-		err = tmpl.Execute(&buf, data)
-		if err != nil {
-			panic(err)
-		}
-		return buf.String()
-	} else {
-		fmt.Println(labels)
-		arr := client.ListCRD(Dynamic, Gvr)
-		if len(arr) != 0 {
-			DeleteCRD(Dynamic, Gvr, "chaosblade-rds-loss")
-		}
-
-	}
-	return ""
-}
-
-// PodNetDelay 配置pod网络延时压测
-func PodNetDelay() string {
-
-	namespace := os.Getenv("NAMESPACE")
-	labels := os.Getenv("LABELS")
-	port := os.Getenv("PORT")
-	time := os.Getenv("TIME")
-	offset := os.Getenv("OFFSET")
-	timeout := os.Getenv("TIMEOUT")
-
-	// 定义模板数据
-	data := &Netdelay{
-		Namespace: namespace,
-		Labels:    labels,
-		Port:      port,
-		Time:      time,
-		Offset:    offset,
-		Timeout:   timeout,
-	}
-
+// 通用函数，用于生成YAML文件
+func generateYAML(templateFile string, data interface{}) string {
 	// 解析模板文件
-	tmpl, err := template.ParseFiles("/Users/chenxiaohui/opentelemetry_demo/src/chaosBlade/chaosblade/yaml/node_network_loss.yaml")
+	tmpl, err := template.ParseFiles(templateFile)
 	if err != nil {
 		panic(err)
 	}
@@ -124,4 +22,121 @@ func PodNetDelay() string {
 		panic(err)
 	}
 	return buf.String()
+}
+
+// 配置node网络丢包压测
+func NodeNetLossYaml(labels string) string {
+	if labels != "" {
+		// 定义模板数据
+		data := &Netloss{
+			Name:    "chaosblade-node-loss",
+			Labels:  labels,
+			Percent: "100",
+			Timeout: "500",
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/node_network_loss.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "chaosblade-node-loss" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}
+
+// 配置RDS断连
+func RDSlossYaml(labels string) string {
+	if labels != "" {
+		// 定义模板数据
+		data := &Netloss{
+			Name:    "chaosblade-rds-loss",
+			Labels:  labels,
+			Percent: "100",
+			Port:    "3306",
+			Timeout: "500",
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/pod_network_loss.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "chaosblade-rds-loss" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}
+
+// PodNetDelay 配置pod网络延时压测
+func PodNetDelayYaml(labels string) string {
+	if labels != "" {
+		// 定义模板数据
+		data := &Netdelay{
+			Namespace: "default",
+			Labels:    labels,
+			Port:      "8080",
+			Time:      "3000",
+			Offset:    "1000",
+			Timeout:   "500",
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/pod_network_delay.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "chaosblade-rds-loss" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}
+
+func PodCpuYaml(percent int64) string {
+	if percent != 0 {
+		// 定义模板数据
+		data := &CpuAndMem{
+			Labels:  "app.kubernetes.io/name=cart",
+			Percent: percent,
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/pod_cpu.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "cpu-load" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}
+
+func PodMemYaml(percent int64) string {
+	if percent != 0 {
+		// 定义模板数据
+		data := &CpuAndMem{
+			Labels:  "app.kubernetes.io/name=cart",
+			Percent: percent,
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/pod_mem.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "mem-load" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
 }

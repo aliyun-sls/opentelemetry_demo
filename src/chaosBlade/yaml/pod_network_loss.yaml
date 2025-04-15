@@ -7,7 +7,7 @@ spec:
     - scope: pod
       target: network
       action: loss
-      desc: "node network loss"
+      desc: "pod network loss"
       matchers:
         - name: labels
           value: ["{{ .Labels }}"]

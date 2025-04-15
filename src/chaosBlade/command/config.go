@@ -24,6 +24,11 @@ type Netdelay struct {
 	Timeout   string
 }
 
+type CpuAndMem struct {
+	Labels  string
+	Percent int64
+}
+
 var Dynamic *dynamic.DynamicClient
 var Gvr schema.GroupVersionResource
 var (

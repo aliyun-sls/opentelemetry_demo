@@ -2,28 +2,12 @@ package command
 
 import (
 	"context"
-	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
 )
 
-func initFeatureFlag() {
-	once.Do(func() {
-		provider := flagd.NewProvider(
-			flagd.WithHost("flagd"),
-			flagd.WithPort(8013),
-		)
-		if err := openfeature.SetProvider(provider); err != nil {
-			log.Printf("设置provider失败: %v", err)
-			return
-		}
-		flagClient = openfeature.NewClient("product")
-	})
-}
-
-func CheckRDSFlagdConfig() string {
-	// 初始化flag客户端(只执行一次)
-	initFeatureFlag()
+func RDSLossFlagd() {
+	var lastConfig, currentConfig string
 
 	// 获取feature flag值
 	istrue := flagClient.String(
@@ -34,8 +18,98 @@ func CheckRDSFlagdConfig() string {
 	)
 	log.Printf("获取feature : %v", istrue)
 	if istrue == "on" {
-		return "app.kubernetes.io/name=product"
+		currentConfig = "app.kubernetes.io/name=product"
 	} else {
-		return ""
+		currentConfig = ""
+	}
+
+	if currentConfig != lastConfig {
+		// 如果配置发生变化，执行相应的操作
+		RDSLoss(currentConfig)
+		lastConfig = currentConfig
+	}
+}
+
+func NodeLossFlagd() {
+	var lastConfig, currentConfig string
+
+	// 获取feature flag值
+	istrue := flagClient.String(
+		context.Background(),
+		"NodeLoss",
+		"",
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature : %v", istrue)
+	if istrue == "on" {
+		currentConfig = "topology.kubernetes.io/zone=cn-guangzhou-a"
+	} else {
+		currentConfig = ""
+	}
+
+	if currentConfig != lastConfig {
+		// 如果配置发生变化，执行相应的操作
+		NodeNetLoss(currentConfig)
+		lastConfig = currentConfig
+	}
+}
+
+func PodCpuFlagd() {
+	var lastConfig int64
+
+	// 获取feature flag值
+	istrue := flagClient.Int(
+		context.Background(),
+		"PodCPULoad",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature : %v", istrue)
+	if istrue != lastConfig {
+		// 如果配置发生变化，执行相应的操作
+		PodCpu(istrue)
+		lastConfig = istrue
+	}
+}
+
+func PodMemFlagd() {
+	var lastConfig int64
+
+	// 获取feature flag值
+	istrue := flagClient.Int(
+		context.Background(),
+		"PodMEMLoad",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature : %v", istrue)
+	if istrue != lastConfig {
+		// 如果配置发生变化，执行相应的操作
+		PodMem(istrue)
+		lastConfig = istrue
+	}
+}
+
+func PodNetDelayFlagd() {
+	var lastConfig, currentConfig string
+
+	// 获取feature flag值
+	istrue := flagClient.String(
+		context.Background(),
+		"PodNetDelay",
+		"",
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature : %v", istrue)
+	if istrue == "on" {
+		currentConfig = "app.kubernetes.io/name=product"
+	} else {
+		currentConfig = ""
+	}
+
+	if currentConfig != lastConfig {
+		// 如果配置发生变化，执行相应的操作
+		PodNetDelay(currentConfig)
+		lastConfig = currentConfig
 	}
 }
