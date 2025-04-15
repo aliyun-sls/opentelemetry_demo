@@ -34,10 +34,10 @@ func main() {
 			command.RDSloss(currentConfig)
 			lastConfig = currentConfig
 		}
-	}
 
-	// 等待一段时间后再次检查
-	time.Sleep(10 * time.Second)
+		// 等待一段时间后再次检查
+		time.Sleep(10 * time.Second)
+	}
 }
 
 // checkFlagdConfig 检查flagd配置是否发生变化
