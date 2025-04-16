@@ -16,5 +16,3 @@ spec:
             - "{{ .Percent }}"
         - name: interface
           value: ["eth0"]
-        - name: timeout
-          value: ["500"]

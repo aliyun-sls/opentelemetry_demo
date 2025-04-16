@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
+	"os"
 	"time"
 )
 
@@ -51,9 +52,13 @@ func NodeLossFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
+	region := os.Getenv("REGION")
+	nodeid := os.Getenv("NODEID")
 	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, nodeLossLastConfig)
-	if istrue == "on" {
-		currentConfig = "topology.kubernetes.io/zone=cn-guangzhou-a"
+	if istrue == "region" {
+		currentConfig = "topology.kubernetes.io/zone=" + region + "-a"
+	} else if istrue == "node" {
+		currentConfig = "alibabacloud.com/ecs-instance-id=" + nodeid
 	} else {
 		currentConfig = ""
 	}
