@@ -80,6 +80,32 @@ services:
         condition: service_started
     logging: *logging
 
+  # Gateway service
+  gateway:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-gateway
+    container_name: gateway
+    build:
+      context: ./
+      dockerfile: ${GATEWAY_APP_DOCKERFILE}
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-gateway
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_APP_PORT}"
+    environment:
+      - CHECKOUT_ADDR
+      - PRODUCT_ADDR
+    depends_on:
+      checkout:
+        condition: service_started
+      product-catalog:
+        condition: service_started
+    logging: *logging
+
   # Cart service
   cart:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-cart
@@ -290,6 +316,8 @@ services:
       - OTEL_COLLECTOR_HOST
       - FLAGD_HOST
       - FLAGD_PORT
+      - ALIBABA_CLOUD_RUM_PID
+      - ALIBABA_CLOUD_RUM_ENDPOINT
     depends_on:
       ad:
         condition: service_started
@@ -351,6 +379,8 @@ services:
       - FLAGD_PORT
       - FLAGD_UI_HOST
       - FLAGD_UI_PORT
+      - GATEWAY_APP_HOST
+      - GATEWAY_APP_PORT
     depends_on:
       frontend:
         condition: service_started
