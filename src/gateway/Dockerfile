@@ -27,4 +27,4 @@ COPY --from=builder /usr/src/app/ ./
 # ENV JAVA_TOOL_OPTIONS=-javaagent:/usr/src/app/opentelemetry-javaagent.jar
 
 EXPOSE ${GATEWAY_PORT}
-ENTRYPOINT [ "java", "-jar" , "./build/libs/gateway-0.0.1-SNAPSHOT.jar" ]
+ENTRYPOINT [ "java", "-Dreactor.netty.pool.leasingStrategy=lifo", "-jar" , "./build/libs/gateway-0.0.1-SNAPSHOT.jar" ]

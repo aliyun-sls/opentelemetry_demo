@@ -1,6 +1,9 @@
 spring:
   cloud:
     gateway:
+      httpclient:
+        pool:
+          max-idle-time: ${MAX_IDLE_TIME:5s}
       routes:
         - id: check
           uri: no://op
@@ -29,6 +32,42 @@ spring:
               args:
                 productAddr: ${PRODUCT_ADDR:localhost:50051}
                 currencyAddr: ${CURRENCY_ADDR:localhost:50052}
+        - id: cart
+          uri: no://op
+          predicates:
+            - Path=/api/cart
+          filters:
+            - name: Cart
+              args:
+                cartAddr: ${CART_ADDR}
+                productAddr: ${PRODUCT_ADDR}
+                currencyAddr: ${CURRENCY_ADDR}
+        - id: data
+          uri: no://op
+          predicates:
+            - Path=/api/data
+          filters:
+            - name: Data
+              args:
+                dataAddr: ${AD_ADDR}
+        - id: recommendation
+          uri: no://op
+          predicates:
+            - Path=/api/recommendations
+          filters:
+            - name: Recommendation
+              args:
+                recommendationAddr: ${RECOMMENDATION_ADDR}
+                productAddr: ${PRODUCT_ADDR}
+                currencyAddr: ${CURRENCY_ADDR}
+        - id: currency
+          uri: no://op
+          predicates:
+            - Path=/api/currency
+          filters:
+            - name: Currency
+              args:
+                currencyAddr: ${CURRENCY_ADDR}
         - id: ads
           uri: http://ads:8080
           predicates:

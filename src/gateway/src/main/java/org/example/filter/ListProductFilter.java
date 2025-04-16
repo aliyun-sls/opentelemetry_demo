@@ -96,7 +96,9 @@ public class ListProductFilter implements GatewayFilter {
 
                     Demo.Money money = DoCurrencyConvert(request.build());
                     JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-                    moneyJson.addProperty("units", Integer.valueOf(moneyJson.get("units").getAsString()));
+                    if (moneyJson.get("units") != null) {
+                        moneyJson.addProperty("units", Integer.valueOf(moneyJson.get("units").getAsString()));
+                    }
                     productJson.add("priceUsd", moneyJson);
 
                     rst.add(productJson);
@@ -104,15 +106,17 @@ public class ListProductFilter implements GatewayFilter {
 
                 return Mono.just(rst);
             }catch (Exception e) {
+                log.info("ListProductFilter", e);
                 return Mono.error(e);
             }
         }).map(f -> new Gson().toJson(f)).flatMap(responseBody -> {
             try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = responseBody.toString().getBytes();
+                byte[] bytes = responseBody.getBytes();
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
+                log.info("ListProductFilter", e);
                 return Mono.error(e);
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
