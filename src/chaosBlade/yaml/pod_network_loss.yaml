@@ -1,0 +1,22 @@
+apiVersion: chaosblade.io/v1alpha1
+kind: ChaosBlade
+metadata:
+  name: {{ .Name }}
+spec:
+  experiments:
+    - scope: pod
+      target: network
+      action: loss
+      desc: "pod network loss"
+      matchers:
+        - name: labels
+          value: ["{{ .Labels }}"]
+        - name: percent
+          value:
+            - "{{ .Percent }}"
+        - name: interface
+          value: ["eth0"]
+        - name: remote-port
+          value: ["{{ .Port }}"]
+        - name: timeout
+          value: ["500"]

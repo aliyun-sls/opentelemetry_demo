@@ -297,11 +297,11 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(catalog)),
 	)
-	httpCall("reporting:8080", "/reporting")
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
+	pb.Mysql()
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.product.id", req.Id),
@@ -335,7 +335,12 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	span.SetAttributes(
 		attribute.String("app.product.name", found.Name),
 	)
-	httpCall("reporting:8080", "/reporting")
+
+	// 确保返回的 Product 对象不为空
+	if found == nil {
+		return nil, status.Errorf(codes.Internal, "Internal Server Error")
+	}
+
 	return found, nil
 }
 

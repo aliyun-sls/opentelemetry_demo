@@ -1,0 +1,23 @@
+apiVersion: chaosblade.io/v1alpha1
+kind: ChaosBlade
+metadata:
+  name: pod-network-delay
+spec:
+  experiments:
+    - scope: pod
+      target: network
+      action: delay
+      desc: "delay pod network by labels"
+      matchers:
+        - name: labels
+          value: ["{{ .Labels }}"]
+        - name: namespace
+          value: ["{{ .Namespace }}"]
+        - name: local-port
+          value: ["{{ .Port }}"]
+        - name: interface
+          value: ["eth0"]
+        - name: time
+          value: ["{{ .Time }}"]
+        - name: offset
+          value: ["{{ .Offset }}"]

@@ -1,0 +1,24 @@
+apiVersion: chaosblade.io/v1alpha1
+kind: ChaosBlade
+metadata:
+  name: node-network-delay
+spec:
+  experiments:
+    - scope: node
+      target: network
+      action: delay
+      desc: "delay node network by names"
+      matchers:
+        - name: names
+          value: {{ .Name }}
+        - name: interface
+          value: ["eth0"]
+        - name: time
+          value:
+            - {{ .Time }}
+        - name: offset
+          value:
+            - {{ .Offset }}
+        - name: timeout
+          value:
+            - "300"

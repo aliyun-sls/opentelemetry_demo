@@ -1,0 +1,17 @@
+FROM o11y-demo-cn-heyuan-registry.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/node-puppeteer:1.0.7
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD true
+ENV USE_DOCKER_CHROME true
+
+ENV PORT 5174
+EXPOSE 5174
+
+
+# Prepare app directory
+WORKDIR /usr/src/app
+COPY . /usr/src/app/
+
+RUN npm install
+
+# Start the app
+#CMD ./replace.sh ;npm run start
+CMD npm run start

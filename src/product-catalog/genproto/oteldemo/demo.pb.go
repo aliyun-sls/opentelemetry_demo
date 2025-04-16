@@ -546,6 +546,22 @@ type GetProductRequest struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
+	delay         string
+	percent       string
+}
+
+func (x *GetProductRequest) GetDelay() string {
+	if x != nil {
+		return x.delay
+	}
+	return ""
+}
+
+func (x *GetProductRequest) Getpercent() string {
+	if x != nil {
+		return x.percent
+	}
+	return ""
 }
 
 func (x *GetProductRequest) Reset() {

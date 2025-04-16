@@ -2,7 +2,10 @@
   "$schema": "https://flagd.dev/schema/v0/flags.json",
   "flags": {
     "productCatalogFailure": {
-      "description": "Fail product catalog service on a specific product",
+      "displayName": "特定产品的产品目录服务失败",
+      "description": "特定产品的产品目录服务失败。Fail product catalog service on a specific product",
+      "category": "商品服务相关",
+      "tags": ["Trace"],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -11,7 +14,10 @@
       "defaultVariant": "off"
     },
     "recommendationCacheFailure": {
-      "description": "Fail recommendation service cache",
+      "displayName": "推荐服务缓存失败",
+      "description": "推荐服务缓存失败。Fail recommendation service cache",
+      "category": "商品服务相关",
+      "tags": ["Trace"],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -20,7 +26,10 @@
       "defaultVariant": "off"
     },
     "adManualGc": {
-      "description": "Triggers full manual garbage collections in the ad service",
+      "displayName": "在广告服务中触发完整的手动垃圾收集",
+      "description": "在广告服务中触发完整的手动垃圾收集。Triggers full manual garbage collections in the ad service",
+      "category": "广告服务相关",
+      "tags": ["Profile"],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -29,7 +38,10 @@
       "defaultVariant": "off"
     },
     "adHighCpu": {
-      "description": "Triggers high cpu load in the ad service",
+      "displayName": "触发广告服务中的高 CPU 负载",
+      "description": "触发广告服务中的高 CPU 负载。Triggers high cpu load in the ad service",
+      "category": "广告服务相关",
+      "tags": ["Profile"],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -38,8 +50,11 @@
       "defaultVariant": "off"
     },
     "adFailure": {
-      "description": "Fail ad service",
+      "displayName": "广告服务失败",
+      "description": "广告服务失败。Fail ad service",
       "state": "ENABLED",
+      "category": "广告服务相关",
+      "tags": ["Trace"],
       "variants": {
         "on": true,
         "off": false
@@ -47,7 +62,10 @@
       "defaultVariant": "off"
     },
     "kafkaQueueProblems": {
-      "description": "Overloads Kafka queue while simultaneously introducing a consumer side delay leading to a lag spike",
+      "displayName": "Kafka 队列超载",
+      "description": "导致 Kafka 队列超载，同时导致消费者端延迟，进而导致延迟峰值。Overloads Kafka queue while simultaneously introducing a consumer side delay leading to a lag spike",
+      "category": "商品服务相关",
+      "tags": ["Trace", "Profile"],
       "state": "ENABLED",
       "variants": {
         "on": 100,
@@ -56,7 +74,10 @@
       "defaultVariant": "off"
     },
     "cartFailure": {
-      "description": "Fail cart service",
+      "displayName": "购物车服务失败",
+      "description": "购物车服务失败。Fail cart service",
+      "category": "支付相关",
+      "tags": ["Trace"],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -65,7 +86,10 @@
       "defaultVariant": "off"
     },
     "paymentFailure": {
-      "description": "Fail payment service charge requests n%",
+      "displayName": "支付服务费请求失败",
+      "description": "支付服务费请求失败 n%。Fail payment service charge requests n%",
+      "category": "支付相关",
+      "tags": ["Trace"],
       "state": "ENABLED",
       "variants": {
         "100%": 1,
@@ -79,7 +103,10 @@
       "defaultVariant": "off"
     },
     "paymentUnreachable": {
-      "description": "Payment service is unavailable",
+      "displayName": "支付服务不可用",
+      "description": "支付服务不可用。Payment service is unavailable",
+      "category": "支付相关",
+      "tags": ["Trace"],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -88,7 +115,10 @@
       "defaultVariant": "off"
     },
     "loadGeneratorFloodHomepage": {
-      "description": "Flood the frontend with a large amount of requests.",
+      "displayName": "用大量请求淹没前端",
+      "description": "用大量请求淹没前端。Flood the frontend with a large amount of requests.",
+      "category": "前端控制",
+      "tags": ["Profile"],
       "state": "ENABLED",
       "variants": {
         "on": 100,
@@ -97,12 +127,107 @@
       "defaultVariant": "off"
     },
     "imageSlowLoad": {
-      "description": "slow loading images in the frontend",
+      "displayName": "前端图片加载缓慢",
+      "description": "前端图片加载缓慢。slow loading images in the frontend",
+      "category": "前端控制",
+      "tags": ["Trace", "Profile"],
       "state": "ENABLED",
       "variants": {
         "10sec": 10000,
         "5sec": 5000,
         "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "adsTableNotExistFlag": {
+      "displayName": "广告服务查询表不存在",
+      "description": "广告服务查询表不存在。ads service table not exist",
+      "category": "广告服务相关",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "adsSqlComplexFlag": {
+      "displayName": "广告服务查询复杂SQL",
+      "description": "广告服务查询复杂SQL。ads service sql complex",
+      "category": "广告服务相关",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "adsMassInsertFlag": {
+      "displayName": "广告服务大量插入",
+      "description": "广告服务大量插入。ads service mass insert",
+      "category": "广告服务相关",
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "productDelay": {
+      "displayName": "上架产品并将产品图片放入oss",
+      "description": "上架产品并将产品图片放入oss。put product and put image to oss",
+      "state": "ENABLED",
+      "variants": {
+        "10sec": 10000,
+        "5sec": 5000,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "marketingHighCpuCostLoopCountFlag": {
+      "displayName": "高CPU消耗循环次数",
+      "description": "高CPU消耗循环次数。high cpu cost loop count",
+      "category": "广告服务相关",
+      "tags": [
+        "应用层异常",
+        "埋点稀疏导致无法排障"
+      ],
+      "state": "ENABLED",
+      "variants": {
+        "on": 1000,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "adsWithTableNotExistCall": {
+      "displayName": "查询不存在的表",
+      "description": "ads with table not exist call",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "数据库异常",
+        "错误率上升"
+      ],
+      "category": "广告服务相关",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "adsWithTableNotExist": {
+      "displayName": "因版本升级导致查询不存在的数据库表",
+      "description": "ads with table not exist",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "数据库异常",
+        "版本升级",
+        "错误率上升"
+      ],
+      "category": "广告服务相关",
+      "variants": {
+        "on": true,
+        "off": false
       },
       "defaultVariant": "off"
     }
