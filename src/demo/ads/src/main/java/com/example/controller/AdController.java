@@ -61,9 +61,9 @@ public class AdController {
         boolean insertFlag = client.getBooleanValue(ADS_INSERT_FLAG, false);
 
         if (tableFlag) {
-            scenarioHandler.handleNormal();
-        } else {
             scenarioHandler.handleTableNotExist();
+        } else {
+            scenarioHandler.handleNormal();
         }
 
         scenarioHandler.handleNormal();
