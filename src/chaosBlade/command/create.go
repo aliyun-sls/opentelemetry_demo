@@ -5,9 +5,9 @@ import (
 )
 
 // --------------region网络丢包------------
-func NodeNetLoss(labels string) {
+func NodeNetLoss(istrue, labels string) {
 	// 生成 yaml 文件
-	nodeNetLoss := NodeNetLossYaml(labels)
+	nodeNetLoss := NodeNetLossYaml(istrue, labels)
 	if nodeNetLoss == "" {
 		return
 	}

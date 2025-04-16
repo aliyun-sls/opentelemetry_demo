@@ -25,14 +25,19 @@ func generateYAML(templateFile string, data interface{}) string {
 }
 
 // 配置node网络丢包压测
-func NodeNetLossYaml(labels string) string {
+func NodeNetLossYaml(istrue, labels string) string {
+	name := ""
+	if istrue == "region" {
+		name = "chaosblade-region-loss"
+	} else {
+		name = "chaosblade-node-loss"
+	}
 	if labels != "" {
 		// 定义模板数据
 		data := &Netloss{
-			Name:    "chaosblade-node-loss",
+			Name:    name,
 			Labels:  labels,
 			Percent: "100",
-			Timeout: "500",
 		}
 
 		path, _ := os.Getwd()
@@ -41,6 +46,8 @@ func NodeNetLossYaml(labels string) string {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
 			if s == "chaosblade-node-loss" {
+				DeleteCRD(Dynamic, Gvr, s)
+			} else if s == "chaosblade-region-loss" {
 				DeleteCRD(Dynamic, Gvr, s)
 			}
 		}
