@@ -35,19 +35,23 @@
     <p><%= order.shipping_cost.units %>.<%= order.shipping_cost.nanos %> <%= order.shipping_cost.currency_code %></p>
     <p><%= order.shipping_address.street_address_1 %>, <%= order.shipping_address.street_address_2 %>, <%= order.shipping_address.city %>, <%= order.shipping_address.country %> <%= order.shipping_address.zip_code %></p>
     <h3>Items</h3>
-    <table style="width:100%">
-        <tr>
-          <th>Item No.</th>
-          <th>Quantity</th>
-          <th>Price</th>
-        </tr>
-        <% order.items.each do |item| %>
+    <% if order.items&.any? %>
+      <table style="width:100%">
           <tr>
-            <td><%= item.item.product_id %></td>
-            <td><%= item.item.quantity %></td>
-            <td><%= item.cost.units %>.<%= item.cost.nanos %> <%= item.cost.currency_code %></td>
+            <th>Item No.</th>
+            <th>Quantity</th>
+            <th>Price</th>
           </tr>
-        <% end %>
-    </table>
+          <% order.items.each do |item| %>
+            <tr>
+              <td><%= item.item.product_id %></td>
+              <td><%= item.item.quantity %></td>
+              <td><%= item.cost.units %>.<%= item.cost.nanos %> <%= item.cost.currency_code %></td>
+            </tr>
+          <% end %>
+      </table>
+    <% else %>
+      <p>No items found in this order</p>
+    <% end %>
   </body>
 </html>
