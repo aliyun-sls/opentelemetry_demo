@@ -10,7 +10,9 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -141,9 +143,6 @@ func main() {
 	svc := &productCatalog{}
 	var port string
 	mustMapEnv(&port, "PRODUCT_CATALOG_PORT")
-
-	port = strings.Split(port, ":")[2]
-
 	log.Infof("Product Catalog gRPC server started on port: %s", port)
 
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
@@ -273,12 +272,32 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
+func httpCall(addr, path string) {
+	httpclient := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	resp, err := httpclient.Get("http://" + addr + path)
+	if err != nil {
+		log.Errorf("Error %q %q", err, addr+path)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("Error %q %q", err, addr+path)
+		return
+	}
+	log.Infof("Response: %q", string(body))
+}
+
 func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.ListProductsResponse, error) {
 	span := trace.SpanFromContext(ctx)
 
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(catalog)),
 	)
+	httpCall("reporting:8080", "/reporting")
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
@@ -316,6 +335,7 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	span.SetAttributes(
 		attribute.String("app.product.name", found.Name),
 	)
+	httpCall("reporting:8080", "/reporting")
 	return found, nil
 }
 

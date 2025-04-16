@@ -6,11 +6,11 @@ import (
 	"net/http"
 )
 
-func ToApp01() {
+func Order() {
 	//service := os.Getenv("SERVICE_NAME")
-	url := "http://goapp:8080/getapp01"
+	urlgoapp := "http://order:8080/order"
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(urlgoapp)
 	if err != nil {
 		log.Fatalf("Error calling endpoint: %v", err)
 	}

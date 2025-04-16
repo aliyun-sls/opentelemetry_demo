@@ -9,6 +9,12 @@ components:
     enabled: true
   mysql:
     enabled: true
+  gateway:
+    labels:
+      acs.cms.workspace: "<workspace>"
+  user:
+    labels:
+      acs.cms.workspace: "<workspace>"
   marketing:
     labels:
       acs.cms.workspace: "<workspace>"
