@@ -44,7 +44,7 @@ const BasicView = () => {
   const flagGroup = useMemo(() => {
     if (!flagData) return new Map<string, FlagGroup>();
     const categoryMaps = new Map<string, FlagGroup>();
-    Object.keys(flagData.flags).map((flagId) => {
+    Object.keys(flagData?.flags ?? {}).map((flagId) => {
       const flagConfig: FlagConfig = flagData.flags[flagId];
       const category = flagConfig.category;
       const config_tags = flagConfig.tags;
@@ -75,7 +75,7 @@ const BasicView = () => {
 
   const tags = useMemo(() => {
     if (!flagData) return [];
-    const tags_set = new Set(Object.keys(flagData.flags).map((flagId) => flagData.flags[flagId].tags).flat())
+    const tags_set = new Set(Object.keys(flagData?.flags ?? {}).map((flagId) => flagData.flags[flagId].tags).flat())
     return Array.from(tags_set).map((tag) => ({
       value: tag,
       label: tag,
