@@ -1,9 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 export interface FlagConfig {
+  displayName: string;
   description: string;
   state: FlagState;
   variants: {};
+  category: string;
+  tags: string[];
   defaultVariant: string;
 }
 
@@ -13,6 +16,11 @@ export type Flags = {
 
 export type ConfigFile = {
   $schema: string;
+  flags: Flags;
+};
+
+export type FlagGroup = {
+  category: string;
   flags: Flags;
 };
 

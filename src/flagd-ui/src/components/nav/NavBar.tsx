@@ -23,7 +23,7 @@ const NavBar = () => {
                   : "text-gray-300 hover:bg-gray-700 hover:text-white"
               } transition-all duration-200`}
             >
-              Basic
+              可视化控制
             </Link>
           </li>
           <li>
@@ -35,7 +35,7 @@ const NavBar = () => {
                   : "text-gray-300 hover:bg-gray-700 hover:text-white"
               } transition-all duration-200`}
             >
-              Advanced
+              文件控制
             </Link>
           </li>
         </ul>
