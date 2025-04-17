@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=bind,rw,source=./src/demo/rds,target=. \
-    go build -ldflags "-s -w" -o /go/bin/rds ./
+    go mod tidy && go build -ldflags "-s -w" -o /go/bin/rds ./
 
 FROM alpine
 
