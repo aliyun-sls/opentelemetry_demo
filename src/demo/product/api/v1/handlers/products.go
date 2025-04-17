@@ -145,12 +145,25 @@ func PutProducts(c *gin.Context) {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", details)
+	log.Printf("获取feature productDelay: %v", details)
 
 	// 应用延迟
 	if details > 0 {
 		time.Sleep(time.Duration(details) * time.Millisecond)
 		log.Println("延迟执行完成")
+	}
+
+	// 获取feature flag值
+	isSwitch := flagClient.String(
+		context.Background(),
+		"SwitchDBInstanceHA",
+		"",
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature SwitchDBInstanceHA: %v", isSwitch)
+
+	if isSwitch == "on" {
+		RDS()
 	}
 
 	// 处理文件上传
