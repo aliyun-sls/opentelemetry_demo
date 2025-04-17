@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DOCKER_REPO=o11y-demo-cn-heyuan-registry.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/demo
-DOCKER_TAG=latest
+DOCKER_TAG=1.0
 
 
 module=frontend-simulator
