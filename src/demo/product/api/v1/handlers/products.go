@@ -161,7 +161,7 @@ func PutProducts(c *gin.Context) {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature SwitchDBInstanceHA: %v", isSwitch)
+	log.Printf("获取feature SwitchDBInstanceHA: %v,lastconfig: %v", isSwitch, lastconfig)
 
 	if isSwitch == "on" && lastconfig != isSwitch {
 		RDS()
