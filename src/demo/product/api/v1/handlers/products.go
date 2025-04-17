@@ -140,21 +140,6 @@ func PutProducts(c *gin.Context) {
 	initFeatureFlag()
 
 	// 获取feature flag值
-	details := flagClient.Int(
-		context.Background(),
-		"PodNetDelay",
-		0,
-		openfeature.EvaluationContext{},
-	)
-	log.Printf("获取feature productDelay: %v", details)
-
-	// 应用延迟
-	if details > 0 {
-		time.Sleep(time.Duration(details) * time.Millisecond)
-		log.Println("延迟执行完成")
-	}
-
-	// 获取feature flag值
 	isSwitch := flagClient.String(
 		context.Background(),
 		"SwitchDBInstanceHA",
