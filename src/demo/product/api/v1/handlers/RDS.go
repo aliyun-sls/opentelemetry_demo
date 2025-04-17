@@ -129,7 +129,9 @@ func _main(args []*string) (_err error) {
 	queries["DBInstanceId"] = tea.String(DBInstanceId)
 	queries["NodeId"] = tea.String(nodeid)
 	runtime = &util.RuntimeOptions{}
-	request = &openapi.OpenApiRequest{}
+	request = &openapi.OpenApiRequest{
+		Query: openapiutil.Query(queries),
+	}
 	// 复制代码运行请自行打印 API 的返回值
 	// 返回值实际为 Map 类型，可从 Map 中获得三类数据：响应体 body、响应头 headers、HTTP 返回的状态码 statusCode。
 	resp, _err = client.CallApi(params, request, runtime)
