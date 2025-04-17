@@ -116,6 +116,7 @@ func ModifyProducts(c *gin.Context) {
 var (
 	flagClient *openfeature.Client
 	once       sync.Once
+	lastconfig string
 )
 
 func initFeatureFlag() {
@@ -162,7 +163,6 @@ func PutProducts(c *gin.Context) {
 	)
 	log.Printf("获取feature SwitchDBInstanceHA: %v", isSwitch)
 
-	var lastconfig string
 	if isSwitch == "on" && lastconfig != isSwitch {
 		RDS()
 		lastconfig = isSwitch
