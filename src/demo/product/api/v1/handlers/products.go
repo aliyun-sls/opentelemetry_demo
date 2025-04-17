@@ -142,7 +142,7 @@ func PutProducts(c *gin.Context) {
 	// 获取feature flag值
 	details := flagClient.Int(
 		context.Background(),
-		"productDelay",
+		"PodNetDelay",
 		0,
 		openfeature.EvaluationContext{},
 	)
