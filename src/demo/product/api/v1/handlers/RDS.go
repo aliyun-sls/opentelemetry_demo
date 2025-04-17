@@ -91,7 +91,7 @@ func _main(args []*string) (_err error) {
 	if _err != nil {
 		return _err
 	}
-	DBInstanceId := os.Getenv("DBInstanceId")
+	DBInstanceId := os.Getenv("DBINSTANCEID")
 	params := DescribeDBInstanceHAConfig()
 	// query params
 	queries := map[string]interface{}{}
