@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -128,8 +129,8 @@ type checkout struct {
 	adsSvcAddr            string
 	marketingSvcAddr      string
 	notificationSvcAddr   string
-	orderSvcAddr          string
 	promotionSvcAddr      string
+	orderSvcAddr          string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
 	KafkaProducerClient     sarama.AsyncProducer
@@ -233,20 +234,26 @@ func main() {
 	log.Fatal(err)
 }
 
-func httpCall(addr, path string) {
+func httpCall(addr, path string) error {
 	resp, err := http.Get("http://" + addr + path)
 	if err != nil {
-		log.Fatalf("Error %q %q", err, addr+path)
-		return
+		log.Warnf("Error %q %q", err, addr+path)
+		return err
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		log.Warnf("Error %q %q", err, addr+path)
+		return errors.New("status code " + strconv.Itoa(resp.StatusCode))
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error %q %q", err, addr+path)
-		return
+		log.Warnf("Error %q %q", err, addr+path)
+		return err
 	}
 	log.Infof("Response: %q", string(body))
+	return nil
 }
 
 func mustMapEnv(target *string, envKey string) {
@@ -266,19 +273,21 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
-	if cs.marketingSvcAddr != "" {
-		httpCall(cs.marketingSvcAddr, "/listMarketing")
-	}
-	if cs.promotionSvcAddr != "" {
-		httpCall(cs.promotionSvcAddr, "/listPromotion")
-	}
-	if cs.notificationSvcAddr != "" {
-		httpCall(cs.notificationSvcAddr, "/listNotification")
-	}
-	if cs.orderSvcAddr != "" {
-		httpCall(cs.orderSvcAddr, "/order")
+	if err := httpCall(cs.marketingSvcAddr, "/listMarketing"); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list marketing")
 	}
 
+	if err := httpCall(cs.promotionSvcAddr, "/listPromotion"); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list promotion")
+	}
+
+	if err := httpCall(cs.notificationSvcAddr, "/listNotification"); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list notification")
+	}
+
+	if err := httpCall(cs.orderSvcAddr, "/order"); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list order")
+	}
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),

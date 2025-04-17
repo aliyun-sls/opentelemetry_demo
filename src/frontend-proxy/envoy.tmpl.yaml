@@ -15,21 +15,21 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 codec_type: AUTO
                 stat_prefix: ingress_http
-                tracing:
-                  spawn_upstream_span: true
-                  provider:
-                    name: envoy.tracers.opentelemetry
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
-                      grpc_service:
-                        envoy_grpc:
-                          cluster_name: opentelemetry_collector_grpc
-                        timeout: 0.250s
-                      service_name: ${OTEL_SERVICE_NAME}
-                      resource_detectors:
-                        - name: envoy.tracers.opentelemetry.resource_detectors.environment
-                          typed_config:
-                            "@type": type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
+                #tracing:
+                #  spawn_upstream_span: true
+                #  provider:
+                #    name: envoy.tracers.opentelemetry
+                #    typed_config:
+                #      "@type": type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                #      grpc_service:
+                #        envoy_grpc:
+                #          cluster_name: opentelemetry_collector_grpc
+                #        timeout: 0.250s
+                #      service_name: ${OTEL_SERVICE_NAME}
+                #      resource_detectors:
+                #        - name: envoy.tracers.opentelemetry.resource_detectors.environment
+                #          typed_config:
+                #            "@type": type.googleapis.com/envoy.extensions.tracers.opentelemetry.resource_detectors.v3.EnvironmentResourceDetectorConfig
                 route_config:
                   name: local_route
                   virtual_hosts:
@@ -52,7 +52,7 @@ static_resources:
                         - match: { prefix: "/feature" }
                           route: { cluster: flagd-ui }
                         - match: { prefix: "/" }
-                          route: { cluster: frontend }
+                          route: { cluster: gateway }
                 http_filters:
                   - name: envoy.filters.http.fault
                     typed_config:
@@ -160,6 +160,18 @@ static_resources:
                     socket_address:
                       address: ${FRONTEND_HOST}
                       port_value: ${FRONTEND_PORT}
+    - name: gateway
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: gateway
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: ${GATEWAY_APP_HOST}
+                      port_value: ${GATEWAY_APP_PORT}
     - name: image-provider
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
