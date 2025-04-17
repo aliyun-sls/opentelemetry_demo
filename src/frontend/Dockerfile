@@ -8,8 +8,8 @@ USER node
 
 WORKDIR /app
 
-COPY ./src/frontend/package*.json ./
-RUN mkdir -p /app/node_modules && chown -R node:node /app
+RUN mkdir -p node_modules && chown -R node:node ./
+COPY --chown=node:node ./src/frontend/package*.json ./
 RUN npm clean-install --no-audit --no-progress
 COPY ./src/frontend/protos ./protos
 COPY ./src/frontend .
