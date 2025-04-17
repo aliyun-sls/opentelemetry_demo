@@ -166,7 +166,7 @@ func PutProducts(c *gin.Context) {
 	if isSwitch == "on" && lastconfig != isSwitch {
 		RDS()
 		lastconfig = isSwitch
-	} else if isSwitch == "off" {
+	} else if isSwitch == "" {
 		lastconfig = ""
 	}
 
