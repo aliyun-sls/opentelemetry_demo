@@ -4,6 +4,7 @@ package main
 import (
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	openapiutil "github.com/alibabacloud-go/openapi-util/service"
+	console "github.com/alibabacloud-go/tea-console/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"os"
@@ -80,10 +81,12 @@ func _main(args []*string) (_err error) {
 	}
 	// 复制代码运行请自行打印 API 的返回值
 	// 返回值实际为 Map 类型，可从 Map 中获得三类数据：响应体 body、响应头 headers、HTTP 返回的状态码 statusCode。
-	_, _err = client.CallApi(params, request, runtime)
+	resp, _err := client.CallApi(params, request, runtime)
 	if _err != nil {
 		return _err
 	}
+
+	console.Log(util.ToJSONString(resp))
 	return _err
 }
 

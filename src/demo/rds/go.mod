@@ -6,6 +6,7 @@ require (
 	github.com/alibabacloud-go/darabonba-openapi/v2 v2.1.7
 	github.com/alibabacloud-go/openapi-util v0.1.1
 	github.com/alibabacloud-go/tea v1.3.8
+	github.com/alibabacloud-go/tea-console v1.0.0
 	github.com/alibabacloud-go/tea-utils/v2 v2.0.7
 )
 
