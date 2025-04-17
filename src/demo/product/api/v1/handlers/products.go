@@ -162,8 +162,10 @@ func PutProducts(c *gin.Context) {
 	)
 	log.Printf("获取feature SwitchDBInstanceHA: %v", isSwitch)
 
-	if isSwitch == "on" {
+	var lastconfig string
+	if isSwitch == "on" && lastconfig != isSwitch {
 		RDS()
+		lastconfig = isSwitch
 	}
 
 	// 处理文件上传
