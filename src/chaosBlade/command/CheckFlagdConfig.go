@@ -135,7 +135,7 @@ func PodNetDelayFlagd() {
 	)
 	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", istrue, podNetDelayLastConfig)
 	if istrue == "on" {
-		currentConfig = "app.kubernetes.io/name=product"
+		currentConfig = "app.kubernetes.io/name=cart"
 	} else {
 		currentConfig = ""
 	}
