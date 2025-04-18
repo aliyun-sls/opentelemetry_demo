@@ -81,7 +81,7 @@ func (region *RegionLoss) RegionLossFlagd() {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", region.flagdValue, region.regionlossLastConfig)
+	log.Printf("获取 RegionLossFlagd feature : %v,last flagd: %v", region.flagdValue, region.regionlossLastConfig)
 
 	if region.flagdValue != region.regionlossLastConfig {
 		// 如果配置发生变化，执行相应的操作
