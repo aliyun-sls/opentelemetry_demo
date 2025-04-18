@@ -57,8 +57,8 @@ func NodeLossFlagd() {
 	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, nodeLossLastConfig)
 	if istrue != nodeLossLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		fmt.Println("删除node-loss")
 		if nodeLossLastConfig > 0 {
+			fmt.Println("删除node-loss")
 			DeleteCRD(Dynamic, Gvr, "node-loss")
 			time.Sleep(5 * time.Second)
 			fmt.Println("删除node-loss完成")
@@ -80,8 +80,8 @@ func (region *RegionLoss) RegionLossFlagd() {
 
 	if region.flagdValue != region.regionlossLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		fmt.Println("删除region-loss")
 		if region.regionlossLastConfig > 0 {
+			fmt.Println("删除region-loss")
 			DeleteCRD(Dynamic, Gvr, "region-loss")
 			time.Sleep(5 * time.Second)
 			fmt.Println("删除region-loss完成")
@@ -102,8 +102,8 @@ func PodCpuFlagd() {
 	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, podCpuLastConfig)
 	if istrue != podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		fmt.Println("删除cpu-load")
 		if podCpuLastConfig > 0 {
+			fmt.Println("删除cpu-load")
 			DeleteCRD(Dynamic, Gvr, "cpu-load")
 			time.Sleep(5 * time.Second)
 			fmt.Println("删除cpu-load完成")
