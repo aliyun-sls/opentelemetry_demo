@@ -202,7 +202,7 @@ func PutProducts(c *gin.Context) {
 
 	// 检查是否已存在相同记录
 	err = util.MDB.WithContext(ctx).Where("brand_id = ? AND seller_id = ?", products.BrandId, products.SellerId).First(&products).Error
-	if err == nil {
+	if err != nil {
 		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
 			util.Status500(c, err)
 		}
