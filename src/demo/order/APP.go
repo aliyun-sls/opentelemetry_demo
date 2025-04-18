@@ -124,7 +124,6 @@ func PutProducts(urlShelve string) {
 	}
 
 	// 确保Content-Type正确设置
-	fmt.Println(body)
 	req, err := http.NewRequest("POST", urlShelve, body)
 	if err != nil {
 		log.Printf("创建请求失败: %v", err)
