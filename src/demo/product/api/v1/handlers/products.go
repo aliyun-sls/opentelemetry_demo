@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"sls-mall-go/common/config"
@@ -208,6 +209,12 @@ func PutProducts(c *gin.Context) {
 			util.Status500(c, err)
 			return
 		}*/
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		// 如果不存在，则插入
+		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
+			util.Status500(c, err)
+			return
+		}
 	} else {
 		// 如果不存在，则插入
 		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
