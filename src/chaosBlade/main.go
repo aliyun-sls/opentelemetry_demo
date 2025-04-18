@@ -36,10 +36,12 @@ func main() {
 		command.FlagClient = openfeature.NewClient("product")
 	})
 
+	region := command.RegionLoss{}
+
 	for {
 		//command.RDSLossFlagd()
 		command.NodeLossFlagd()
-		command.RegionLossFlagd()
+		region.RegionLossFlagd()
 		command.PodNetDelayFlagd()
 		command.PodCpuFlagd()
 		command.PodMemFlagd()
