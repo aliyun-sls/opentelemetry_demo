@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"sls-mall-go/common/config"
@@ -204,22 +203,8 @@ func PutProducts(c *gin.Context) {
 	// 检查是否已存在相同记录
 	err = util.MDB.WithContext(ctx).Where("brand_id = ? AND seller_id = ?", products.BrandId, products.SellerId).First(&products).Error
 	if err == nil {
-		// 如果存在，则更新
-		/*if err := util.MDB.WithContext(ctx).Updates(&products).Error; err != nil {
-			util.Status500(c, err)
-			return
-		}*/
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		// 如果不存在，则插入
 		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
 			util.Status500(c, err)
-			return
-		}
-	} else {
-		// 如果不存在，则插入
-		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
-			util.Status500(c, err)
-			return
 		}
 	}
 

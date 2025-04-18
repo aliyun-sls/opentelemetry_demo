@@ -33,7 +33,7 @@ func main() {
 			log.Printf("设置provider失败: %v", err)
 			return
 		}
-		command.FlagClient = openfeature.NewClient("product")
+		command.FlagClient = openfeature.NewClient("chaosblade-run")
 	})
 
 	region := command.RegionLoss{}
