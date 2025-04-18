@@ -123,7 +123,16 @@ func PutProducts(urlShelve string) {
 		log.Printf("关闭writer失败: %v", err)
 	}
 
-	respShelve, err := http.Post(urlShelve, writer.FormDataContentType(), body)
+	// 确保Content-Type正确设置
+	req, err := http.NewRequest("POST", urlShelve, body)
+	if err != nil {
+		log.Printf("创建请求失败: %v", err)
+		return
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	respShelve, err := client.Do(req)
 	if err != nil {
 		log.Printf("Error calling shelve endpoint: %v", err)
 		return // 直接返回，避免后续操作
