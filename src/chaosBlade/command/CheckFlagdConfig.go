@@ -1,6 +1,7 @@
 package command
 
 import (
+	"chaosBlade/client"
 	"context"
 	"fmt"
 	"github.com/open-feature/go-sdk/openfeature"
@@ -59,8 +60,12 @@ func NodeLossFlagd() {
 		// 如果配置发生变化，执行相应的操作
 		if nodeLossLastConfig > 0 {
 			fmt.Println("删除node-loss")
-			DeleteCRD(Dynamic, Gvr, "node-loss")
-			time.Sleep(5 * time.Second)
+			arr := client.ListCRD(Dynamic, Gvr)
+			for _, s := range arr {
+				if s == "node-loss" {
+					DeleteCRD(Dynamic, Gvr, s)
+				}
+			}
 			fmt.Println("删除node-loss完成")
 		}
 		NodeNetLoss(istrue)
@@ -82,8 +87,12 @@ func (region *RegionLoss) RegionLossFlagd() {
 		// 如果配置发生变化，执行相应的操作
 		if region.regionlossLastConfig > 0 {
 			fmt.Println("删除region-loss")
-			DeleteCRD(Dynamic, Gvr, "region-loss")
-			time.Sleep(5 * time.Second)
+			arr := client.ListCRD(Dynamic, Gvr)
+			for _, s := range arr {
+				if s == "region-loss" {
+					DeleteCRD(Dynamic, Gvr, s)
+				}
+			}
 			fmt.Println("删除region-loss完成")
 		}
 		region.RegionNetLoss()
