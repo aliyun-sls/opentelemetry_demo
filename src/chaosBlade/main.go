@@ -37,8 +37,9 @@ func main() {
 	})
 
 	for {
-		command.RDSLossFlagd()
+		//command.RDSLossFlagd()
 		command.NodeLossFlagd()
+		command.RegionLossFlagd()
 		command.PodNetDelayFlagd()
 		command.PodCpuFlagd()
 		command.PodMemFlagd()

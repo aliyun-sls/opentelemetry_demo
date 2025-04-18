@@ -5,9 +5,20 @@ import (
 )
 
 // --------------region网络丢包------------
-func NodeNetLoss(istrue, labels string) {
+func NodeNetLoss(istrue int64) {
 	// 生成 yaml 文件
-	nodeNetLoss := NodeNetLossYaml(istrue, labels)
+	nodeNetLoss := NodeNetLossYaml(istrue)
+	if nodeNetLoss == "" {
+		return
+	}
+	// 根据 yaml 文件创建资源
+	data := createCRD(Dynamic, Gvr, nodeNetLoss)
+	fmt.Println("创建NodeNetLoss资源:", data)
+}
+
+func (region *RegionLoss) RegionNetLoss() {
+	// 生成 yaml 文件
+	nodeNetLoss := region.RegionNetLossYaml()
 	if nodeNetLoss == "" {
 		return
 	}
