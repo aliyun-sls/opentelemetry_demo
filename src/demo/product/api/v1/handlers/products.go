@@ -162,12 +162,14 @@ func PutProducts(c *gin.Context) {
 		return
 	}
 
-	if image != nil {
-		if err := PushOSS(image, image.Filename); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
-			return
+	/*
+		if image != nil {
+			if err := PushOSS(image, image.Filename); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
+				return
+			}
 		}
-	}
+	*/
 	var ProductsStatus model.ProductsStatus
 	var ProductsCate model.Category
 
