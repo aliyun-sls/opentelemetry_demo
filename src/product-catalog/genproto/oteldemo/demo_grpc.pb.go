@@ -481,7 +481,6 @@ func _ProductCatalogService_GetProduct_Handler(srv interface{}, ctx context.Cont
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	Order()
 	if interceptor == nil {
 		return srv.(ProductCatalogServiceServer).GetProduct(ctx, in)
 	}
