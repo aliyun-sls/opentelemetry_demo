@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	openapiutil "github.com/alibabacloud-go/openapi-util/service"
 	console "github.com/alibabacloud-go/tea-console/client"
@@ -94,6 +95,7 @@ func _main(args []*string) (_err error) {
 	}
 	DBInstanceId := os.Getenv("MYSQL_ENDPOINT")
 	DBInstanceId = strings.Split(DBInstanceId, ".")[0]
+	fmt.Println("DBInstanceId", DBInstanceId)
 	params := DescribeDBInstanceHAConfig()
 	// query params
 	queries := map[string]interface{}{}
