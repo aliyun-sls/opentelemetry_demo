@@ -93,9 +93,9 @@ func _main(args []*string) (_err error) {
 	if _err != nil {
 		return _err
 	}
-	DBInstanceId := os.Getenv("MYSQL_ENDPOINT")
+	DBInstanceId := os.Getenv("MYSQL_HOST")
 	DBInstanceId = strings.Split(DBInstanceId, ".")[0]
-	fmt.Println("DBInstanceId", DBInstanceId)
+	fmt.Println("DBInstanceId:", DBInstanceId)
 	params := DescribeDBInstanceHAConfig()
 	// query params
 	queries := map[string]interface{}{}
