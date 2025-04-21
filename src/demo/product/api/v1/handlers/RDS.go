@@ -9,6 +9,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"os"
+	"strings"
 )
 
 type NodeInfo struct {
@@ -91,7 +92,8 @@ func _main(args []*string) (_err error) {
 	if _err != nil {
 		return _err
 	}
-	DBInstanceId := os.Getenv("DBINSTANCEID")
+	DBInstanceId := os.Getenv("MYSQL_ENDPOINT")
+	DBInstanceId = strings.Split(DBInstanceId, ".")[0]
 	params := DescribeDBInstanceHAConfig()
 	// query params
 	queries := map[string]interface{}{}
