@@ -33,12 +33,15 @@ func main() {
 			log.Printf("设置provider失败: %v", err)
 			return
 		}
-		command.FlagClient = openfeature.NewClient("product")
+		command.FlagClient = openfeature.NewClient("chaosblade-run")
 	})
 
+	region := command.RegionLoss{}
+
 	for {
-		command.RDSLossFlagd()
+		//command.RDSLossFlagd()
 		command.NodeLossFlagd()
+		region.RegionLossFlagd()
 		command.PodNetDelayFlagd()
 		command.PodCpuFlagd()
 		command.PodMemFlagd()

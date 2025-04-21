@@ -6,18 +6,22 @@ import (
 	"fmt"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
-	"os"
 	"time"
 )
 
 // 将 lastConfig 提升为包级别的全局变量
 var (
 	rdsLossLastConfig     string
-	nodeLossLastConfig    string
+	nodeLossLastConfig    int64
 	podCpuLastConfig      int64
 	podMemLastConfig      int64
 	podNetDelayLastConfig string
 )
+
+type RegionLoss struct {
+	regionlossLastConfig int64
+	flagdValue           int64
+}
 
 func RDSLossFlagd() {
 	var currentConfig string
@@ -44,38 +48,55 @@ func RDSLossFlagd() {
 }
 
 func NodeLossFlagd() {
-	var currentConfig string
-
 	// 获取feature flag值
-	istrue := FlagClient.String(
+	istrue := FlagClient.Int(
 		context.Background(),
 		"NodeLoss",
-		"",
+		0,
 		openfeature.EvaluationContext{},
 	)
-	region := os.Getenv("REGION")
-	nodeid := os.Getenv("NODEID")
 	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, nodeLossLastConfig)
-	if istrue == "region" {
-		currentConfig = "topology.kubernetes.io/zone=" + region + "-a"
-	} else if istrue == "node" {
-		currentConfig = "alibabacloud.com/ecs-instance-id=" + nodeid
-	} else {
-		currentConfig = ""
-	}
-
 	if istrue != nodeLossLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		arr := client.ListCRD(Dynamic, Gvr)
-		for _, s := range arr {
-			if s == "chaosblade-node-loss" {
-				DeleteCRD(Dynamic, Gvr, s)
-			} else if s == "chaosblade-region-loss" {
-				DeleteCRD(Dynamic, Gvr, s)
+		if nodeLossLastConfig > 0 {
+			fmt.Println("删除node-loss")
+			arr := client.ListCRD(Dynamic, Gvr)
+			for _, s := range arr {
+				if s == "node-loss" {
+					DeleteCRD(Dynamic, Gvr, s)
+				}
 			}
+			fmt.Println("删除node-loss完成")
 		}
-		NodeNetLoss(istrue, currentConfig)
+		NodeNetLoss(istrue)
 		nodeLossLastConfig = istrue
+	}
+}
+
+func (region *RegionLoss) RegionLossFlagd() {
+	// 获取feature flag值
+	region.flagdValue = FlagClient.Int(
+		context.Background(),
+		"RegionLoss",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 RegionLossFlagd feature : %v,last flagd: %v", region.flagdValue, region.regionlossLastConfig)
+
+	if region.flagdValue != region.regionlossLastConfig {
+		// 如果配置发生变化，执行相应的操作
+		if region.regionlossLastConfig > 0 {
+			fmt.Println("删除region-loss")
+			arr := client.ListCRD(Dynamic, Gvr)
+			for _, s := range arr {
+				if s == "region-loss" {
+					DeleteCRD(Dynamic, Gvr, s)
+				}
+			}
+			fmt.Println("删除region-loss完成")
+		}
+		region.RegionNetLoss()
+		region.regionlossLastConfig = region.flagdValue
 	}
 }
 
@@ -90,8 +111,8 @@ func PodCpuFlagd() {
 	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, podCpuLastConfig)
 	if istrue != podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		fmt.Println("删除cpu-load")
 		if podCpuLastConfig > 0 {
+			fmt.Println("删除cpu-load")
 			DeleteCRD(Dynamic, Gvr, "cpu-load")
 			time.Sleep(5 * time.Second)
 			fmt.Println("删除cpu-load完成")

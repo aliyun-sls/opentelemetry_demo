@@ -116,6 +116,7 @@ func ModifyProducts(c *gin.Context) {
 var (
 	flagClient *openfeature.Client
 	once       sync.Once
+	lastconfig string
 )
 
 func initFeatureFlag() {
@@ -139,18 +140,19 @@ func PutProducts(c *gin.Context) {
 	initFeatureFlag()
 
 	// 获取feature flag值
-	details := flagClient.Int(
+	isSwitch := flagClient.String(
 		context.Background(),
-		"productDelay",
-		0,
+		"SwitchDBInstanceHA",
+		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取feature : %v", details)
+	log.Printf("获取feature SwitchDBInstanceHA: %v,lastconfig: %v", isSwitch, lastconfig)
 
-	// 应用延迟
-	if details > 0 {
-		time.Sleep(time.Duration(details) * time.Millisecond)
-		log.Println("延迟执行完成")
+	if isSwitch == "on" && lastconfig != isSwitch {
+		RDS()
+		lastconfig = isSwitch
+	} else if isSwitch == "" {
+		lastconfig = ""
 	}
 
 	// 处理文件上传
@@ -160,12 +162,14 @@ func PutProducts(c *gin.Context) {
 		return
 	}
 
-	if image != nil {
-		if err := PushOSS(image, image.Filename); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
-			return
+	/*
+		if image != nil {
+			if err := PushOSS(image, image.Filename); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "文件上传失败"})
+				return
+			}
 		}
-	}
+	*/
 	var ProductsStatus model.ProductsStatus
 	var ProductsCate model.Category
 
@@ -200,17 +204,10 @@ func PutProducts(c *gin.Context) {
 
 	// 检查是否已存在相同记录
 	err = util.MDB.WithContext(ctx).Where("brand_id = ? AND seller_id = ?", products.BrandId, products.SellerId).First(&products).Error
-	if err == nil {
-		// 如果存在，则更新
-		/*if err := util.MDB.WithContext(ctx).Updates(&products).Error; err != nil {
+	if err != nil {
+		if err = util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
+			fmt.Println("创建记录失败:", err)
 			util.Status500(c, err)
-			return
-		}*/
-	} else {
-		// 如果不存在，则插入
-		if err := util.MDB.WithContext(ctx).Create(&products).Error; err != nil {
-			util.Status500(c, err)
-			return
 		}
 	}
 

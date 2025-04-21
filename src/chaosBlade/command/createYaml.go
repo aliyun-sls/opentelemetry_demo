@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"chaosBlade/client"
 	"os"
+	"strconv"
 	"text/template"
 )
 
@@ -25,19 +26,17 @@ func generateYAML(templateFile string, data interface{}) string {
 }
 
 // 配置node网络丢包压测
-func NodeNetLossYaml(istrue, labels string) string {
-	name := ""
-	if istrue == "region" {
-		name = "chaosblade-region-loss"
-	} else {
-		name = "chaosblade-node-loss"
-	}
-	if labels != "" {
+func NodeNetLossYaml(istrue int64) string {
+	nodeid := os.Getenv("NODEID")
+	labels := "alibabacloud.com/ecs-instance-id=" + nodeid
+	name := "node-loss"
+	if istrue != 0 {
 		// 定义模板数据
 		data := &Netloss{
 			Name:    name,
 			Labels:  labels,
 			Percent: "100",
+			Timeout: strconv.Itoa(int(istrue)),
 		}
 
 		path, _ := os.Getwd()
@@ -45,9 +44,33 @@ func NodeNetLossYaml(istrue, labels string) string {
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
-			if s == "chaosblade-node-loss" {
+			if s == "node-loss" {
 				DeleteCRD(Dynamic, Gvr, s)
-			} else if s == "chaosblade-region-loss" {
+			}
+		}
+	}
+	return ""
+}
+
+func (region *RegionLoss) RegionNetLossYaml() string {
+	zone := os.Getenv("ZONE")
+	labels := "topology.kubernetes.io/zone=" + zone
+	name := "region-loss"
+	if region.flagdValue != 0 {
+		// 定义模板数据
+		data := &Netloss{
+			Name:    name,
+			Labels:  labels,
+			Percent: "100",
+			Timeout: strconv.Itoa(int(region.flagdValue)),
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/node_network_loss.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "region-loss" {
 				DeleteCRD(Dynamic, Gvr, s)
 			}
 		}
