@@ -7,6 +7,32 @@ import (
 	"sync"
 )
 
+type RegionLoss struct {
+	regionlossLastConfig int64
+	flagdValue           int64
+}
+
+type NodeLoss struct {
+	nodeLossLastConfig int64
+	flagdValue         int64
+}
+
+type PodNetDelay struct {
+	podNetDelayLastConfig string
+	flagdValue            string
+	labels                string
+}
+
+type PodCpu struct {
+	podCpuLastConfig int64
+	flagdValue       int64
+}
+
+type PodMem struct {
+	podMemLastConfig int64
+	flagdValue       int64
+}
+
 type Netloss struct {
 	Name    string
 	Labels  string

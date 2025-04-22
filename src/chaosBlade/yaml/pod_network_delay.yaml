@@ -11,8 +11,6 @@ spec:
       matchers:
         - name: labels
           value: ["{{ .Labels }}"]
-        - name: namespace
-          value: ["{{ .Namespace }}"]
         - name: local-port
           value: ["{{ .Port }}"]
         - name: interface

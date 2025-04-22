@@ -5,9 +5,9 @@ import (
 )
 
 // --------------region网络丢包------------
-func NodeNetLoss(istrue int64) {
+func (node *NodeLoss) NodeNetLoss() {
 	// 生成 yaml 文件
-	nodeNetLoss := NodeNetLossYaml(istrue)
+	nodeNetLoss := node.NodeNetLossYaml()
 	if nodeNetLoss == "" {
 		return
 	}
@@ -27,21 +27,9 @@ func (region *RegionLoss) RegionNetLoss() {
 	fmt.Println("创建NodeNetLoss资源:", data)
 }
 
-// ------------RDS断连---------------
-func RDSLoss(labels string) {
+func (podnetdelay *PodNetDelay) PodNetDelay() {
 	// 生成 yaml 文件
-	RDSloss := RDSlossYaml(labels)
-	if RDSloss == "" {
-		return
-	}
-	// 根据 yaml 文件创建资源
-	data := createCRD(Dynamic, Gvr, RDSloss)
-	fmt.Println("创建RDSLoss资源:", data)
-}
-
-func PodNetDelay(labels string) {
-	// 生成 yaml 文件
-	podNetDelay := PodNetDelayYaml(labels)
+	podNetDelay := podnetdelay.PodNetDelayYaml()
 	if podNetDelay == "" {
 		return
 	}
@@ -50,8 +38,8 @@ func PodNetDelay(labels string) {
 	fmt.Println("创建PodNetDelay资源:", data)
 }
 
-func PodCpu(percent int64) {
-	podCpu := PodCpuYaml(percent)
+func (podcpu *PodCpu) PodCpu() {
+	podCpu := podcpu.PodCpuYaml()
 	if podCpu == "" {
 		return
 	}
@@ -59,8 +47,8 @@ func PodCpu(percent int64) {
 	fmt.Println("创建PodCpu资源:", data)
 }
 
-func PodMem(percent int64) {
-	podMem := PodMemYaml(percent)
+func (podmem *PodMem) PodMem() {
+	podMem := podmem.PodMemYaml()
 	if podMem == "" {
 		return
 	}

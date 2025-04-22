@@ -26,17 +26,17 @@ func generateYAML(templateFile string, data interface{}) string {
 }
 
 // 配置node网络丢包压测
-func NodeNetLossYaml(istrue int64) string {
+func (node *NodeLoss) NodeNetLossYaml() string {
 	nodeid := os.Getenv("NODEID")
 	labels := "alibabacloud.com/ecs-instance-id=" + nodeid
 	name := "node-loss"
-	if istrue != 0 {
+	if node.flagdValue != 0 {
 		// 定义模板数据
 		data := &Netloss{
 			Name:    name,
 			Labels:  labels,
 			Percent: "100",
-			Timeout: strconv.Itoa(int(istrue)),
+			Timeout: strconv.Itoa(int(node.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
@@ -78,41 +78,15 @@ func (region *RegionLoss) RegionNetLossYaml() string {
 	return ""
 }
 
-// 配置RDS断连
-func RDSlossYaml(labels string) string {
-	if labels != "" {
-		// 定义模板数据
-		data := &Netloss{
-			Name:    "chaosblade-rds-loss",
-			Labels:  labels,
-			Percent: "100",
-			Port:    "3306",
-			Timeout: "500",
-		}
-
-		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/pod_network_loss.yaml", data)
-	} else {
-		arr := client.ListCRD(Dynamic, Gvr)
-		for _, s := range arr {
-			if s == "chaosblade-rds-loss" {
-				DeleteCRD(Dynamic, Gvr, s)
-			}
-		}
-	}
-	return ""
-}
-
 // PodNetDelay 配置pod网络延时压测
-func PodNetDelayYaml(labels string) string {
-	if labels != "" {
+func (podnetdelay *PodNetDelay) PodNetDelayYaml() string {
+	if podnetdelay.labels != "" {
 		// 定义模板数据
 		data := &Netdelay{
-			Namespace: "default",
-			Labels:    labels,
-			Port:      "8080",
-			Time:      "3000",
-			Offset:    "1000",
+			Labels: podnetdelay.labels,
+			Port:   "8080",
+			Time:   "3000",
+			Offset: "1000",
 		}
 
 		path, _ := os.Getwd()
@@ -128,12 +102,12 @@ func PodNetDelayYaml(labels string) string {
 	return ""
 }
 
-func PodCpuYaml(percent int64) string {
-	if percent != 0 {
+func (podcpu *PodCpu) PodCpuYaml() string {
+	if podcpu.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
 			Labels:  "app.kubernetes.io/name=cart",
-			Percent: percent,
+			Percent: podcpu.flagdValue,
 		}
 
 		path, _ := os.Getwd()
@@ -149,12 +123,12 @@ func PodCpuYaml(percent int64) string {
 	return ""
 }
 
-func PodMemYaml(percent int64) string {
-	if percent != 0 {
+func (podmem *PodMem) PodMemYaml() string {
+	if podmem.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
 			Labels:  "app.kubernetes.io/name=cart",
-			Percent: percent,
+			Percent: podmem.flagdValue,
 		}
 
 		path, _ := os.Getwd()

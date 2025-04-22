@@ -9,56 +9,18 @@ import (
 	"time"
 )
 
-// 将 lastConfig 提升为包级别的全局变量
-var (
-	rdsLossLastConfig     string
-	nodeLossLastConfig    int64
-	podCpuLastConfig      int64
-	podMemLastConfig      int64
-	podNetDelayLastConfig string
-)
-
-type RegionLoss struct {
-	regionlossLastConfig int64
-	flagdValue           int64
-}
-
-func RDSLossFlagd() {
-	var currentConfig string
-
+func (node *NodeLoss) NodeLossFlagd() {
 	// 获取feature flag值
-	istrue := FlagClient.String(
-		context.Background(),
-		"RDSLoss",
-		"",
-		openfeature.EvaluationContext{},
-	)
-	log.Printf("获取 RDSLossFlagd feature : %v,last flagd: %v", istrue, rdsLossLastConfig)
-	if istrue == "on" {
-		currentConfig = "app.kubernetes.io/name=product"
-	} else {
-		currentConfig = ""
-	}
-
-	if istrue != rdsLossLastConfig {
-		// 如果配置发生变化，执行相应的操作
-		RDSLoss(currentConfig)
-		rdsLossLastConfig = istrue
-	}
-}
-
-func NodeLossFlagd() {
-	// 获取feature flag值
-	istrue := FlagClient.Int(
+	node.flagdValue = FlagClient.Int(
 		context.Background(),
 		"NodeLoss",
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", istrue, nodeLossLastConfig)
-	if istrue != nodeLossLastConfig {
+	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", node.flagdValue, node.nodeLossLastConfig)
+	if node.flagdValue != node.nodeLossLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		if nodeLossLastConfig > 0 {
+		if node.nodeLossLastConfig > 0 {
 			fmt.Println("删除node-loss")
 			arr := client.ListCRD(Dynamic, Gvr)
 			for _, s := range arr {
@@ -68,8 +30,8 @@ func NodeLossFlagd() {
 			}
 			fmt.Println("删除node-loss完成")
 		}
-		NodeNetLoss(istrue)
-		nodeLossLastConfig = istrue
+		node.NodeNetLoss()
+		node.nodeLossLastConfig = node.flagdValue
 	}
 }
 
@@ -100,70 +62,68 @@ func (region *RegionLoss) RegionLossFlagd() {
 	}
 }
 
-func PodCpuFlagd() {
+func (podcpu *PodCpu) PodCpuFlagd() {
 	// 获取feature flag值
-	istrue := FlagClient.Int(
+	podcpu.flagdValue = FlagClient.Int(
 		context.Background(),
 		"PodCPULoad",
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", istrue, podCpuLastConfig)
-	if istrue != podCpuLastConfig {
+	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", podcpu.flagdValue, podcpu.podCpuLastConfig)
+	if podcpu.flagdValue != podcpu.podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		if podCpuLastConfig > 0 {
+		if podcpu.podCpuLastConfig > 0 {
 			fmt.Println("删除cpu-load")
 			DeleteCRD(Dynamic, Gvr, "cpu-load")
 			time.Sleep(5 * time.Second)
 			fmt.Println("删除cpu-load完成")
 		}
-		PodCpu(istrue)
-		podCpuLastConfig = istrue
+		podcpu.PodCpu()
+		podcpu.podCpuLastConfig = podcpu.flagdValue
 	}
 }
 
-func PodMemFlagd() {
+func (podmem *PodMem) PodMemFlagd() {
 	// 获取feature flag值
-	istrue := FlagClient.Int(
+	podmem.flagdValue = FlagClient.Int(
 		context.Background(),
 		"PodMEMLoad",
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", istrue, podMemLastConfig)
-	if istrue != podMemLastConfig {
-		if podMemLastConfig > 0 {
+	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", podmem.flagdValue, podmem.podMemLastConfig)
+	if podmem.flagdValue != podmem.podMemLastConfig {
+		if podmem.podMemLastConfig > 0 {
 			fmt.Println("删除mem-load")
 			DeleteCRD(Dynamic, Gvr, "mem-load")
 			time.Sleep(5 * time.Second)
 			fmt.Println("删除mem-load完成")
 		}
 		// 如果配置发生变化，执行相应的操作
-		PodMem(istrue)
-		podMemLastConfig = istrue
+		podmem.PodMem()
+		podmem.podMemLastConfig = podmem.flagdValue
 	}
 }
 
-func PodNetDelayFlagd() {
-	var currentConfig string
-
+func (podnetdelay *PodNetDelay) PodNetDelayFlagd() {
 	// 获取feature flag值
-	istrue := FlagClient.String(
+	podnetdelay.flagdValue = FlagClient.String(
 		context.Background(),
 		"PodNetDelay",
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", istrue, podNetDelayLastConfig)
-	if istrue == "on" {
-		currentConfig = "app.kubernetes.io/name=product"
+	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", podnetdelay.flagdValue, podnetdelay.podNetDelayLastConfig)
+	if podnetdelay.flagdValue == "on" {
+		podnetdelay.labels = "app.kubernetes.io/name=product"
 	} else {
-		currentConfig = ""
+		podnetdelay.labels = ""
 	}
 
-	if istrue != podNetDelayLastConfig {
+	if podnetdelay.flagdValue != podnetdelay.podNetDelayLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		PodNetDelay(currentConfig)
-		podNetDelayLastConfig = istrue
+		podnetdelay.PodNetDelay()
+		podnetdelay.podNetDelayLastConfig = podnetdelay.flagdValue
 	}
 }
