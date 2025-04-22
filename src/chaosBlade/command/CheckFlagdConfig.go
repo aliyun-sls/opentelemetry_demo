@@ -9,6 +9,18 @@ import (
 	"time"
 )
 
+// 提取重复的删除CRD逻辑到单独的函数
+func deleteCRDIfExists(crdName string) {
+	fmt.Printf("删除 %s\n", crdName)
+	arr := client.ListCRD(Dynamic, Gvr)
+	for _, s := range arr {
+		if s == crdName {
+			DeleteCRD(Dynamic, Gvr, s)
+		}
+	}
+	fmt.Printf("删除 %s 完成\n", crdName)
+}
+
 func (node *NodeLoss) NodeLossFlagd() {
 	// 获取feature flag值
 	node.flagdValue = FlagClient.Int(
@@ -21,14 +33,7 @@ func (node *NodeLoss) NodeLossFlagd() {
 	if node.flagdValue != node.nodeLossLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		if node.nodeLossLastConfig > 0 {
-			fmt.Println("删除node-loss")
-			arr := client.ListCRD(Dynamic, Gvr)
-			for _, s := range arr {
-				if s == "node-loss" {
-					DeleteCRD(Dynamic, Gvr, s)
-				}
-			}
-			fmt.Println("删除node-loss完成")
+			deleteCRDIfExists("node-loss")
 		}
 		node.NodeNetLoss()
 		node.nodeLossLastConfig = node.flagdValue
@@ -48,14 +53,7 @@ func (region *RegionLoss) RegionLossFlagd() {
 	if region.flagdValue != region.regionlossLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		if region.regionlossLastConfig > 0 {
-			fmt.Println("删除region-loss")
-			arr := client.ListCRD(Dynamic, Gvr)
-			for _, s := range arr {
-				if s == "region-loss" {
-					DeleteCRD(Dynamic, Gvr, s)
-				}
-			}
-			fmt.Println("删除region-loss完成")
+			deleteCRDIfExists("region-loss")
 		}
 		region.RegionNetLoss()
 		region.regionlossLastConfig = region.flagdValue
@@ -74,10 +72,8 @@ func (podcpu *PodCpu) PodCpuFlagd() {
 	if podcpu.flagdValue != podcpu.podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		if podcpu.podCpuLastConfig > 0 {
-			fmt.Println("删除cpu-load")
-			DeleteCRD(Dynamic, Gvr, "cpu-load")
+			deleteCRDIfExists("cpu-load")
 			time.Sleep(5 * time.Second)
-			fmt.Println("删除cpu-load完成")
 		}
 		podcpu.PodCpu()
 		podcpu.podCpuLastConfig = podcpu.flagdValue
@@ -95,10 +91,8 @@ func (podmem *PodMem) PodMemFlagd() {
 	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", podmem.flagdValue, podmem.podMemLastConfig)
 	if podmem.flagdValue != podmem.podMemLastConfig {
 		if podmem.podMemLastConfig > 0 {
-			fmt.Println("删除mem-load")
-			DeleteCRD(Dynamic, Gvr, "mem-load")
+			deleteCRDIfExists("mem-load")
 			time.Sleep(5 * time.Second)
-			fmt.Println("删除mem-load完成")
 		}
 		// 如果配置发生变化，执行相应的操作
 		podmem.PodMem()
