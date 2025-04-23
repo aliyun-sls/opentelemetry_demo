@@ -11,7 +11,6 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (username === 'cms' && password === 'ali88') {
-      // 设置登录状态（可以使用cookie或session）
       document.cookie = 'isLoggedIn=true; path=/';
       router.push('/');
     } else {
