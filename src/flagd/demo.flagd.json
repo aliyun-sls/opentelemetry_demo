@@ -5,7 +5,9 @@
       "displayName": "特定产品的产品目录服务失败",
       "description": "特定产品的产品目录服务失败。Fail product catalog service on a specific product",
       "category": "商品服务相关",
-      "tags": ["Trace"],
+      "tags": [
+        "Trace"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -17,7 +19,9 @@
       "displayName": "推荐服务缓存失败",
       "description": "推荐服务缓存失败。Fail recommendation service cache",
       "category": "商品服务相关",
-      "tags": ["Trace"],
+      "tags": [
+        "Trace"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -29,7 +33,9 @@
       "displayName": "在广告服务中触发完整的手动垃圾收集",
       "description": "在广告服务中触发完整的手动垃圾收集。Triggers full manual garbage collections in the ad service",
       "category": "广告服务相关",
-      "tags": ["Profile"],
+      "tags": [
+        "Profile"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -41,7 +47,9 @@
       "displayName": "触发广告服务中的高 CPU 负载",
       "description": "触发广告服务中的高 CPU 负载。Triggers high cpu load in the ad service",
       "category": "广告服务相关",
-      "tags": ["Profile"],
+      "tags": [
+        "Profile"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -54,7 +62,9 @@
       "description": "广告服务失败。Fail ad service",
       "state": "ENABLED",
       "category": "广告服务相关",
-      "tags": ["Trace"],
+      "tags": [
+        "Trace"
+      ],
       "variants": {
         "on": true,
         "off": false
@@ -65,7 +75,10 @@
       "displayName": "Kafka 队列超载",
       "description": "导致 Kafka 队列超载，同时导致消费者端延迟，进而导致延迟峰值。Overloads Kafka queue while simultaneously introducing a consumer side delay leading to a lag spike",
       "category": "商品服务相关",
-      "tags": ["Trace", "Profile"],
+      "tags": [
+        "Trace",
+        "Profile"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": 100,
@@ -77,7 +90,9 @@
       "displayName": "购物车服务失败",
       "description": "购物车服务失败。Fail cart service",
       "category": "支付相关",
-      "tags": ["Trace"],
+      "tags": [
+        "Trace"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -89,7 +104,9 @@
       "displayName": "支付服务费请求失败",
       "description": "支付服务费请求失败 n%。Fail payment service charge requests n%",
       "category": "支付相关",
-      "tags": ["Trace"],
+      "tags": [
+        "Trace"
+      ],
       "state": "ENABLED",
       "variants": {
         "100%": 1,
@@ -106,7 +123,9 @@
       "displayName": "支付服务不可用",
       "description": "支付服务不可用。Payment service is unavailable",
       "category": "支付相关",
-      "tags": ["Trace"],
+      "tags": [
+        "Trace"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": true,
@@ -118,7 +137,9 @@
       "displayName": "用大量请求淹没前端",
       "description": "用大量请求淹没前端。Flood the frontend with a large amount of requests.",
       "category": "前端控制",
-      "tags": ["Profile"],
+      "tags": [
+        "Profile"
+      ],
       "state": "ENABLED",
       "variants": {
         "on": 100,
@@ -130,23 +151,15 @@
       "displayName": "前端图片加载缓慢",
       "description": "前端图片加载缓慢。slow loading images in the frontend",
       "category": "前端控制",
-      "tags": ["Trace", "Profile"],
+      "tags": [
+        "Trace",
+        "Profile"
+      ],
       "state": "ENABLED",
       "variants": {
         "10sec": 10000,
         "5sec": 5000,
         "off": 0
-      },
-      "defaultVariant": "off"
-    },
-    "adsTableNotExistFlag": {
-      "displayName": "广告服务查询表不存在",
-      "description": "广告服务查询表不存在。ads service table not exist",
-      "category": "广告服务相关",
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
       },
       "defaultVariant": "off"
     },
@@ -172,31 +185,21 @@
       },
       "defaultVariant": "off"
     },
-    "productDelay": {
-      "displayName": "上架产品并将产品图片放入oss",
-      "description": "上架产品并将产品图片放入oss。put product and put image to oss",
-      "state": "ENABLED",
-      "variants": {
-        "10sec": 10000,
-        "5sec": 5000,
-        "off": 0
-      },
-      "defaultVariant": "off"
-    },
     "marketingHighCpuCostLoopCountFlag": {
       "displayName": "高CPU消耗循环次数",
       "description": "高CPU消耗循环次数。high cpu cost loop count",
       "category": "广告服务相关",
       "tags": [
         "应用层异常",
-        "埋点稀疏导致无法排障"
+        "埋点稀疏",
+        "延迟升高"
       ],
       "state": "ENABLED",
       "variants": {
-        "on": 1000,
+        "on": 100000,
         "off": 0
       },
-      "defaultVariant": "off"
+      "defaultVariant": "on"
     },
     "adsWithTableNotExistCall": {
       "displayName": "查询不存在的表",
@@ -228,6 +231,155 @@
       "variants": {
         "on": true,
         "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "PodMEMLoad": {
+      "displayName": "触发 cart 服务内存高负载",
+      "description": "cart服务内存高负载（1分钟左右生效）。cart pod MEM Load",
+      "state": "ENABLED",
+      "tags": [
+        "Profile"
+      ],
+      "category": "支付相关",
+      "variants": {
+        "100%": 100,
+        "90%": 90,
+        "80%": 80,
+        "70%": 70,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "PodNetDelay": {
+      "displayName": "网络导致pod网络延时",
+      "description": "product服务延时2～4秒（1分钟左右生效）。product pod Net Delay 2s～4s",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "延迟升高"
+      ],
+      "category": "商品服务相关",
+      "variants": {
+        "on": "on",
+        "off": ""
+      },
+      "defaultVariant": "off"
+    },
+    "PodCPULoad": {
+      "displayName": "触发 cart 服务 CPU 高负载",
+      "description": "cart服务CPU高负载（1分钟左右生效）。cart pod CPU Load",
+      "state": "ENABLED",
+      "tags": [
+        "Profile"
+      ],
+      "category": "支付相关",
+      "variants": {
+        "100%": 100,
+        "90%": 90,
+        "80%": 80,
+        "70%": 70,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "NodeLoss": {
+      "displayName": "节点状态异常",
+      "description": "节点状态异常（1分钟左右生效）",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "错误率上升",
+        "基础设置异常"
+      ],
+      "category": "基础设置异常",
+      "variants": {
+        "20min": 1200,
+        "10min": 600,
+        "5min": 300,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "RegionLoss": {
+      "displayName": "region状态异常",
+      "description": "region状态异常（1分钟左右生效）",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "错误率上升",
+        "基础设置异常"
+      ],
+      "category": "基础设置异常",
+      "variants": {
+        "20min": 1200,
+        "10min": 600,
+        "5min": 300,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "SwitchDBInstanceHA": {
+      "displayName": "切换RDS主备",
+      "description": "切换RDS主备",
+      "state": "ENABLED",
+      "tags": [
+        "RDS主备切换"
+      ],
+      "category": "基础设置异常",
+      "variants": {
+        "on": "on",
+        "off": ""
+      },
+      "defaultVariant": "off"
+    },
+    "threadPoolDepletionFlag": {
+      "displayName": "线程池耗尽",
+      "description": "线程池耗尽",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "线程池耗尽"
+      ],
+      "category": "广告服务相关",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "slowSQLFlag": {
+      "displayName": "慢 SQL 执行",
+      "description": "慢 SQL 执行",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "慢 SQL "
+      ],
+      "category": "广告服务相关",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "youngGcCountLoopCountFlag": {
+      "displayName": "Young GC 频繁",
+      "description": "Young GC 频繁，每次分配的对象为 128K，按需选择分配的个数，循环一轮后会等待 500MS",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "GC 频繁"
+      ],
+      "category": "广告服务相关",
+      "variants": {
+        "2M": 200000,
+        "2KW": 20000,
+        "200W": 2000,
+        "20W": 200,
+        "2W": 20,
+        "2K": 2,
+        "off": 0
       },
       "defaultVariant": "off"
     }
