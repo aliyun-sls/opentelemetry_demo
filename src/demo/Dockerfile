@@ -21,12 +21,6 @@ COPY promotion/src promotion/src/
 COPY logistics/pom.xml logistics/
 COPY logistics/src logistics/src/
 
-COPY reporting/pom.xml reporting/
-COPY reporting/src reporting/src/
-
-COPY review/pom.xml review/
-COPY review/src review/src/
-
 RUN mvn package -DskipTests
 
 FROM openjdk:11-jdk
