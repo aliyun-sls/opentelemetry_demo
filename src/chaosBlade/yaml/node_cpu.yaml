@@ -7,13 +7,9 @@ spec:
     - scope: node
       target: cpu
       action: fullload
-      desc: "increase node cpu load by names"
+      desc: "increase node cpu load by labels"
       matchers:
-        - name: names
-          value: {{ .Name }}
+        - name: labels
+          value: [ "{{ .Labels }}" ]
         - name: cpu-percent
-          value:
-            - {{ .Percent }}
-        - name: timeout
-          value:
-            - "600"
+          value: [ "{{ .Percent }}" ]

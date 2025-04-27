@@ -7,16 +7,9 @@ spec:
     - scope: node
       target: mem
       action: load
-      desc: "increase node cpu load by names"
+      desc: "increase node cpu load by labels"
       matchers:
-        - name: names
-          value: {{ .Name }}
-        - name: mode
-          value:
-            - "ram"
+        - name: labels
+          value: [ "{{ .Labels }}" ]
         - name: mem-percent
-          value:
-            - {{ .Percent }}
-        - name: timeout
-          value:
-            - "600"
+          value: [ "{{ .Percent }}" ]

@@ -143,3 +143,49 @@ func (podmem *PodMem) PodMemYaml() string {
 	}
 	return ""
 }
+
+func (nodecpu *NodeCpu) NodeCpuYaml() string {
+	nodeid := os.Getenv("NODEID")
+	labels := "alibabacloud.com/ecs-instance-id=" + nodeid
+	if nodecpu.flagdValue != 0 {
+		// 定义模板数据
+		data := &CpuAndMem{
+			Labels:  labels,
+			Percent: nodecpu.flagdValue,
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/node_cpu.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "node-cpu" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}
+
+func (nodemem *NodeMem) NodeMemYaml() string {
+	nodeid := os.Getenv("NODEID")
+	labels := "alibabacloud.com/ecs-instance-id=" + nodeid
+	if nodemem.flagdValue != 0 {
+		// 定义模板数据
+		data := &CpuAndMem{
+			Labels:  labels,
+			Percent: nodemem.flagdValue,
+		}
+
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/node_mem.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "node-mem" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}

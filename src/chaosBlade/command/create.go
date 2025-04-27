@@ -55,3 +55,21 @@ func (podmem *PodMem) PodMem() {
 	data := createCRD(Dynamic, Gvr, podMem)
 	fmt.Println("创建PodMem资源:", data)
 }
+
+func (nodecpu *NodeCpu) NodeCpu() {
+	nodeCpu := nodecpu.NodeCpuYaml()
+	if nodeCpu == "" {
+		return
+	}
+	data := createCRD(Dynamic, Gvr, nodeCpu)
+	fmt.Println("创建NodeCpu资源:", data)
+}
+
+func (nodemem *NodeMem) NodeMem() {
+	nodeMem := nodemem.NodeMemYaml()
+	if nodeMem == "" {
+		return
+	}
+	data := createCRD(Dynamic, Gvr, nodeMem)
+	fmt.Println("创建NodeCpu资源:", data)
+}

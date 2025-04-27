@@ -121,3 +121,43 @@ func (podnetdelay *PodNetDelay) PodNetDelayFlagd() {
 		podnetdelay.podNetDelayLastConfig = podnetdelay.flagdValue
 	}
 }
+
+func (nodecpu *NodeCpu) NodeCpuFlagd() {
+	// 获取feature flag值
+	nodecpu.flagdValue = FlagClient.Int(
+		context.Background(),
+		"NodeCPULoad",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 NodeCPULoad feature : %v,last flagd: %v", nodecpu.flagdValue, nodecpu.nodeCpuLastConfig)
+	if nodecpu.flagdValue != nodecpu.nodeCpuLastConfig {
+		// 如果配置发生变化，执行相应的操作
+		if nodecpu.nodeCpuLastConfig > 0 {
+			deleteCRDIfExists("node-cpu")
+			time.Sleep(5 * time.Second)
+		}
+		nodecpu.NodeCpu()
+		nodecpu.nodeCpuLastConfig = nodecpu.flagdValue
+	}
+}
+
+func (nodemem *NodeMem) NodeMemFlagd() {
+	// 获取feature flag值
+	nodemem.flagdValue = FlagClient.Int(
+		context.Background(),
+		"NodeMemLoad",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 NodeMemLoad feature : %v,last flagd: %v", nodemem.flagdValue, nodemem.nodeMemLastConfig)
+	if nodemem.flagdValue != nodemem.nodeMemLastConfig {
+		// 如果配置发生变化，执行相应的操作
+		if nodemem.nodeMemLastConfig > 0 {
+			deleteCRDIfExists("node-mem")
+			time.Sleep(5 * time.Second)
+		}
+		nodemem.NodeMem()
+		nodemem.nodeMemLastConfig = nodemem.flagdValue
+	}
+}

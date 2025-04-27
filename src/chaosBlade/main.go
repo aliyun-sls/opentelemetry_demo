@@ -37,17 +37,21 @@ func main() {
 	})
 
 	region := command.RegionLoss{}
-	node := command.NodeLoss{}
+	nodeloss := command.NodeLoss{}
 	podnetdelay := command.PodNetDelay{}
 	podcpu := command.PodCpu{}
 	podmem := command.PodMem{}
+	nodecpu := command.NodeCpu{}
+	nodemem := command.NodeMem{}
 
 	for {
-		node.NodeLossFlagd()
+		nodeloss.NodeLossFlagd()
 		region.RegionLossFlagd()
 		podnetdelay.PodNetDelayFlagd()
 		podcpu.PodCpuFlagd()
 		podmem.PodMemFlagd()
+		nodecpu.NodeCpuFlagd()
+		nodemem.NodeMemFlagd()
 
 		time.Sleep(30 * time.Second)
 	}

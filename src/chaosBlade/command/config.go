@@ -17,6 +17,16 @@ type NodeLoss struct {
 	flagdValue         int64
 }
 
+type NodeCpu struct {
+	nodeCpuLastConfig int64
+	flagdValue        int64
+}
+
+type NodeMem struct {
+	nodeMemLastConfig int64
+	flagdValue        int64
+}
+
 type PodNetDelay struct {
 	podNetDelayLastConfig string
 	flagdValue            string
