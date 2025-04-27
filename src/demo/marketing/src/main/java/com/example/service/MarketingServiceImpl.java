@@ -35,7 +35,7 @@ public class MarketingServiceImpl implements MarketingService {
         //high cpu executor
         highCPUExecutor.execute();
         //thread pool depletion executor
-        for(int i = 0; i < 3; i++) {
+        for(int i = 0; i < 4; i++) {
             threadPoolDepletionExecutor.execute();
         }
         //slowly sql
