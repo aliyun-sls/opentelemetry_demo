@@ -21,6 +21,7 @@ public class FrequentGCExecutor {
         final Integer count = openFeatureAPI.getClient().getIntegerValue(FREQUENT_YOUNG_GC_LOOP_COUNT_FLAG, 0);
         if (count < 1) {
             logger.info("Young GC executor is disabled.");
+            return ;
         }
         final long loopCountSum = 1024L * count;
         final int youngGcAllocSize = 128;
