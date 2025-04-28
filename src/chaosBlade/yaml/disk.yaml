@@ -5,8 +5,8 @@ metadata:
 spec:
   experiments:
     - scope: {{ .Scope }}
-      target: {{ .Target }}
-      action: {{ .Action }}
+      target: disk
+      action: fill
       desc: "increase disk load by labels"
       matchers:
         - name: labels
