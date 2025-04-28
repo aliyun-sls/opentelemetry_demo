@@ -1,8 +1,6 @@
 module goapp
 
-go 1.22.7
-
-toolchain go1.23.7
+go 1.23.7
 
 require (
 	github.com/open-feature/go-sdk v1.14.1
