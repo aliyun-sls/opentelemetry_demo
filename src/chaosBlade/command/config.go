@@ -50,6 +50,7 @@ type PodMem struct {
 
 type Netloss struct {
 	Name    string
+	Scope   string
 	Labels  string
 	Port    string
 	Percent string
@@ -57,17 +58,21 @@ type Netloss struct {
 }
 
 type Netdelay struct {
-	Namespace string
-	Labels    string
-	Port      string
-	Time      string
-	Offset    string
-	Timeout   string
+	Name    string
+	Scope   string
+	Labels  string
+	Port    string
+	Time    string
+	Offset  string
+	Timeout string
 }
 
 type CpuAndMem struct {
+	Name    string
+	Scope   string
 	Labels  string
-	Percent int64
+	Percent string
+	Timeout string
 }
 
 var Dynamic *dynamic.DynamicClient

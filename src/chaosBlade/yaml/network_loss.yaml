@@ -4,10 +4,10 @@ metadata:
   name: {{ .Name }}
 spec:
   experiments:
-    - scope: pod
+    - scope: {{ .Scope }}
       target: network
       action: loss
-      desc: "pod network loss"
+      desc: "network loss"
       matchers:
         - name: labels
           value: ["{{ .Labels }}"]
@@ -16,7 +16,5 @@ spec:
             - "{{ .Percent }}"
         - name: interface
           value: ["eth0"]
-        - name: remote-port
-          value: ["{{ .Port }}"]
         - name: timeout
-          value: ["500"]
+          value: ["{{ .Timeout }}"]

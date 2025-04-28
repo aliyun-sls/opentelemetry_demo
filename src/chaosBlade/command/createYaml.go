@@ -34,13 +34,14 @@ func (node *NodeLoss) NodeNetLossYaml() string {
 		// 定义模板数据
 		data := &Netloss{
 			Name:    name,
+			Scope:   "node",
 			Labels:  labels,
 			Percent: "100",
 			Timeout: strconv.Itoa(int(node.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/node_network_loss.yaml", data)
+		return generateYAML(path+"/yaml/network_loss.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
@@ -60,13 +61,14 @@ func (region *RegionLoss) RegionNetLossYaml() string {
 		// 定义模板数据
 		data := &Netloss{
 			Name:    name,
+			Scope:   "node",
 			Labels:  labels,
 			Percent: "100",
 			Timeout: strconv.Itoa(int(region.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/node_network_loss.yaml", data)
+		return generateYAML(path+"/yaml/network_loss.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
@@ -83,6 +85,8 @@ func (podnetdelay *PodNetDelay) PodNetDelayYaml() string {
 	if podnetdelay.labels != "" {
 		// 定义模板数据
 		data := &Netdelay{
+			Name:   "pod-delay",
+			Scope:  "pod",
 			Labels: podnetdelay.labels,
 			Port:   "8080",
 			Time:   "3000",
@@ -90,11 +94,11 @@ func (podnetdelay *PodNetDelay) PodNetDelayYaml() string {
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/pod_network_delay.yaml", data)
+		return generateYAML(path+"/yaml/network_delay.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
-			if s == "pod-network-delay" {
+			if s == "pod-delay" {
 				DeleteCRD(Dynamic, Gvr, s)
 			}
 		}
@@ -106,16 +110,18 @@ func (podcpu *PodCpu) PodCpuYaml() string {
 	if podcpu.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
+			Name:    "pod-cpu",
+			Scope:   "pod",
 			Labels:  "app.kubernetes.io/name=cart",
-			Percent: podcpu.flagdValue,
+			Percent: strconv.Itoa(int(podcpu.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/pod_cpu.yaml", data)
+		return generateYAML(path+"/yaml/cpu.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
-			if s == "cpu-load" {
+			if s == "pod-cpu" {
 				DeleteCRD(Dynamic, Gvr, s)
 			}
 		}
@@ -127,16 +133,18 @@ func (podmem *PodMem) PodMemYaml() string {
 	if podmem.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
+			Name:    "pod-mem",
+			Scope:   "pod",
 			Labels:  "app.kubernetes.io/name=cart",
-			Percent: podmem.flagdValue,
+			Percent: strconv.Itoa(int(podmem.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/pod_mem.yaml", data)
+		return generateYAML(path+"/yaml/mem.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
-			if s == "mem-load" {
+			if s == "pod-mem" {
 				DeleteCRD(Dynamic, Gvr, s)
 			}
 		}
@@ -150,12 +158,15 @@ func (nodecpu *NodeCpu) NodeCpuYaml() string {
 	if nodecpu.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
+			Name:    "node-cpu",
+			Scope:   "node",
 			Labels:  labels,
-			Percent: nodecpu.flagdValue,
+			Percent: "85",
+			Timeout: strconv.Itoa(int(nodecpu.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/node_cpu.yaml", data)
+		return generateYAML(path+"/yaml/cpu.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
@@ -173,12 +184,15 @@ func (nodemem *NodeMem) NodeMemYaml() string {
 	if nodemem.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
+			Name:    "node-mem",
+			Scope:   "node",
 			Labels:  labels,
-			Percent: nodemem.flagdValue,
+			Percent: "85",
+			Timeout: strconv.Itoa(int(nodemem.flagdValue)),
 		}
 
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/node_mem.yaml", data)
+		return generateYAML(path+"/yaml/mem.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {
@@ -196,11 +210,14 @@ func (nodedisk *NodeDisk) NodeDiskYaml() string {
 	if nodedisk.flagdValue != 0 {
 		// 定义模板数据
 		data := &CpuAndMem{
+			Name:    "node-disk",
+			Scope:   "node",
 			Labels:  labels,
-			Percent: nodedisk.flagdValue,
+			Percent: "85",
+			Timeout: strconv.Itoa(int(nodedisk.flagdValue)),
 		}
 		path, _ := os.Getwd()
-		return generateYAML(path+"/yaml/node_disk.yaml", data)
+		return generateYAML(path+"/yaml/disk.yaml", data)
 	} else {
 		arr := client.ListCRD(Dynamic, Gvr)
 		for _, s := range arr {

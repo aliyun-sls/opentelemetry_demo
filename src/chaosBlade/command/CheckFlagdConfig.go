@@ -104,7 +104,7 @@ func (podnetdelay *PodNetDelay) PodNetDelayFlagd() {
 		"",
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 PodNetDelayFlagd feature : %v,last flagd: %v", podnetdelay.flagdValue, podnetdelay.podNetDelayLastConfig)
+	log.Printf("获取 PodNetDelayFlagd feature : \"%v\",last flagd: \"%v\"", podnetdelay.flagdValue, podnetdelay.podNetDelayLastConfig)
 	if podnetdelay.flagdValue == "on" {
 		podnetdelay.labels = "app.kubernetes.io/name=product"
 	} else {
@@ -166,7 +166,7 @@ func (nodedisk *NodeDisk) NodeDiskFlagd() {
 		0,
 		openfeature.EvaluationContext{},
 	)
-	log.Printf("获取 NodeDiskLoad feature : \"%v\",last flagd: \"%v\"", nodedisk.flagdValue, nodedisk.nodeDiskLastConfig)
+	log.Printf("获取 NodeDiskLoad feature : %v,last flagd: %v", nodedisk.flagdValue, nodedisk.nodeDiskLastConfig)
 	if nodedisk.flagdValue != nodedisk.nodeDiskLastConfig {
 		// 如果配置发生变化，执行相应的操作
 		if nodedisk.nodeDiskLastConfig > 0 {

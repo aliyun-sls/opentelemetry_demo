@@ -1,13 +1,13 @@
 apiVersion: chaosblade.io/v1alpha1
 kind: ChaosBlade
 metadata:
-  name: pod-network-delay
+  name: {{ .Name }}
 spec:
   experiments:
-    - scope: pod
+    - scope: {{ .Scope }}
       target: network
       action: delay
-      desc: "delay pod network by labels"
+      desc: "delay network by labels"
       matchers:
         - name: labels
           value: ["{{ .Labels }}"]
