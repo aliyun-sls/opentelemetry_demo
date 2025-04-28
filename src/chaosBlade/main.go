@@ -43,6 +43,7 @@ func main() {
 	podmem := command.PodMem{}
 	nodecpu := command.NodeCpu{}
 	nodemem := command.NodeMem{}
+	nodedisk := command.NodeDisk{}
 
 	for {
 		nodeloss.NodeLossFlagd()
@@ -52,6 +53,7 @@ func main() {
 		podmem.PodMemFlagd()
 		nodecpu.NodeCpuFlagd()
 		nodemem.NodeMemFlagd()
+		nodedisk.NodeDiskFlagd()
 
 		time.Sleep(30 * time.Second)
 	}

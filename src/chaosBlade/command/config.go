@@ -27,6 +27,11 @@ type NodeMem struct {
 	flagdValue        int64
 }
 
+type NodeDisk struct {
+	nodeDiskLastConfig int64
+	flagdValue         int64
+}
+
 type PodNetDelay struct {
 	podNetDelayLastConfig string
 	flagdValue            string

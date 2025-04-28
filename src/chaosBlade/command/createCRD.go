@@ -22,7 +22,7 @@ func createCRD(dynamic *dynamic.DynamicClient, gvr schema.GroupVersionResource, 
 		panic(err.Error())
 	}
 
-	res, err := dynamic.Resource(gvr).Create(context.TODO(), obj, metav1.CreateOptions{})
+	res, err := dynamic.Resource(gvr).Apply(context.TODO(), obj.GetName(), obj, metav1.ApplyOptions{FieldManager: "chaosBlade"})
 	if err != nil {
 		panic(err.Error())
 	}

@@ -10,6 +10,6 @@ spec:
       desc: "increase node cpu load by labels"
       matchers:
         - name: labels
-          value: [ "{{ .Labels }}" ]
+          value: ["{{ .Labels }}"]
         - name: cpu-percent
-          value: [ "{{ .Percent }}" ]
+          value: ["{{ .Percent }}"]

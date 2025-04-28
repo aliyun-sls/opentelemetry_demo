@@ -73,3 +73,12 @@ func (nodemem *NodeMem) NodeMem() {
 	data := createCRD(Dynamic, Gvr, nodeMem)
 	fmt.Println("创建NodeCpu资源:", data)
 }
+
+func (nodedisk *NodeDisk) NodeDisk() {
+	nodeDisk := nodedisk.NodeDiskYaml()
+	if nodeDisk == "" {
+		return
+	}
+	data := createCRD(Dynamic, Gvr, nodeDisk)
+	fmt.Println("创建NodeDisk资源:", data)
+}

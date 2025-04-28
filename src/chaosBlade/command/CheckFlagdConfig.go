@@ -71,10 +71,6 @@ func (podcpu *PodCpu) PodCpuFlagd() {
 	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", podcpu.flagdValue, podcpu.podCpuLastConfig)
 	if podcpu.flagdValue != podcpu.podCpuLastConfig {
 		// 如果配置发生变化，执行相应的操作
-		if podcpu.podCpuLastConfig > 0 {
-			deleteCRDIfExists("cpu-load")
-			time.Sleep(5 * time.Second)
-		}
 		podcpu.PodCpu()
 		podcpu.podCpuLastConfig = podcpu.flagdValue
 	}
@@ -159,5 +155,25 @@ func (nodemem *NodeMem) NodeMemFlagd() {
 		}
 		nodemem.NodeMem()
 		nodemem.nodeMemLastConfig = nodemem.flagdValue
+	}
+}
+
+func (nodedisk *NodeDisk) NodeDiskFlagd() {
+	// 获取feature flag值
+	nodedisk.flagdValue = FlagClient.Int(
+		context.Background(),
+		"NodeDiskLoad",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 NodeDiskLoad feature : \"%v\",last flagd: \"%v\"", nodedisk.flagdValue, nodedisk.nodeDiskLastConfig)
+	if nodedisk.flagdValue != nodedisk.nodeDiskLastConfig {
+		// 如果配置发生变化，执行相应的操作
+		if nodedisk.nodeDiskLastConfig > 0 {
+			deleteCRDIfExists("node-disk")
+			time.Sleep(5 * time.Second)
+		}
+		nodedisk.NodeDisk()
+		nodedisk.nodeDiskLastConfig = nodedisk.flagdValue
 	}
 }

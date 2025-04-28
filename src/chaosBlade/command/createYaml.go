@@ -189,3 +189,25 @@ func (nodemem *NodeMem) NodeMemYaml() string {
 	}
 	return ""
 }
+
+func (nodedisk *NodeDisk) NodeDiskYaml() string {
+	nodeid := os.Getenv("NODEID")
+	labels := "alibabacloud.com/ecs-instance-id=" + nodeid
+	if nodedisk.flagdValue != 0 {
+		// 定义模板数据
+		data := &CpuAndMem{
+			Labels:  labels,
+			Percent: nodedisk.flagdValue,
+		}
+		path, _ := os.Getwd()
+		return generateYAML(path+"/yaml/node_disk.yaml", data)
+	} else {
+		arr := client.ListCRD(Dynamic, Gvr)
+		for _, s := range arr {
+			if s == "node-disk" {
+				DeleteCRD(Dynamic, Gvr, s)
+			}
+		}
+	}
+	return ""
+}
