@@ -64,7 +64,7 @@ func main() {
 }
 
 func service() {
-	response, err := http.Get("http://test:8080")
+	response, err := http.Get("http://abnormal:8080")
 	if err != nil {
 		log.Printf("Error calling shelve endpoint: %v", err)
 	}
