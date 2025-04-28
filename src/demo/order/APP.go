@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
+	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
+	"github.com/open-feature/go-sdk/openfeature"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 )
+
+var flagClient *openfeature.Client
 
 type APP struct {
 }
@@ -22,15 +26,35 @@ func (a *APP) Order(w http.ResponseWriter, r *http.Request) {
 	urlShelve := "http://product:8080/api/v1/products/put_products"
 
 	PutProducts(urlShelve)
+	isSwitch := flagClient.String(
+		context.Background(),
+		"ServiceAbnormal",
+		"",
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取feature ServiceAbnormal: %v", isSwitch)
+
+	if isSwitch == "on" {
+		service()
+	}
 }
 
-type User struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+func initFeatureFlag() {
+	provider := flagd.NewProvider(
+		flagd.WithHost("flagd"),
+		flagd.WithPort(8013),
+	)
+	if err := openfeature.SetProvider(provider); err != nil {
+		log.Printf("设置provider失败: %v", err)
+		return
+	}
+	flagClient = openfeature.NewClient("order")
 }
 
 func main() {
 	app := &APP{}
+
+	initFeatureFlag()
 
 	http.HandleFunc("/order", app.Order)
 	log.Println("监听端口: 8080")
@@ -39,40 +63,16 @@ func main() {
 	}
 }
 
-func cpu(urlCpu string) {
-	body, err := http.Get(urlCpu)
+func service() {
+	response, err := http.Get("http://test:8080")
 	if err != nil {
-		log.Printf("Error calling cpu endpoint: %v", err)
-		return
+		log.Printf("Error calling shelve endpoint: %v", err)
 	}
-	log.Printf("gocpu Response: %s", body)
-}
-
-func user(urlLogin string) {
-	user := User{
-		Username: "admin",
-		Password: "admin",
-	}
-	jsonData, err := json.Marshal(user)
+	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Printf("Error marshalling user data: %v", err)
-		return
+		log.Printf("Error reading shelve response body: %v", err)
 	}
-
-	// POST 请求到登录接口
-	resp, err := http.Post(urlLogin, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Printf("Error calling login endpoint: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Error reading login response body: %v", err)
-		return
-	}
-	log.Printf("Login Response: %s", body)
+	log.Printf("service Response: %s", body)
 }
 
 func PutProducts(urlShelve string) {
