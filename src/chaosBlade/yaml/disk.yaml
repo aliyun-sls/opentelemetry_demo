@@ -1,15 +1,17 @@
 apiVersion: chaosblade.io/v1alpha1
 kind: ChaosBlade
 metadata:
-  name: node-disk
+  name: {{ .Name }}
 spec:
   experiments:
-    - scope: node
+    - scope: {{ .Scope }}
       target: disk
       action: fill
-      desc: "increase node disk load by labels"
+      desc: "increase disk load by labels"
       matchers:
         - name: labels
           value: ["{{ .Labels }}"]
         - name: percent
           value: ["{{ .Percent }}"]
+        - name: timeout
+          value: [ "{{ .Timeout }}" ]
