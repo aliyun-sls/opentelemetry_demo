@@ -1,25 +1,10 @@
 package command
 
 import (
-	"chaosBlade/client"
 	"context"
-	"fmt"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
-	"time"
 )
-
-// 提取重复的删除CRD逻辑到单独的函数
-func deleteCRDIfExists(crdName string) {
-	fmt.Printf("删除 %s\n", crdName)
-	arr := client.ListCRD(Dynamic, Gvr)
-	for _, s := range arr {
-		if s == crdName {
-			DeleteCRD(Dynamic, Gvr, s)
-		}
-	}
-	fmt.Printf("删除 %s 完成\n", crdName)
-}
 
 func (node *NodeLoss) NodeLossFlagd() {
 	// 获取feature flag值
@@ -31,10 +16,6 @@ func (node *NodeLoss) NodeLossFlagd() {
 	)
 	log.Printf("获取 NodeLossFlagd feature : %v,last flagd: %v", node.flagdValue, node.nodeLossLastConfig)
 	if node.flagdValue != node.nodeLossLastConfig {
-		// 如果配置发生变化，执行相应的操作
-		if node.nodeLossLastConfig > 0 {
-			deleteCRDIfExists("node-loss")
-		}
 		node.NodeNetLoss()
 		node.nodeLossLastConfig = node.flagdValue
 	}
@@ -51,10 +32,6 @@ func (region *RegionLoss) RegionLossFlagd() {
 	log.Printf("获取 RegionLossFlagd feature : %v,last flagd: %v", region.flagdValue, region.regionlossLastConfig)
 
 	if region.flagdValue != region.regionlossLastConfig {
-		// 如果配置发生变化，执行相应的操作
-		if region.regionlossLastConfig > 0 {
-			deleteCRDIfExists("region-loss")
-		}
 		region.RegionNetLoss()
 		region.regionlossLastConfig = region.flagdValue
 	}
@@ -70,7 +47,6 @@ func (podcpu *PodCpu) PodCpuFlagd() {
 	)
 	log.Printf("获取 PodCpuFlagd feature : %v,last flagd: %v", podcpu.flagdValue, podcpu.podCpuLastConfig)
 	if podcpu.flagdValue != podcpu.podCpuLastConfig {
-		// 如果配置发生变化，执行相应的操作
 		podcpu.PodCpu()
 		podcpu.podCpuLastConfig = podcpu.flagdValue
 	}
@@ -86,11 +62,6 @@ func (podmem *PodMem) PodMemFlagd() {
 	)
 	log.Printf("获取 PodMemFlagd feature : %v,last flagd: %v", podmem.flagdValue, podmem.podMemLastConfig)
 	if podmem.flagdValue != podmem.podMemLastConfig {
-		if podmem.podMemLastConfig > 0 {
-			deleteCRDIfExists("mem-load")
-			time.Sleep(5 * time.Second)
-		}
-		// 如果配置发生变化，执行相应的操作
 		podmem.PodMem()
 		podmem.podMemLastConfig = podmem.flagdValue
 	}
@@ -112,7 +83,6 @@ func (podnetdelay *PodNetDelay) PodNetDelayFlagd() {
 	}
 
 	if podnetdelay.flagdValue != podnetdelay.podNetDelayLastConfig {
-		// 如果配置发生变化，执行相应的操作
 		podnetdelay.PodNetDelay()
 		podnetdelay.podNetDelayLastConfig = podnetdelay.flagdValue
 	}
@@ -128,11 +98,6 @@ func (nodecpu *NodeCpu) NodeCpuFlagd() {
 	)
 	log.Printf("获取 NodeCPULoad feature : %v,last flagd: %v", nodecpu.flagdValue, nodecpu.nodeCpuLastConfig)
 	if nodecpu.flagdValue != nodecpu.nodeCpuLastConfig {
-		// 如果配置发生变化，执行相应的操作
-		if nodecpu.nodeCpuLastConfig > 0 {
-			deleteCRDIfExists("node-cpu")
-			time.Sleep(5 * time.Second)
-		}
 		nodecpu.NodeCpu()
 		nodecpu.nodeCpuLastConfig = nodecpu.flagdValue
 	}
@@ -148,11 +113,6 @@ func (nodemem *NodeMem) NodeMemFlagd() {
 	)
 	log.Printf("获取 NodeMemLoad feature : %v,last flagd: %v", nodemem.flagdValue, nodemem.nodeMemLastConfig)
 	if nodemem.flagdValue != nodemem.nodeMemLastConfig {
-		// 如果配置发生变化，执行相应的操作
-		if nodemem.nodeMemLastConfig > 0 {
-			deleteCRDIfExists("node-mem")
-			time.Sleep(5 * time.Second)
-		}
 		nodemem.NodeMem()
 		nodemem.nodeMemLastConfig = nodemem.flagdValue
 	}
@@ -168,11 +128,6 @@ func (nodedisk *NodeDisk) NodeDiskFlagd() {
 	)
 	log.Printf("获取 NodeDiskLoad feature : %v,last flagd: %v", nodedisk.flagdValue, nodedisk.nodeDiskLastConfig)
 	if nodedisk.flagdValue != nodedisk.nodeDiskLastConfig {
-		// 如果配置发生变化，执行相应的操作
-		if nodedisk.nodeDiskLastConfig > 0 {
-			deleteCRDIfExists("node-disk")
-			time.Sleep(5 * time.Second)
-		}
 		nodedisk.NodeDisk()
 		nodedisk.nodeDiskLastConfig = nodedisk.flagdValue
 	}

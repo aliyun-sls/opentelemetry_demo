@@ -11,6 +11,9 @@ spec:
       matchers:
         - name: labels
           value: ["{{ .Labels }}"]
+        - name: mode
+          value:
+            - "ram"
         - name: mem-percent
           value: ["{{ .Percent }}"]
         - name: timeout
