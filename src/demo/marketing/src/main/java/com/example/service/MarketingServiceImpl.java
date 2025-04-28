@@ -1,15 +1,11 @@
 package com.example.service;
 
 import com.example.entity.MarketingEntity;
-import com.example.problempattern.FrequentGCExecutor;
-import com.example.problempattern.HighCPUExecutor;
-import com.example.problempattern.SlowSQLExecutor;
-import com.example.problempattern.ThreadPoolDepletionExecutor;
+import com.example.problempattern.*;
 import com.example.repository.MarketingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -29,6 +25,9 @@ public class MarketingServiceImpl implements MarketingService {
     @Autowired
     private FrequentGCExecutor frequentGCExecutor;
 
+    @Autowired
+    private ServiceDowntimeExecutor serviceDowntimeExecutor;
+
     @Override
     public List<MarketingEntity> listMarketingEntity() {
         List<MarketingEntity> all = marketingRepository.findAll();
@@ -42,6 +41,12 @@ public class MarketingServiceImpl implements MarketingService {
         slowSQLExecutor.execute();
         //frequent gc
         frequentGCExecutor.youngGcExecute();
+        //big object.
+        frequentGCExecutor.oldGcExecute();
+        //oom
+        frequentGCExecutor.oomExecute();
+        //downtime
+        serviceDowntimeExecutor.downtimeExecute();
         return all;
     }
 
