@@ -341,7 +341,7 @@
         "应用层异常",
         "线程池耗尽"
       ],
-      "category": "广告服务相关",
+      "category": "营销服务相关",
       "variants": {
         "on": true,
         "off": false
@@ -356,7 +356,7 @@
         "应用层异常",
         "慢 SQL "
       ],
-      "category": "广告服务相关",
+      "category": "营销服务相关",
       "variants": {
         "on": true,
         "off": false
@@ -371,7 +371,7 @@
         "应用层异常",
         "GC 频繁"
       ],
-      "category": "广告服务相关",
+      "category": "营销服务相关",
       "variants": {
         "2M": 200000,
         "2KW": 20000,
@@ -380,6 +380,58 @@
         "2W": 20,
         "2K": 2,
         "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "oldGcLoopCountFlag": {
+      "displayName": "Old GC 频繁",
+      "description": "Old GC 频繁，每次分配的对象为 1MB，按需选择分配大小，循环一轮后无等待",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "GC 频繁"
+      ],
+      "category": "营销服务相关",
+      "variants": {
+        "64GB": 65536,
+        "32GB": 32768,
+        "16GB": 16384,
+        "8GB": 8192,
+        "4GB": 4096,
+        "2GB": 2048,
+        "512MB": 512,
+        "off": 0
+      },
+      "defaultVariant": "off"
+    },
+    "jvmOOMFlag": {
+      "displayName": "JVM OOM 执行器",
+      "description": "JVM OOM 执行器 不间断分配堆内存直到 OOM",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "JVM OOM"
+      ],
+      "category": "营销服务相关",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "serviceDowntimeFlag": {
+      "displayName": "服务宕机",
+      "description": "服务直接宕机",
+      "state": "ENABLED",
+      "tags": [
+        "应用层异常",
+        "服务宕机",
+        "JVM 宕机"
+      ],
+      "category": "营销服务相关",
+      "variants": {
+        "on": true,
+        "off": false
       },
       "defaultVariant": "off"
     }
