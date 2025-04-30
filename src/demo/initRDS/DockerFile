@@ -1,0 +1,28 @@
+FROM golang:1.23.7-alpine AS builder
+
+WORKDIR /usr/src/app/
+
+COPY ./src/demo/common /usr/src/app/common
+
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,rw,source=./src/demo/initRDS/go.sum,target=go.sum \
+    --mount=type=bind,rw,source=./src/demo/initRDS/go.mod,target=go.mod \
+    --mount=type=bind,source=./src/demo/common,target=./common \
+    go mod edit -replace sls-mall-go/common=./common && \
+    go mod download
+
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=bind,rw,source=./src/demo/initRDS,target=initRDS \
+    cd initRDS && \
+    go build -ldflags "-s -w" -o /go/bin/initRDS/ ./
+
+FROM alpine
+
+WORKDIR /usr/src/app/
+
+COPY --from=builder /go/bin/initRDS/ ./
+
+EXPOSE 8080
+ENTRYPOINT [ "./initRDS" ]
