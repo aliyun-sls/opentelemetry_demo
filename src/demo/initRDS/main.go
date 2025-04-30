@@ -40,7 +40,7 @@ func InitMDB() {
 func initData() {
 	ads := model.AdEntity{
 		Model:       gorm.Model{},
-		ID:          1,
+		ID:          999,
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
@@ -51,7 +51,7 @@ func initData() {
 
 	marketing := model.MarketingEntity{
 		Model:       gorm.Model{},
-		ID:          1,
+		ID:          999,
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
@@ -62,7 +62,7 @@ func initData() {
 
 	notification := model.NotificationEntity{
 		Model:       gorm.Model{},
-		ID:          1,
+		ID:          999,
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
@@ -73,7 +73,7 @@ func initData() {
 
 	promotion := model.PromotionEntity{
 		Model:       gorm.Model{},
-		ID:          1,
+		ID:          999,
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
