@@ -44,9 +44,12 @@ func initData() {
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
-	err := MDB.Create(&ads).Error
-	if err != nil {
-		panic(err)
+	err := MDB.First(&ads, ads.ID).Error
+	if err == gorm.ErrRecordNotFound {
+		err = MDB.Create(&ads).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	marketing := model.MarketingEntity{
@@ -55,9 +58,12 @@ func initData() {
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
-	err = MDB.Create(&marketing).Error
-	if err != nil {
-		panic(err)
+	err = MDB.First(&marketing, marketing.ID).Error
+	if err == gorm.ErrRecordNotFound {
+		err = MDB.Create(&marketing).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	notification := model.NotificationEntity{
@@ -66,9 +72,12 @@ func initData() {
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
-	err = MDB.Create(&notification).Error
-	if err != nil {
-		panic(err)
+	err = MDB.First(&notification, notification.ID).Error
+	if err == gorm.ErrRecordNotFound {
+		err = MDB.Create(&notification).Error
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	promotion := model.PromotionEntity{
@@ -77,8 +86,12 @@ func initData() {
 		RedirectUrl: "/product/2ZYFJ3GM2P",
 		Text:        "/product/2ZYFJ3GM2P Roof Binoculars for sale. 50% off.",
 	}
-	err = MDB.Create(&promotion).Error
-	if err != nil {
-		panic(err)
+	err = MDB.First(&promotion, promotion.ID).Error
+	if err == gorm.ErrRecordNotFound {
+		err = MDB.Create(&promotion).Error
+		if err != nil {
+			panic(err)
+		}
 	}
+
 }
