@@ -17,13 +17,13 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     cd initRDS && \
     go mod edit -require github.com/ugorji/go/codec@v1.2.12 && \
     go mod tidy && \
-    go build -ldflags "-s -w" -o /go/bin/initRDS/ ./
+    go build -ldflags "-s -w" -o /usr/src/app/initRDS ./
 
 FROM alpine
 
 WORKDIR /usr/src/app/
 
-COPY --from=builder /go/bin/initRDS/ ./
+COPY --from=builder /usr/src/app/initRDS ./
 
 EXPOSE 8080
 ENTRYPOINT [ "./initRDS" ]
