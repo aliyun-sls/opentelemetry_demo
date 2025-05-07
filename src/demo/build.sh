@@ -24,14 +24,6 @@ module=marketing
 sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
 sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
 
-module=review
-sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
-sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
-
-module=reporting
-sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
-sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
-
 module=logistics
 sudo docker build -f Dockerfile --build-arg module=${module} --tag ${DOCKER_REPO}:${DOCKER_TAG}-${module} .
 sudo docker push ${DOCKER_REPO}:${DOCKER_TAG}-${module}
