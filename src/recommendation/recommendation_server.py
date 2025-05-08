@@ -13,6 +13,8 @@ from concurrent import futures
 # Pip
 import grpc
 from langchain.llms.openai import OpenAI
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import HumanMessage, SystemMessage
 from opentelemetry import trace, metrics
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
@@ -144,23 +146,24 @@ def get_product_list(request_product_ids):
 
         try:
             # 调用AI API
-            client = OpenAI(
+            client = ChatOpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
-                base_url=os.getenv('OPENAI_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'),
-                model_name=model_config["model"]
-            )
-            response = client.predict(
-                f"""你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。
-
-{prompt}""",
+                base_url=os.getenv('OPENAI_BASE_URL', 'https://dashscope.aliyuncs.com/api/v1'),
+                model=model_config["model"],
                 temperature=model_config.get("temperature", 0.7),
                 max_tokens=model_config.get("max_tokens", 100)
             )
-
+            
+            messages = [
+                SystemMessage(content="你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"),
+                HumanMessage(content=prompt)
+            ]
+            
+            response = client.invoke(messages)
             logger.info(f"AI API调用结果: {response}")
             
             # 解析推荐结果
-            recommended_ids = response.strip().split(',')
+            recommended_ids = response.content.strip().split(',')
             recommended_ids = [id.strip() for id in recommended_ids if id.strip()]
             
             # 确保返回的商品数量不超过max_responses
