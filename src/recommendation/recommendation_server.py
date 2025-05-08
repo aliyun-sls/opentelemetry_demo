@@ -80,7 +80,7 @@ def get_model_config():
     except Exception as e:
         logger.warning(f"无法从flagd获取模型配置，使用默认配置: {str(e)}")
         return {
-            "model": "deepseek-chat",
+            "model": "qwen-plus",
             "temperature": 0.7,
             "max_tokens": 100,
             "ai_probability": 0.3
@@ -146,7 +146,8 @@ def get_product_list(request_product_ids):
             # 调用AI API
             client = OpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
-                base_url=os.getenv('OPENAI_BASE_URL')
+                base_url=os.getenv('OPENAI_BASE_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'),
+                model_name=model_config["model"]
             )
             response = client.predict(
                 f"""你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。
