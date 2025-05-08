@@ -72,7 +72,6 @@ def get_model_config():
     try:
         model_config = client.get_object_value("recommendationModelConfig", {
             "model": "qwen-plus",
-            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
             "temperature": 0.7,
             "max_tokens": 100
         })
@@ -81,7 +80,6 @@ def get_model_config():
         logger.warning(f"无法从flagd获取模型配置，使用默认配置: {str(e)}")
         return {
             "model": "deepseek-chat",
-            "base_url": "https://api.deepseek.com/v1",
             "temperature": 0.7,
             "max_tokens": 100
         }
