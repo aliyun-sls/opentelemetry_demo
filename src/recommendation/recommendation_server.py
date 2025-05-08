@@ -2,8 +2,9 @@
 
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
-
-
+from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient, GrpcInstrumentorServer
+GrpcInstrumentorClient().instrument()
+GrpcInstrumentorServer().instrument()
 # Python
 import os
 import random
