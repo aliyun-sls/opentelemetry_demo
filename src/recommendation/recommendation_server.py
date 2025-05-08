@@ -142,8 +142,8 @@ def get_product_list(request_product_ids):
                     {"role": "system", "content": "你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=model_config["temperature"],
-                max_tokens=model_config["max_tokens"]
+                temperature=0.7,
+                max_tokens=100,
             )
 
             logger.info(f"AI API调用结果: {response}")
