@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -26,15 +25,12 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
 
 	otelhooks "github.com/open-feature/go-sdk-contrib/hooks/open-telemetry/pkg"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
@@ -179,13 +175,17 @@ type productCatalog struct {
 }
 
 func loadProductCatalog() {
-	log.Info("Loading Product Catalog...")
+	log.Info("开始加载商品目录...")
 	var err error
 	catalog, err = readProductFiles()
 	if err != nil {
-		log.Fatalf("Error reading product files: %v\n", err)
+		log.WithError(err).Fatal("读取商品文件失败")
 		os.Exit(1)
 	}
+
+	log.WithFields(logrus.Fields{
+		"product_count": len(catalog),
+	}).Info("商品目录加载完成")
 
 	// Default reload interval is 10 seconds
 	interval := DEFAULT_RELOAD_INTERVAL
@@ -196,7 +196,7 @@ func loadProductCatalog() {
 			interval = DEFAULT_RELOAD_INTERVAL
 		}
 	}
-	log.Infof("Product Catalog reload interval: %d", interval)
+	log.Infof("商品目录重载间隔: %d 秒", interval)
 
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
@@ -204,12 +204,15 @@ func loadProductCatalog() {
 		for {
 			select {
 			case <-ticker.C:
-				log.Info("Reloading Product Catalog...")
+				log.Info("开始重载商品目录...")
 				catalog, err = readProductFiles()
 				if err != nil {
-					log.Errorf("Error reading product files: %v", err)
+					log.WithError(err).Error("重载商品目录失败")
 					continue
 				}
+				log.WithFields(logrus.Fields{
+					"product_count": len(catalog),
+				}).Info("商品目录重载完成")
 			}
 		}
 	}()
@@ -272,91 +275,82 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 	return status.Errorf(codes.Unimplemented, "health check via Watch not implemented")
 }
 
-func httpCall(addr, path string) {
-	httpclient := &http.Client{
-		Timeout: 3 * time.Second,
-	}
-	resp, err := httpclient.Get("http://" + addr + path)
+func httpCall(addr, path string) error {
+	resp, err := http.Get("http://" + addr + path)
 	if err != nil {
-		log.Errorf("Error %q %q", err, addr+path)
-		return
+		return err
 	}
 	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Errorf("Error %q %q", err, addr+path)
-		return
-	}
-	log.Infof("Response: %q", string(body))
+	return nil
 }
 
 func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.ListProductsResponse, error) {
-	span := trace.SpanFromContext(ctx)
+	log.WithFields(logrus.Fields{
+		"request_id": ctx.Value("request_id"),
+	}).Info("收到获取商品列表请求")
 
-	span.SetAttributes(
-		attribute.Int("app.products.count", len(catalog)),
-	)
+	if marketingAddr := os.Getenv("MARKETING_ADDR"); marketingAddr != "" {
+		if err := httpCall(marketingAddr, "/listMarketing"); err != nil {
+			log.WithError(err).Error("调用营销服务失败")
+		}
+	}
+
+	log.WithFields(logrus.Fields{
+		"product_count": len(catalog),
+	}).Info("成功获取商品列表")
+
 	return &pb.ListProductsResponse{Products: catalog}, nil
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
-	span := trace.SpanFromContext(ctx)
-	span.SetAttributes(
-		attribute.String("app.product.id", req.Id),
-	)
+	log.WithFields(logrus.Fields{
+		"request_id": ctx.Value("request_id"),
+		"product_id": req.Id,
+	}).Info("收到获取商品详情请求")
 
-	// GetProduct will fail on a specific product when feature flag is enabled
 	if p.checkProductFailure(ctx, req.Id) {
-		msg := fmt.Sprintf("Error: Product Catalog Fail Feature Flag Enabled")
-		span.SetStatus(otelcodes.Error, msg)
-		span.AddEvent(msg)
-		return nil, status.Errorf(codes.Internal, msg)
+		log.WithFields(logrus.Fields{
+			"product_id": req.Id,
+		}).Warn("商品故障注入被触发")
+		return nil, status.Error(codes.Internal, "商品服务故障")
 	}
 
-	var found *pb.Product
 	for _, product := range catalog {
-		if req.Id == product.Id {
-			found = product
-			break
+		if product.Id == req.Id {
+			log.WithFields(logrus.Fields{
+				"product_id":   req.Id,
+				"product_name": product.Name,
+			}).Info("成功获取商品详情")
+			return product, nil
 		}
 	}
 
-	if found == nil {
-		msg := fmt.Sprintf("Product Not Found: %s", req.Id)
-		span.SetStatus(otelcodes.Error, msg)
-		span.AddEvent(msg)
-		return nil, status.Errorf(codes.NotFound, msg)
-	}
-
-	msg := fmt.Sprintf("Product Found - ID: %s, Name: %s", req.Id, found.Name)
-	span.AddEvent(msg)
-	span.SetAttributes(
-		attribute.String("app.product.name", found.Name),
-	)
-
-	// 确保返回的 Product 对象不为空
-	if found == nil {
-		return nil, status.Errorf(codes.Internal, "Internal Server Error")
-	}
-
-	return found, nil
+	log.WithFields(logrus.Fields{
+		"product_id": req.Id,
+	}).Warn("未找到商品")
+	return nil, status.Error(codes.NotFound, "商品未找到")
 }
 
 func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.SearchProductsResponse, error) {
-	span := trace.SpanFromContext(ctx)
+	log.WithFields(logrus.Fields{
+		"request_id": ctx.Value("request_id"),
+		"query":      req.Query,
+	}).Info("收到搜索商品请求")
 
-	var result []*pb.Product
+	var results []*pb.Product
 	for _, product := range catalog {
 		if strings.Contains(strings.ToLower(product.Name), strings.ToLower(req.Query)) ||
 			strings.Contains(strings.ToLower(product.Description), strings.ToLower(req.Query)) {
-			result = append(result, product)
+			results = append(results, product)
 		}
 	}
-	span.SetAttributes(
-		attribute.Int("app.products_search.count", len(result)),
-	)
-	return &pb.SearchProductsResponse{Results: result}, nil
+
+	log.WithFields(logrus.Fields{
+		"query":        req.Query,
+		"result_count": len(results),
+	}).Info("商品搜索完成")
+
+	return &pb.SearchProductsResponse{Results: results}, nil
 }
 
 func (p *productCatalog) checkProductFailure(ctx context.Context, id string) bool {

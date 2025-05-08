@@ -273,6 +273,12 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	log.WithFields(logrus.Fields{
+		"user_id":  req.UserId,
+		"email":    req.Email,
+		"currency": req.UserCurrency,
+	}).Info("开始处理订单请求")
+
 	if err := httpCall(cs.marketingSvcAddr, "/listMarketing"); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list marketing")
 	}
@@ -312,9 +318,17 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 
 	prep, err := cs.prepareOrderItemsAndShippingQuoteFromCart(ctx, req.UserId, req.UserCurrency, req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		log.WithFields(logrus.Fields{
+			"error":   err,
+			"user_id": req.UserId,
+		}).Error("准备订单项和运费失败")
+		return nil, status.Errorf(codes.Internal, "准备订单失败: %+v", err)
 	}
-	span.AddEvent("prepared")
+
+	log.WithFields(logrus.Fields{
+		"items_count":   len(prep.orderItems),
+		"shipping_cost": prep.shippingCostLocalized,
+	}).Info("订单项和运费准备完成")
 
 	total := &pb.Money{CurrencyCode: req.UserCurrency,
 		Units: 0,
@@ -325,13 +339,19 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		total = money.Must(money.Sum(total, multPrice))
 	}
 
-	txID, err := cs.chargeCard(ctx, total, req.CreditCard)
+	txID, err := cs.chargeCard(ctx, prep.shippingCostLocalized, req.CreditCard)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to charge card: %+v", err)
+		log.WithFields(logrus.Fields{
+			"error":  err,
+			"amount": prep.shippingCostLocalized,
+		}).Error("支付处理失败")
+		return nil, status.Errorf(codes.Internal, "支付处理失败: %+v", err)
 	}
-	log.Infof("payment went through (transaction_id: %s)", txID)
-	span.AddEvent("charged",
-		trace.WithAttributes(attribute.String("app.payment.transaction.id", txID)))
+
+	log.WithFields(logrus.Fields{
+		"transaction_id": txID,
+		"amount":         prep.shippingCostLocalized,
+	}).Info("支付处理成功")
 
 	shippingTrackingID, err := cs.shipOrder(ctx, req.Address, prep.cartItems)
 	if err != nil {
@@ -362,7 +382,12 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	)
 
 	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {
-		log.Warnf("failed to send order confirmation to %q: %+v", req.Email, err)
+		log.WithFields(logrus.Fields{
+			"error":    err,
+			"order_id": orderID,
+			"email":    req.Email,
+		}).Error("发送订单确认邮件失败")
+		// 继续处理，不返回错误
 	} else {
 		log.Infof("order confirmation email sent to %q", req.Email)
 	}
@@ -372,6 +397,11 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		log.Infof("sending to postProcessor")
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
+
+	log.WithFields(logrus.Fields{
+		"order_id": orderID,
+		"user_id":  req.UserId,
+	}).Info("订单处理完成")
 
 	resp := &pb.PlaceOrderResponse{Order: orderResult}
 	return resp, nil

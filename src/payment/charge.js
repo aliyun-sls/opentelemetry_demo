@@ -24,13 +24,24 @@ function random(arr) {
 module.exports.charge = async request => {
   const span = tracer.startSpan('charge');
 
+  logger.info({
+    amount: request.amount,
+    card_last_four: request.creditCard.creditCardNumber.substr(-4),
+    card_expiry: `${request.creditCard.creditCardExpirationMonth}/${request.creditCard.creditCardExpirationYear}`
+  }, '收到支付请求');
+
   await OpenFeature.setProviderAndWait(flagProvider);
 
-  const numberVariant =  await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
+  const numberVariant = await OpenFeature.getClient().getNumberValue("paymentFailure", 0);
 
   if (numberVariant > 0) {
     // n% chance to fail with app.loyalty.level=gold
     if (Math.random() < numberVariant) {
+      logger.warn({
+        loyalty_level: 'gold',
+        failure_rate: numberVariant
+      }, '支付故障注入被触发');
+      
       span.setAttributes({'app.loyalty.level': 'gold' });
       span.end();
 
@@ -53,6 +64,13 @@ module.exports.charge = async request => {
 
   const loyalty_level = random(LOYALTY_LEVEL);
 
+  logger.info({
+    transaction_id: transactionId,
+    card_type: cardType,
+    card_valid: valid,
+    loyalty_level: loyalty_level
+  }, '开始处理支付');
+
   span.setAttributes({
     'app.payment.card_type': cardType,
     'app.payment.card_valid': valid,
@@ -60,14 +78,28 @@ module.exports.charge = async request => {
   });
 
   if (!valid) {
+    logger.error({
+      transaction_id: transactionId,
+      card_type: cardType,
+      card_last_four: lastFourDigits
+    }, '信用卡信息无效');
     throw new Error('Credit card info is invalid.');
   }
 
   if (!['visa', 'mastercard'].includes(cardType)) {
+    logger.error({
+      transaction_id: transactionId,
+      card_type: cardType
+    }, '不支持的信用卡类型');
     throw new Error(`Sorry, we cannot process ${cardType} credit cards. Only VISA or MasterCard is accepted.`);
   }
 
   if ((currentYear * 12 + currentMonth) > (year * 12 + month)) {
+    logger.error({
+      transaction_id: transactionId,
+      card_last_four: lastFourDigits,
+      expiry_date: `${month}/${year}`
+    }, '信用卡已过期');
     throw new Error(`The credit card (ending ${lastFourDigits}) expired on ${month}/${year}.`);
   }
 
@@ -75,12 +107,27 @@ module.exports.charge = async request => {
   const baggage = propagation.getBaggage(context.active());
   if (baggage && baggage.getEntry('synthetic_request') && baggage.getEntry('synthetic_request').value === 'true') {
     span.setAttribute('app.payment.charged', false);
+    logger.info({
+      transaction_id: transactionId,
+      charged: false
+    }, '模拟请求，不实际扣款');
   } else {
     span.setAttribute('app.payment.charged', true);
+    logger.info({
+      transaction_id: transactionId,
+      charged: true
+    }, '实际扣款');
   }
 
   const { units, nanos, currencyCode } = request.amount;
-  logger.info({ transactionId, cardType, lastFourDigits, amount: { units, nanos, currencyCode }, loyalty_level }, 'Transaction complete.');
+  logger.info({
+    transaction_id: transactionId,
+    card_type: cardType,
+    card_last_four: lastFourDigits,
+    amount: { units, nanos, currencyCode },
+    loyalty_level
+  }, '支付处理完成');
+  
   transactionsCounter.add(1, { 'app.payment.currency': currencyCode });
   span.end();
 
