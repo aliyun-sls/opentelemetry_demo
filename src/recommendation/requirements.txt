@@ -10,3 +10,4 @@ openfeature-hooks-opentelemetry==0.2.0
 psutil==6.1.1 # Importing this will also import opentelemetry-instrumentation-system-metrics when running opentelemetry-bootstrap
 
 opentelemetry-instrumentation-grpc==0.50b0
+openai>=1.0.0

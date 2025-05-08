@@ -12,6 +12,7 @@ from concurrent import futures
 
 # Pip
 import grpc
+import openai
 from opentelemetry import trace, metrics
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
@@ -65,6 +66,26 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
             status=health_pb2.HealthCheckResponse.UNIMPLEMENTED)
 
 
+def get_model_config():
+    """从flagd获取模型配置"""
+    client = api.get_client()
+    try:
+        model_config = client.get_object_value("recommendationModelConfig", {
+            "model": "qwen-plus",
+            "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "temperature": 0.7,
+            "max_tokens": 100
+        })
+        return model_config
+    except Exception as e:
+        logger.warning(f"无法从flagd获取模型配置，使用默认配置: {str(e)}")
+        return {
+            "model": "deepseek-chat",
+            "base_url": "https://api.deepseek.com/v1",
+            "temperature": 0.7,
+            "max_tokens": 100
+        }
+
 def get_product_list(request_product_ids):
     global first_run
     global cached_ids
@@ -75,42 +96,64 @@ def get_product_list(request_product_ids):
         request_product_ids_str = ''.join(request_product_ids)
         request_product_ids = request_product_ids_str.split(',')
 
-        # Feature flag scenario - Cache Leak
-        if check_feature_flag("recommendationCacheFailure"):
-            span.set_attribute("app.recommendation.cache_enabled", True)
-            if random.random() < 0.5 or first_run:
-                first_run = False
-                span.set_attribute("app.cache_hit", False)
-                logger.info("get_product_list: cache miss")
-                cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
-                response_ids = [x.id for x in cat_response.products]
-                cached_ids = cached_ids + response_ids
-                cached_ids = cached_ids + cached_ids[:len(cached_ids) // 4]
-                product_ids = cached_ids
-            else:
-                span.set_attribute("app.cache_hit", True)
-                logger.info("get_product_list: cache hit")
-                product_ids = cached_ids
-        else:
-            span.set_attribute("app.recommendation.cache_enabled", False)
-            cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
-            product_ids = [x.id for x in cat_response.products]
+        # 获取所有商品信息
+        cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
+        all_products = cat_response.products
+        
+        # 获取请求的商品详情
+        requested_products = []
+        for product_id in request_product_ids:
+            product = product_catalog_stub.GetProduct(demo_pb2.GetProductRequest(id=product_id))
+            requested_products.append(product)
 
-        span.set_attribute("app.products.count", len(product_ids))
+        # 构建提示词
+        prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
 
-        # Create a filtered list of products excluding the products received as input
-        filtered_products = list(set(product_ids) - set(request_product_ids))
-        num_products = len(filtered_products)
-        span.set_attribute("app.filtered_products.count", num_products)
-        num_return = min(max_responses, num_products)
+用户正在查看的商品：
+{', '.join([f"{p.name}: {p.description}" for p in requested_products])}
 
-        # Sample list of indicies to return
-        indices = random.sample(range(num_products), num_return)
-        # Fetch product ids from indices
-        prod_list = [filtered_products[i] for i in indices]
+可选的商品列表：
+{', '.join([f"{p.name}: {p.description}" for p in all_products if p.id not in request_product_ids])}
+
+请只返回商品ID列表，用逗号分隔。"""
+
+        try:
+            # 获取模型配置
+            model_config = get_model_config()
+            span.set_attribute("app.recommendation.model", model_config["model"])
+
+            # 调用AI API
+            client = openai.OpenAI(
+                api_key=os.getenv('OPENAI_API_KEY'),
+                base_url=os.getenv('OPENAI_BASE_URL')
+            )
+            response = client.chat.completions.create(
+                model=model_config["model"],
+                messages=[
+                    {"role": "system", "content": "你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=model_config["temperature"],
+                max_tokens=model_config["max_tokens"]
+            )
+            
+            # 解析推荐结果
+            recommended_ids = response.choices[0].message.content.strip().split(',')
+            recommended_ids = [id.strip() for id in recommended_ids if id.strip()]
+            
+            # 确保返回的商品数量不超过max_responses
+            prod_list = recommended_ids[:max_responses]
+            
+        except Exception as e:
+            logger.error(f"AI API调用失败: {str(e)}")
+            # 如果API调用失败，回退到随机推荐
+            filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+            num_products = len(filtered_products)
+            num_return = min(max_responses, num_products)
+            indices = random.sample(range(num_products), num_return)
+            prod_list = [filtered_products[i] for i in indices]
 
         span.set_attribute("app.filtered_products.list", prod_list)
-
         return prod_list
 
 
