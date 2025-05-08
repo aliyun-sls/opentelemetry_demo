@@ -73,7 +73,8 @@ def get_model_config():
         model_config = client.get_object_value("recommendationModelConfig", {
             "model": "qwen-plus",
             "temperature": 0.7,
-            "max_tokens": 100
+            "max_tokens": 100,
+            "ai_probability": 0.3
         })
         return model_config
     except Exception as e:
@@ -81,7 +82,8 @@ def get_model_config():
         return {
             "model": "deepseek-chat",
             "temperature": 0.7,
-            "max_tokens": 100
+            "max_tokens": 100,
+            "ai_probability": 0.3
         }
 
 def get_product_list(request_product_ids):
@@ -97,7 +99,7 @@ def get_product_list(request_product_ids):
         # 获取所有商品信息
         cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
         all_products = cat_response.products
-
+        
         # 获取请求的商品详情
         requested_products = []
         for product_id in request_product_ids:
@@ -107,30 +109,40 @@ def get_product_list(request_product_ids):
             else:
                 logger.warning(f"未找到商品ID: {product_id}")
 
+        # 获取模型配置
+        model_config = get_model_config()
+        span.set_attribute("app.recommendation.model", model_config["model"])
+        span.set_attribute("app.recommendation.ai_probability", model_config.get("ai_probability", 0.3))
+
+        # 根据概率决定是否使用AI推荐
+        if random.random() > model_config.get("ai_probability", 0.3):
+            logger.info("使用随机推荐")
+            filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+            num_products = len(filtered_products)
+            num_return = min(max_responses, num_products)
+            indices = random.sample(range(num_products), num_return)
+            return [filtered_products[i] for i in indices]
+
         # 构建提示词
         if requested_products:
             prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
 
 用户正在查看的商品：
-{', '.join([f"{p.name}: {p.description}" for p in requested_products])}
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in requested_products])}
 
 可选的商品列表：
-{', '.join([f"{p.name}: {p.description}" for p in all_products if p.id not in request_product_ids])}
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products if p.id not in request_product_ids])}
 
 请只返回商品ID列表，用逗号分隔。"""
         else:
             prompt = f"""请从以下商品列表中随机推荐5个商品：
 
 可选的商品列表：
-{', '.join([f"{p.name}: {p.description}" for p in all_products])}
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products])}
 
 请只返回商品ID列表，用逗号分隔。"""
 
         try:
-            # 获取模型配置
-            model_config = get_model_config()
-            span.set_attribute("app.recommendation.model", model_config["model"])
-
             # 调用AI API
             client = openai.OpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
@@ -143,7 +155,7 @@ def get_product_list(request_product_ids):
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
-                max_tokens=100,
+                max_tokens=100
             )
 
             logger.info(f"AI API调用结果: {response}")
