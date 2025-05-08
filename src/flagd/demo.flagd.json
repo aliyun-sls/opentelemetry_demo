@@ -449,7 +449,27 @@
           "model": "qwen-plus",
           "temperature": 0.7,
           "max_tokens": 100,
-          "ai_probability": 0.3
+          "ai_probability": 0.01
+        }
+      }
+    },
+    "tokenBlackholeConfig": {
+      "displayName": "token黑洞配置",
+      "description": "token黑洞配置",
+      "state": "ENABLED",
+      "tags": [
+        "推荐服务相关"
+      ],
+      "defaultVariant": "off",
+      "category": "推荐服务相关",
+      "variants": {
+        "on": {
+          "enabled": true,
+          "waste_tokens": 1000
+        },
+        "off": {
+          "enabled": false,
+          "waste_tokens": 0
         }
       }
     }

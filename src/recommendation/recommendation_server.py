@@ -9,6 +9,7 @@ GrpcInstrumentorServer().instrument()
 import os
 import random
 from concurrent import futures
+import time
 
 # Pip
 import grpc
@@ -76,17 +77,90 @@ def get_model_config():
             "model": "qwen-plus",
             "temperature": 0.7,
             "max_tokens": 100,
-            "ai_probability": 0.3
+            "ai_probability": 0.01
         })
+        logger.info(f"从flagd获取的模型配置: {model_config}")
         return model_config
     except Exception as e:
         logger.warning(f"无法从flagd获取模型配置，使用默认配置: {str(e)}")
-        return {
+        default_config = {
             "model": "qwen-plus",
             "temperature": 0.7,
             "max_tokens": 100,
-            "ai_probability": 0.3
+            "ai_probability": 0.01
         }
+        logger.info(f"使用默认模型配置: {default_config}")
+        return default_config
+
+def check_fault_flag(flag_name: str):
+    """检查故障注入flag"""
+    client = api.get_client()
+    return client.get_boolean_value(flag_name, False)
+
+def get_token_blackhole_config():
+    """获取token黑洞配置"""
+    client = api.get_client()
+    try:
+        config = client.get_object_value("tokenBlackholeConfig", {
+            "enabled": False,
+            "waste_tokens": 1000
+        })
+        logger.info(f"从flagd获取的token黑洞配置: {config}")
+        return config
+    except Exception as e:
+        logger.warning(f"无法从flagd获取token黑洞配置，使用默认配置: {str(e)}")
+        default_config = {
+            "enabled": False,
+            "waste_tokens": 1000
+        }
+        logger.info(f"使用默认token黑洞配置: {default_config}")
+        return default_config
+
+def create_blackhole_prompt(base_prompt: str, waste_tokens: int) -> str:
+    """创建用于消耗token的提示词"""
+    analysis_requirements = [
+        "请详细分析每个商品的以下方面：",
+        "1. 价格合理性：分析价格是否合理，是否具有竞争力",
+        "2. 产品质量：分析产品的材质、工艺、耐用性等",
+        "3. 用户评价：分析用户反馈和评价",
+        "4. 市场定位：分析产品的目标用户群体",
+        "5. 竞品对比：与同类产品进行详细对比",
+        "6. 使用场景：分析产品的适用场景",
+        "7. 性价比：分析产品的性价比",
+        "8. 品牌价值：分析品牌的影响力和价值",
+        "9. 售后服务：分析售后服务的质量和保障",
+        "10. 创新特点：分析产品的创新点和特色"
+    ]
+    
+    # 根据waste_tokens计算需要重复的次数
+    repeat_times = waste_tokens // 200  # 假设每个分析要求大约消耗200个token
+    return base_prompt + "\n\n" + "\n".join(analysis_requirements * repeat_times)
+
+def handle_token_blackhole(prompt: str, model_config: dict, waste_tokens: int) -> None:
+    """处理token黑洞故障"""
+    logger.info(f"触发Token黑洞故障: 消耗{waste_tokens}个token")
+    
+    # 创建用于消耗token的提示词
+    long_prompt = create_blackhole_prompt(prompt, waste_tokens)
+    
+    # 创建OpenAI客户端
+    client = ChatOpenAI(
+        api_key=os.getenv('OPENAI_API_KEY'),
+        base_url=os.getenv('OPENAI_BASE_URL'),
+        model=model_config["model"],
+        temperature=model_config.get("temperature", 0.7),
+        max_tokens=model_config.get("max_tokens", 100)
+    )
+    
+    # 构建消息
+    messages = [
+        SystemMessage(content="你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"),
+        HumanMessage(content=long_prompt)
+    ]
+    
+    # 调用API消耗token，但忽略结果
+    client.invoke(messages)
+    logger.info(f"Token黑洞故障API调用完成，消耗了约{waste_tokens}个token")
 
 def get_product_list(request_product_ids):
     global first_run
@@ -114,10 +188,10 @@ def get_product_list(request_product_ids):
         # 获取模型配置
         model_config = get_model_config()
         span.set_attribute("app.recommendation.model", model_config["model"])
-        span.set_attribute("app.recommendation.ai_probability", model_config.get("ai_probability", 0.3))
+        span.set_attribute("app.recommendation.ai_probability", model_config.get("ai_probability", 0.01))
 
         # 根据概率决定是否使用AI推荐
-        if random.random() > model_config.get("ai_probability", 0.3):
+        if random.random() > model_config.get("ai_probability", 0.01):
             logger.info("使用随机推荐")
             filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
             num_products = len(filtered_products)
@@ -145,10 +219,16 @@ def get_product_list(request_product_ids):
 请只返回商品ID列表，用逗号分隔。"""
 
         try:
-            # 调用AI API
+            # 检查是否需要触发token黑洞
+            blackhole_config = get_token_blackhole_config()
+            if blackhole_config.get("enabled", False):
+                handle_token_blackhole(prompt, model_config, blackhole_config.get("waste_tokens", 1000))
+                return []
+            
+            # 正常调用AI API
             client = ChatOpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
-                base_url=os.getenv('OPENAI_BASE_URL', 'https://dashscope.aliyuncs.com/api/v1'),
+                base_url=os.getenv('OPENAI_BASE_URL'),
                 model=model_config["model"],
                 temperature=model_config.get("temperature", 0.7),
                 max_tokens=model_config.get("max_tokens", 100)
