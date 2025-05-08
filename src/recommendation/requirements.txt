@@ -11,3 +11,5 @@ psutil==6.1.1 # Importing this will also import opentelemetry-instrumentation-sy
 
 opentelemetry-instrumentation-grpc==0.50b0
 openai>=1.0.0
+langchain==0.2.17
+langchain_community
