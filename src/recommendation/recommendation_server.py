@@ -98,8 +98,6 @@ def get_product_list(request_product_ids):
         cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
         all_products = cat_response.products
 
-        logger.info(f"所有商品信息: {all_products}")
-        
         # 获取请求的商品详情
         requested_products = []
         for product_id in request_product_ids:
