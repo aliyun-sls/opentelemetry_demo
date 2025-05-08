@@ -44,6 +44,10 @@ from metrics import (
 cached_ids = []
 first_run = True
 
+# 添加全局变量用于控制token黑洞触发时间
+last_blackhole_trigger_time = 0
+BLACKHOLE_COOLDOWN = 30  # 冷却时间（秒）
+
 class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
     def ListRecommendations(self, request, context):
         prod_list = get_product_list(request.product_ids)
@@ -115,6 +119,15 @@ def get_token_blackhole_config():
         }
         logger.info(f"使用默认token黑洞配置: {default_config}")
         return default_config
+
+def can_trigger_blackhole() -> bool:
+    """检查是否可以触发token黑洞"""
+    global last_blackhole_trigger_time
+    current_time = time.time()
+    if current_time - last_blackhole_trigger_time >= BLACKHOLE_COOLDOWN:
+        last_blackhole_trigger_time = current_time
+        return True
+    return False
 
 def create_blackhole_prompt(base_prompt: str, waste_tokens: int) -> str:
     """创建用于消耗token的提示词"""
@@ -222,8 +235,17 @@ def get_product_list(request_product_ids):
             # 检查是否需要触发token黑洞
             blackhole_config = get_token_blackhole_config()
             if blackhole_config.get("enabled", False):
-                handle_token_blackhole(prompt, model_config, blackhole_config.get("waste_tokens", 1000))
-                return []
+                if can_trigger_blackhole():
+                    handle_token_blackhole(prompt, model_config, blackhole_config.get("waste_tokens", 1000))
+                    return []
+                else:
+                    logger.info("Token黑洞在冷却中，跳过触发")
+                    # 如果黑洞在冷却中，使用随机推荐
+                    filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+                    num_products = len(filtered_products)
+                    num_return = min(max_responses, num_products)
+                    indices = random.sample(range(num_products), num_return)
+                    return [filtered_products[i] for i in indices]
             
             # 正常调用AI API
             client = ChatOpenAI(
