@@ -134,6 +134,8 @@ def get_product_list(request_product_ids):
                 temperature=model_config["temperature"],
                 max_tokens=model_config["max_tokens"]
             )
+
+            logger.info(f"AI API调用结果: {response}")
             
             # 解析推荐结果
             recommended_ids = response.choices[0].message.content.strip().split(',')
