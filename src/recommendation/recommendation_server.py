@@ -103,17 +103,28 @@ def get_product_list(request_product_ids):
         # 获取请求的商品详情
         requested_products = []
         for product_id in request_product_ids:
-            product = product_catalog_stub.GetProduct(demo_pb2.GetProductRequest(id=product_id))
-            requested_products.append(product)
+            product = next((p for p in all_products if p.id == product_id), None)
+            if product:
+                requested_products.append(product)
+            else:
+                logger.warning(f"未找到商品ID: {product_id}")
 
         # 构建提示词
-        prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
+        if requested_products:
+            prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
 
 用户正在查看的商品：
 {', '.join([f"{p.name}: {p.description}" for p in requested_products])}
 
 可选的商品列表：
 {', '.join([f"{p.name}: {p.description}" for p in all_products if p.id not in request_product_ids])}
+
+请只返回商品ID列表，用逗号分隔。"""
+        else:
+            prompt = f"""请从以下商品列表中随机推荐5个商品：
+
+可选的商品列表：
+{', '.join([f"{p.name}: {p.description}" for p in all_products])}
 
 请只返回商品ID列表，用逗号分隔。"""
 
