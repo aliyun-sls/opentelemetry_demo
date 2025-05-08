@@ -12,7 +12,7 @@ from concurrent import futures
 
 # Pip
 import grpc
-import openai
+from langchain.llms.openai import OpenAI
 from opentelemetry import trace, metrics
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
@@ -144,7 +144,7 @@ def get_product_list(request_product_ids):
 
         try:
             # 调用AI API
-            client = openai.OpenAI(
+            client = OpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
                 base_url=os.getenv('OPENAI_BASE_URL')
             )
