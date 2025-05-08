@@ -148,20 +148,18 @@ def get_product_list(request_product_ids):
                 api_key=os.getenv('OPENAI_API_KEY'),
                 base_url=os.getenv('OPENAI_BASE_URL')
             )
-            response = client.chat.completions.create(
-                model=model_config["model"],
-                messages=[
-                    {"role": "system", "content": "你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=100
+            response = client.predict(
+                f"""你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。
+
+{prompt}""",
+                temperature=model_config.get("temperature", 0.7),
+                max_tokens=model_config.get("max_tokens", 100)
             )
 
             logger.info(f"AI API调用结果: {response}")
             
             # 解析推荐结果
-            recommended_ids = response.choices[0].message.content.strip().split(',')
+            recommended_ids = response.strip().split(',')
             recommended_ids = [id.strip() for id in recommended_ids if id.strip()]
             
             # 确保返回的商品数量不超过max_responses
