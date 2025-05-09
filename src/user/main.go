@@ -38,8 +38,9 @@ func main() {
 	})
 
 	// 注册路由
-	r.POST("/register", register)
+	//r.POST("/register", register)
 	r.POST("/login", login)
+	r.POST("/login", logout)
 
 	// 启动服务
 	r.Run(":8080")

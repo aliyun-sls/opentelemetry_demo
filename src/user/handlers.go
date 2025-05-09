@@ -58,3 +58,23 @@ func login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "sessionid": uid, "role": foundUser.Role}) // 返回角色信息
 }
+
+func logout(c *gin.Context) {
+
+	sessionID, err := c.Cookie("sessionid")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No active session"})
+		return
+	}
+
+	// 从 Redis 中删除会话
+	if err := redisClient.Del(c, sessionID).Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete session"})
+		return
+	}
+
+	// 清除 cookie
+	c.SetCookie("sessionid", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
+}
