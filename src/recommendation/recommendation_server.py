@@ -147,7 +147,7 @@ def create_blackhole_prompt(base_prompt: str, waste_tokens: int) -> str:
     
     # 根据waste_tokens计算需要重复的次数
     repeat_times = waste_tokens // 200  # 假设每个分析要求大约消耗200个token
-    return base_prompt + "\n\n" + "\n".join(analysis_requirements * repeat_times)
+    return base_prompt + "\n\n" + "\n".join(analysis_requirements * int(repeat_times))
 
 def handle_token_blackhole(prompt: str, model_config: dict, waste_tokens: int) -> None:
     """处理token黑洞故障"""
@@ -162,7 +162,7 @@ def handle_token_blackhole(prompt: str, model_config: dict, waste_tokens: int) -
         base_url=os.getenv('OPENAI_BASE_URL'),
         model=model_config["model"],
         temperature=model_config.get("temperature", 0.7),
-        max_tokens=model_config.get("max_tokens", 100)
+        max_tokens=model_config.get("max_tokens", 10000)
     )
     
     # 构建消息
