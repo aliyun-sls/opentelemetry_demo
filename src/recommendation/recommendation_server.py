@@ -203,6 +203,25 @@ def get_product_list(request_product_ids):
         span.set_attribute("app.recommendation.model", model_config["model"])
         span.set_attribute("app.recommendation.ai_probability", model_config.get("ai_probability", 0.01))
 
+        # 构建提示词
+        if requested_products:
+            prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
+
+用户正在查看的商品：
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in requested_products])}
+
+可选的商品列表：
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products if p.id not in request_product_ids])}
+
+请只返回商品ID列表，用逗号分隔。"""
+        else:
+            prompt = f"""请从以下商品列表中随机推荐5个商品：
+
+可选的商品列表：
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products])}
+
+请只返回商品ID列表，用逗号分隔。"""
+
         # 检查是否需要触发token黑洞
         blackhole_config = get_token_blackhole_config()
         if blackhole_config.get("enabled", False):
@@ -226,25 +245,6 @@ def get_product_list(request_product_ids):
             num_return = min(max_responses, num_products)
             indices = random.sample(range(num_products), num_return)
             return [filtered_products[i] for i in indices]
-
-        # 构建提示词
-        if requested_products:
-            prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
-
-用户正在查看的商品：
-{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in requested_products])}
-
-可选的商品列表：
-{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products if p.id not in request_product_ids])}
-
-请只返回商品ID列表，用逗号分隔。"""
-        else:
-            prompt = f"""请从以下商品列表中随机推荐5个商品：
-
-可选的商品列表：
-{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products])}
-
-请只返回商品ID列表，用逗号分隔。"""
 
         try:
             # 正常调用AI API
