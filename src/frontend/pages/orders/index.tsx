@@ -1,26 +1,26 @@
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import styles from '../../styles/orders.module.css'; // 导入样式文件
-import { ordersDemoData } from '../../utils/demoData';
+import styles from '../../styles/orders.module.css';
+import { ordersDemoData, Order } from '../../utils/demoData';
 import Header from '../../components/Header/Header';
 
 const OrdersPage = () => {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
   const fetchOrders = async () => {
-    // ===== 使用 demo 数据 =====
-    const useDemoData = true; // 设置为 true 使用 demo 数据，false 回到真实请求
+    const useDemoData = true;
     if (useDemoData) {
       setOrders(ordersDemoData.data);
       return;
     }
 
     try {
-      const response = await fetch('/api/orders');
+      const response = await fetch('http://order:8080/order/list');
 
       if (!response.ok) {
         setOrders([]);
