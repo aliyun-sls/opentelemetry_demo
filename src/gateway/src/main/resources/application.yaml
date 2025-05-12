@@ -1,4 +1,14 @@
 spring:
+  redis:
+    host: ${REDIS_ADDR}
+    port: ${REDIS_PORT}
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 4
+        min-idle: 1
+        max-wait: 2000ms
+    timeout: 5000ms
   cloud:
     gateway:
       httpclient:

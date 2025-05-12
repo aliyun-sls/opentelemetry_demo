@@ -1,0 +1,54 @@
+.container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.section {
+  margin-bottom: 25px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.sectionTitle {
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.detailRow {
+  margin-bottom: 10px;
+}
+
+.label {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #666;
+}
+
+.value {
+  color: #333;
+}
+
+.separator {
+  margin: 20px 0;
+  border-top: 1px solid #eee;
+}
+
+.backLink {
+  display: inline-block;
+  margin-top: 20px;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}

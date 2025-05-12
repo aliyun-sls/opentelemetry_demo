@@ -62,11 +62,11 @@ const Header = () => {
                       <S.DropdownItem onClick={toggleCurrencySwitcher}>
                         币种转换
                       </S.DropdownItem>
-                      <S.DropdownItem onClick={handleLogout}>
-                        注销
-                      </S.DropdownItem>
                       <S.DropdownItem onClick={handleOrdersClick}>
                         订单
+                      </S.DropdownItem>
+                      <S.DropdownItem onClick={handleLogout}>
+                        注销
                       </S.DropdownItem>
                     </>
                   ) : (

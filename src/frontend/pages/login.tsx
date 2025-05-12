@@ -2,6 +2,7 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/router';
 import styles from '../styles/login.module.css';
+import SessionGateway from '../gateways/Session.gateway';
 
 interface LoginResponse {
   message: string;
@@ -33,9 +34,8 @@ const Login = () => {
       }
       const data: LoginResponse = await response.json();
       // 存储会话 ID 和角色信息
-      localStorage.setItem('sessionId', data.sessionid);
-      localStorage.setItem('userRole', String(data.role));
-
+      localStorage.setItem('sid', data.sessionid);
+      SessionGateway.setSessionValue('sid', data.sessionid);
       // 重定向到首页
       router.push('/');
     } catch (error) {

@@ -8,11 +8,15 @@ USER node
 
 WORKDIR /app
 
-RUN mkdir -p node_modules && chown -R node:node ./
+USER node
+
+RUN mkdir -p /app/.next && mkdir -p /app/.next/static && mkdir -p /app/.next/cache
+
 COPY --chown=node:node ./src/frontend/package*.json ./
 RUN npm clean-install --no-audit --no-progress
-COPY ./src/frontend/protos ./protos
-COPY ./src/frontend .
+
+COPY --chown=node:node ./src/frontend/protos ./protos
+COPY --chown=node:node ./src/frontend .
 
 RUN npm run build
 
@@ -43,10 +47,11 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+RUN chown -R nextjs:nodejs /app/.next
+
 USER nextjs
 
 ENV PORT=8080
 EXPOSE ${PORT}
 
 ENTRYPOINT ["npm", "start"]
-

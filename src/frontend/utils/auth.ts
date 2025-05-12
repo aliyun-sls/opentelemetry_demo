@@ -7,7 +7,7 @@ export interface AuthResult {
 
 export function checkAuth(): boolean {
   if (typeof window !== 'undefined') {
-      const sessionId = localStorage.getItem('sessionId');
+      const sessionId = localStorage.getItem('sid');
       return sessionId !== null;
     }
   return false;
@@ -21,13 +21,13 @@ export function isAdmin(): boolean {
 
 
 export function getAuthStatus(): AuthResult {
-  const sessionId = localStorage.getItem('sessionId');
+  const sessionId = localStorage.getItem('sid');
 
   if (!sessionId) {
     return { isAuthenticated: false };
   }
 
-  const userRole = localStorage.getItem('userRole');
+  const userRole = localStorage.getItem('uid');
   const isAdminUser = userRole === '0'; // ROLE_ADMIN = 0
 
   return {

@@ -15,7 +15,7 @@ export default async function handler(
   }  
   
   try {  
-    const response = await fetch('http://localhost:10001/logout', {
+    const response = await fetch('http://user:8080/logout', {
       method: 'POST',
       credentials: 'include',
     });

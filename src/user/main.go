@@ -16,7 +16,6 @@ type User struct {
 
 const (
 	ROLE_ADMIN = iota
-	ROLE_USRR
 )
 
 // 初始化 Redis 客户端
@@ -29,7 +28,7 @@ func main() {
 	// 初始化 Gin
 	r := gin.Default()
 
-	redisAddr := os.Getenv("REDIS_ENDPOINT")
+	redisAddr := os.Getenv("REDIS_ADDR")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisClient = redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
@@ -40,7 +39,7 @@ func main() {
 	// 注册路由
 	//r.POST("/register", register)
 	r.POST("/login", login)
-	r.POST("/login", logout)
+	r.POST("/logout", logout)
 
 	// 启动服务
 	r.Run(":8080")
