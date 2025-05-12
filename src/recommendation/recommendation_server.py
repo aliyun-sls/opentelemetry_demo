@@ -203,6 +203,21 @@ def get_product_list(request_product_ids):
         span.set_attribute("app.recommendation.model", model_config["model"])
         span.set_attribute("app.recommendation.ai_probability", model_config.get("ai_probability", 0.01))
 
+        # 检查是否需要触发token黑洞
+        blackhole_config = get_token_blackhole_config()
+        if blackhole_config.get("enabled", False):
+            if can_trigger_blackhole():
+                handle_token_blackhole(prompt, model_config, blackhole_config.get("waste_tokens", 1000))
+                return []
+            else:
+                logger.info("Token黑洞在冷却中，跳过触发")
+                # 如果黑洞在冷却中，使用随机推荐
+                filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+                num_products = len(filtered_products)
+                num_return = min(max_responses, num_products)
+                indices = random.sample(range(num_products), num_return)
+                return [filtered_products[i] for i in indices]
+
         # 根据概率决定是否使用AI推荐
         if random.random() > model_config.get("ai_probability", 0.01):
             logger.info("使用随机推荐")
@@ -232,21 +247,6 @@ def get_product_list(request_product_ids):
 请只返回商品ID列表，用逗号分隔。"""
 
         try:
-            # 检查是否需要触发token黑洞
-            blackhole_config = get_token_blackhole_config()
-            if blackhole_config.get("enabled", False):
-                if can_trigger_blackhole():
-                    handle_token_blackhole(prompt, model_config, blackhole_config.get("waste_tokens", 1000))
-                    return []
-                else:
-                    logger.info("Token黑洞在冷却中，跳过触发")
-                    # 如果黑洞在冷却中，使用随机推荐
-                    filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
-                    num_products = len(filtered_products)
-                    num_return = min(max_responses, num_products)
-                    indices = random.sample(range(num_products), num_return)
-                    return [filtered_products[i] for i in indices]
-            
             # 正常调用AI API
             client = ChatOpenAI(
                 api_key=os.getenv('OPENAI_API_KEY'),
