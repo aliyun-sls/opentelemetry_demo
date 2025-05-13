@@ -1,7 +1,7 @@
 spring:
   redis:
-    host: ${REDIS_ADDR}
-    port: ${REDIS_PORT}
+    host: ${REDIS_ADDR:localhost}
+    port: ${REDIS_PORT:6379}
     lettuce:
       pool:
         max-active: 8
