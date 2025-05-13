@@ -5,7 +5,7 @@ metadata:
     app: user
   name: user
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: user
@@ -20,6 +20,16 @@ spec:
     spec:
       containers:
         - env:
+            - name: REDIS_ADDR
+              valueFrom:
+                secretKeyRef:
+                  name: 011y-demo
+                  key: REDIS_ADDR
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: 011y-demo
+                  key: REDIS_PASSWORD
             - name: MYSQL_ENDPOINT
               valueFrom:
                 secretKeyRef:

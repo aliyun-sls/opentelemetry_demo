@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+import SessionGateway from '../gateways/Session.gateway';
+
 interface IRequestParams {
   url: string;
   body?: object;
@@ -18,10 +20,16 @@ const request = async <T>({
     'content-type': 'application/json',
   },
 }: IRequestParams): Promise<T> => {
+  const session = SessionGateway.getSession();
+  const finalHeaders = {
+    ...headers,
+    sid: session.sid,
+  };
+
   const response = await fetch(`${url}?${new URLSearchParams(queryParams).toString()}`, {
     method,
     body: body ? JSON.stringify(body) : undefined,
-    headers,
+    headers: finalHeaders,
   });
 
   const responseText = await response.text();

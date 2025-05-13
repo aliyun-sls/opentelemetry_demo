@@ -3,39 +3,30 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"math/rand"
 	"net/http"
-	"os"
 	"time"
 )
 
-func register(c *gin.Context) {
-	var user User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := db.Where("username = ?", user.Username).First(&user).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "username already registered"})
-		return
-	}
-	user.Role = ROLE_USRR
-	if err := db.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
-}
+//func register(c *gin.Context) {
+//	var user User
+//	if err := c.ShouldBindJSON(&user); err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//		return
+//	}
+//	if err := db.Where("username = ?", user.Username).First(&user).Error; err == nil {
+//		c.JSON(http.StatusConflict, gin.H{"error": "username already registered"})
+//		return
+//	}
+//	user.Role = ROLE_USRR
+//	if err := db.Create(&user).Error; err != nil {
+//		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to register user"})
+//		return
+//	}
+//
+//	c.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
+//}
 
 func login(c *gin.Context) {
-	if os.Getenv("ISTROUBLE") == "true" {
-		if rand.Int()%5 == 0 {
-			time.Sleep(5 * time.Second)
-		} else if rand.Int()%3 == 0 {
-			time.Sleep(2 * time.Second)
-		}
-	}
 	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -54,7 +45,27 @@ func login(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("sessionid", uid, 3600*24, "/", "", false, true)
+	c.SetCookie("sid", uid, 3600*24, "/", "", false, true)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "sessionid": uid, "role": foundUser.Role}) // 返回角色信息
+	c.JSON(http.StatusOK, gin.H{"message": "Login successful", "sid": uid, "role": foundUser.Role}) // 返回角色信息
+}
+
+func logout(c *gin.Context) {
+
+	sessionID, err := c.Cookie("sid")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No active session"})
+		return
+	}
+
+	// 从 Redis 中删除会话
+	if err := redisClient.Del(c, sessionID).Err(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete session"})
+		return
+	}
+
+	// 清除 cookie
+	c.SetCookie("sid", "", -1, "/", "", false, true)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
 }

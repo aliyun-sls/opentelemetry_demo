@@ -6,12 +6,15 @@ import { v4 } from 'uuid';
 interface ISession {
   userId: string;
   currencyCode: string;
+  sid: string;
 }
 
 const sessionKey = 'session';
+const sessionIdKey = 'sessionId'
 const defaultSession = {
   userId: v4(),
   currencyCode: 'USD',
+  sid: '',
 };
 
 const SessionGateway = () => ({
@@ -20,7 +23,6 @@ const SessionGateway = () => ({
     const sessionString = localStorage.getItem(sessionKey);
 
     if (!sessionString) localStorage.setItem(sessionKey, JSON.stringify(defaultSession));
-
     return JSON.parse(sessionString || JSON.stringify(defaultSession)) as ISession;
   },
   setSessionValue<K extends keyof ISession>(key: K, value: ISession[K]) {
