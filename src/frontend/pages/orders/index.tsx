@@ -20,7 +20,7 @@ const OrdersPage = () => {
     }
 
     try {
-      const response = await fetch('http://order:8080/order/list', {
+      const response = await fetch('/order/list', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
