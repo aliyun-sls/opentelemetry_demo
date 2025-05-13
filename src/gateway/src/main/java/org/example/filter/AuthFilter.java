@@ -34,6 +34,7 @@ public class AuthFilter implements GlobalFilter {
     
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info("AuthFilter: {}", exchange.getRequest().getURI());
         String sid = exchange.getRequest().getHeaders().getFirst(sidKey);
         if (StringUtils.isNotBlank(sid)) {
             exchange.getAttributes().put(sidKey, sid);

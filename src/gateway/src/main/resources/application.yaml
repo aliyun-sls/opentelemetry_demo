@@ -102,6 +102,10 @@ spring:
           uri: http://notification:8080
           predicates:
             - Path=/notification/**
+        - id: user
+          uri: http://user:8080
+          predicates:
+            - Path=/user/api/**
         - id: default
           uri: http://frontend:8080
           predicates:

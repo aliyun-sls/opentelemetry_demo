@@ -36,10 +36,10 @@ func main() {
 		DB:       0,
 	})
 
-	// 注册路由
+
 	//r.POST("/register", register)
-	r.POST("/login", login)
-	r.POST("/logout", logout)
+	r.POST("/user/api/login", login)
+	r.POST("/user/api/logout", logout)
 
 	// 启动服务
 	r.Run(":8080")
