@@ -29,19 +29,28 @@ import (
 func login(c *gin.Context) {
 	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request payload",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	var foundUser User
 	if err := db.Where("username = ? AND password = ?", user.Username, user.Password).First(&foundUser).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error":   "Invalid credentials",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	uid := uuid.New().String()
 	if err := redisClient.Set(c, uid, foundUser.ID, 24*time.Hour).Err(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to create session",
+			"details": err.Error(),
+		})
 		return
 	}
 
@@ -51,16 +60,21 @@ func login(c *gin.Context) {
 }
 
 func logout(c *gin.Context) {
-
 	sessionID, err := c.Cookie("sid")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No active session"})
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error":   "No active session",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	// 从 Redis 中删除会话
 	if err := redisClient.Del(c, sessionID).Err(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete session"})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to delete session",
+			"details": err.Error(),
+		})
 		return
 	}
 
