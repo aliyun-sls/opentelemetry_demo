@@ -1,0 +1,8 @@
+FROM redis:7.2.7
+
+RUN mkdir -p /usr/local/etc/redis
+
+
+RUN echo "requirepass \"\"" > /usr/local/etc/redis/redis.conf
+
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]
