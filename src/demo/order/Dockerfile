@@ -3,6 +3,7 @@ FROM golang:1.23.7-alpine AS builder
 
 WORKDIR /usr/src/app/
 COPY ./src/demo/order .
+COPY ./src/demo/common .
 COPY ./tools/instgo /tmp/instgo
 RUN go mod tidy
 RUN chmod +x /tmp/instgo
