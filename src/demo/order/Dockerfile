@@ -10,7 +10,7 @@ RUN go mod tidy
 
 WORKDIR /build/order
 COPY ./src/demo/order .
-RUN yum install -y gcc
+RUN apk add --no-cache gcc make musl-dev
 RUN go mod tidy
 RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux /build/instgo go build -ldflags "-s -w" -o order .
 
