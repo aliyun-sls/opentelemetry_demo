@@ -5,6 +5,7 @@ WORKDIR /usr/src/app/
 COPY ./tools/instgo /tmp/instgo
 COPY ./src/demo/order/tupian /usr/src/app/tupian
 COPY ./src/demo/common /usr/src/app/common
+COPY ./src/demo/order/config /usr/src/app/config
 RUN chmod +x /tmp/instgo
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
