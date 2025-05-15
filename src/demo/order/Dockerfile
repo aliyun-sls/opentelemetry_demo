@@ -7,9 +7,11 @@ WORKDIR /build
 
 WORKDIR /build/common
 COPY ./src/demo/common .
+COPY ./src/demo/common/go.mod .
+COPY ./src/demo/common/go.sum .
+RUN go mod download
 COPY ./tools/instgo /build/instgo
 RUN chmod +x /build/instgo
-RUN go mod tidy
 
 WORKDIR /build/order
 COPY ./src/demo/order .
