@@ -1,17 +1,23 @@
 FROM golang:1.23.7-alpine AS builder
 
+WORKDIR /build
 
-WORKDIR /usr/src/app/
-COPY ./src/demo/order /usr/src/app/order
-COPY ./src/demo/common /usr/src/app/common
-COPY ./tools/instgo /tmp/instgo
+WORKDIR /build/common
+COPY common .
 RUN go mod tidy
+
+WORKDIR /build/order
+COPY order .
+COPY ./tools/instgo /tmp/instgo
 RUN chmod +x /tmp/instgo
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -o order .
+RUN go mod tidy
+RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags "-s -w" -o order .
+
 
 FROM alpine:3.16 AS order
 
-WORKDIR /usr/src/app/
-COPY --from=builder /usr/src/app/order /usr/src/app/
+WORKDIR /app
+COPY --from=builder /build/order/order /app/
+COPY --from=builder /build/order/config /app/config
 EXPOSE 8080
-ENTRYPOINT ["/usr/src/app/"]
+ENTRYPOINT ["/app/order"]

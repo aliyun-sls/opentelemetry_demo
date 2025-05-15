@@ -56,7 +56,7 @@ func DoInitProducer(cfg *KafkaConfig) *kafka.Producer {
 	case "sasl_ssl":
 		kafkaconf.SetKey("security.protocol", "sasl_ssl")
 				//根据证书正式路径替换 /Users/victor/rfcwork/work/opentelemetry_demo/src/demo/order/config/ca-cert.pem
-        kafkaconf.SetKey("ssl.ca.location", "/usr/src/app/order/config/ca-cert.pem")
+        kafkaconf.SetKey("ssl.ca.location", "/app/config/ca-cert.pem")
 		kafkaconf.SetKey("sasl.username", cfg.SaslUsername)
 		kafkaconf.SetKey("sasl.password", cfg.SaslPassword)
 		kafkaconf.SetKey("sasl.mechanism", cfg.SaslMechanism)
