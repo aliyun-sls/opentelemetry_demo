@@ -13,6 +13,5 @@ FROM alpine:3.16 AS order
 
 WORKDIR /usr/src/app/
 COPY --from=builder /usr/src/app/order /usr/src/app/
-COPY --from=builder /usr/src/app/tupian ./tupian
 EXPOSE 8080
 ENTRYPOINT ["/usr/src/app/"]
