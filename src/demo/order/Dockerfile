@@ -11,7 +11,7 @@ RUN go mod tidy
 WORKDIR /build/order
 COPY ./src/demo/order .
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOARCH=amd64 GOOS=linux /build/instgo go build -ldflags "-s -w" -o order .
+RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux /build/instgo go build -ldflags "-s -w" -o order .
 
 
 FROM alpine:3.16 AS order
