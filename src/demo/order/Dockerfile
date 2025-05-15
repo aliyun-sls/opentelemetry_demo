@@ -1,4 +1,4 @@
-FROM golang:1.23.7-alpine AS builder
+FROM golang:1.20-alpine AS builder
 
 WORKDIR /build
 
@@ -15,7 +15,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -ldflags "-s -w" -o order .
 
 
-FROM alpine:3.16 AS order
+FROM alpine:latest AS order
 RUN apk add --no-cache librdkafka
 WORKDIR /app
 COPY --from=builder /build/order/order /app/
