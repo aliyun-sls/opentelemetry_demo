@@ -13,6 +13,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,rw,source=./src/demo/order/go.mod,target=go.mod \
     --mount=type=bind,source=./src/demo/common,target=./common \
     go mod edit -replace sls-mall-go/common=./common && \
+    go mod tidy && \
     go mod download
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \

@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-
 	util.InitDB()
 	service.InitFeatureFlag()
 	r := util.InitGin()
