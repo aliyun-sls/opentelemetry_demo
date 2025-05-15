@@ -1,4 +1,7 @@
-FROM golang:1.23.7-alpine AS builder
+FROM golang:1.20-alpine AS builder
+
+# 安装必要的依赖，包括 librdkafka
+RUN apk add --no-cache gcc musl-dev librdkafka-dev pkgconf
 
 WORKDIR /build
 
@@ -10,14 +13,9 @@ RUN go mod tidy
 
 WORKDIR /build/order
 COPY ./src/demo/order .
-RUN apk add --no-cache gcc musl-dev librdkafka-dev pkgconf
-# 手动编译 librdkafka
-RUN git clone https://github.com/edenhill/librdkafka.git /librdkafka && \
-    cd /librdkafka && \
-    ./configure --prefix=/usr && \
-    make && \
-    make install
-RUN go mod tidy
+COPY ./src/demo/order/go.mod .
+COPY ./src/demo/order/go.sum .
+RUN go mod download
 RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -ldflags "-s -w" -o order .
 
 
