@@ -10,6 +10,8 @@ RUN go mod tidy
 
 WORKDIR /build/order
 COPY ./src/demo/order .
+RUN apt-get update && \
+    apt-get install -y gcc
 RUN go mod tidy
 RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux /build/instgo go build -ldflags "-s -w" -o order .
 
