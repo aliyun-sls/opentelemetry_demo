@@ -20,7 +20,7 @@ RUN go mod tidy
 RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -ldflags "-s -w" -o order .
 
 
-FROM alpine:3.16 AS order
+FROM debian:stable-slim AS order
 RUN apt-get update && apt-get install -y \
     librdkafka1 \
     && rm -rf /var/lib/apt/lists/*
