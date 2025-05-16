@@ -1,12 +1,10 @@
-FROM golang:1.23.7-alpine AS builder
+FROM golang:1.23.7 AS builder
 
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     gcc \
-    musl-dev \
+    libc6-dev \
     librdkafka-dev \
-    make \
-    git \
-    cmake
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
@@ -23,7 +21,9 @@ RUN CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build -ldflags "-s -w" -o order .
 
 
 FROM alpine:3.16 AS order
-RUN apk add --no-cache librdkafka
+RUN apt-get update && apt-get install -y \
+    librdkafka1 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /build/order/order /app/
 COPY --from=builder /build/order/config /app/config
