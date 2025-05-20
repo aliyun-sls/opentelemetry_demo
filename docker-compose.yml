@@ -106,6 +106,34 @@ services:
         condition: service_started
     logging: *logging
 
+  # User service
+  user:
+    image: ${IMAGE_NAME}:${DEMO_VERSION}-user
+    container_name: user
+    build:
+      context: ./
+      dockerfile: ${USER_DOCKERFILE}
+      cache_from:
+        - ${IMAGE_NAME}:${IMAGE_VERSION}-user
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    restart: unless-stopped
+    ports:
+      - "${USER_PORT}"
+    environment:
+      - USER_PORT
+      - REDIS_ADDR
+      - MYSQL_ADDR
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
+      - OTEL_RESOURCE_ATTRIBUTES
+      - OTEL_SERVICE_NAME=user
+    depends_on:
+      otel-collector:
+        condition: service_started
+    logging: *logging
+
   # Cart service
   cart:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-cart

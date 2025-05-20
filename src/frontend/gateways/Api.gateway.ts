@@ -9,6 +9,7 @@ import SessionGateway from './Session.gateway';
 import { context, propagation } from "@opentelemetry/api";
 
 const { userId } = SessionGateway.getSession();
+const { sid } = SessionGateway.getSession();
 
 const basePath = '/api';
 
