@@ -29,7 +29,6 @@ WORKDIR /usr/src/app/
 
 COPY ./src/cart/ ./
 COPY ./pb/ ./pb/
-COPY ./otel-dotnet-auto-install.sh ./pb/
 RUN dotnet restore ./src/cart.csproj -r linux-musl-$TARGETARCH
 
 RUN dotnet publish ./src/cart.csproj -r linux-musl-$TARGETARCH --no-restore -o /cart
