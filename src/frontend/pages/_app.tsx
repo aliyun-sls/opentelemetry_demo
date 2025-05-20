@@ -6,12 +6,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App, { AppContext, AppProps } from 'next/app';
 import CurrencyProvider from '../providers/Currency.provider';
 import CartProvider from '../providers/Cart.provider';
-import { ThemeProvider } from 'styled-components';
-import Theme from '../styles/Theme';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import FrontendTracer from '../utils/telemetry/FrontendTracer';
 import SessionGateway from '../gateways/Session.gateway';
 import { OpenFeatureProvider, OpenFeature } from '@openfeature/react-sdk';
 import { FlagdWebProvider } from '@openfeature/flagd-web-provider';
+import { UserProvider } from '../providers/UserContext';
+import Navbar from '../components/Navbar';
 
 declare global {
   interface Window {
@@ -58,18 +60,28 @@ if (typeof window !== 'undefined') {
 
 const queryClient = new QueryClient();
 
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider theme={Theme}>
-      <OpenFeatureProvider>
-        <QueryClientProvider client={queryClient}>
-          <CurrencyProvider>
-            <CartProvider>
-              <Component {...pageProps} />
-            </CartProvider>
-          </CurrencyProvider>
-        </QueryClientProvider>
-      </OpenFeatureProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <UserProvider>
+        <Navbar />
+        <OpenFeatureProvider>
+          <QueryClientProvider client={queryClient}>
+            <CurrencyProvider>
+              <CartProvider>
+                <Component {...pageProps} />
+              </CartProvider>
+            </CurrencyProvider>
+          </QueryClientProvider>
+        </OpenFeatureProvider>
+      </UserProvider>
     </ThemeProvider>
   );
 }

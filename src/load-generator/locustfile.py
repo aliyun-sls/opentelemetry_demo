@@ -105,6 +105,26 @@ people = json.load(people_file)
 
 class WebsiteUser(HttpUser):
     wait_time = between(1, 10)
+    session_id = None
+
+    def on_start(self):
+        # 设置 baggage
+        ctx = baggage.set_baggage("session.id", str(uuid.uuid4()))
+        ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
+        context.attach(ctx)
+
+        # 登录
+        login_data = {
+            "username": "cms",
+            "password": "ali88"
+        }
+        response = self.client.post("/api/user/login", json=login_data)
+        if response.status_code == 200:
+            self.session_id = response.cookies.get("session")
+            # 设置所有请求的 cookie
+            self.client.cookies.set("session", self.session_id)
+        else:
+            logging.error("Failed to login for load generator")
 
     @task(1)
     def index(self):
@@ -171,12 +191,6 @@ class WebsiteUser(HttpUser):
         for _ in range(0, get_flagd_value("loadGeneratorFloodHomepage")):
             self.client.get("/")
 
-    def on_start(self):
-        ctx = baggage.set_baggage("session.id", str(uuid.uuid4()))
-        ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
-        context.attach(ctx)
-        self.index()
-
 
 browser_traffic_enabled = os.environ.get("LOCUST_BROWSER_TRAFFIC_ENABLED", "").lower() in ("true", "yes", "on")
 
@@ -190,10 +204,20 @@ if browser_traffic_enabled:
             try:
                 page.on("console", lambda msg: print(msg.text))
                 await page.route('**/*', add_baggage_header)
+                
+                # 先登录
+                await page.goto("/login", wait_until="domcontentloaded")
+                await page.fill('input[name="username"]', 'cms')
+                await page.fill('input[name="password"]', 'ali88')
+                await page.click('button[type="submit"]')
+                await page.wait_for_load_state('networkidle')
+                
+                # 然后访问购物车页面
                 await page.goto("/cart", wait_until="domcontentloaded")
                 await page.select_option('[name="currency_code"]', 'CHF')
                 await page.wait_for_timeout(2000)  # giving the browser time to export the traces
-            except:
+            except Exception as e:
+                logging.error(f"Browser user error: {str(e)}")
                 pass
 
         @task

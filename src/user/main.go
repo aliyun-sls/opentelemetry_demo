@@ -1,10 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
-	"os"
 )
 
 type User struct {
@@ -22,9 +23,27 @@ const (
 // 初始化 Redis 客户端
 var redisClient *redis.Client
 
+// 初始化内置管理员用户
+func initAdminUser() {
+	var adminUser User
+	result := db.Where("username = ?", "cms").First(&adminUser)
+	if result.Error != nil {
+		// 如果管理员用户不存在，则创建
+		adminUser = User{
+			Username: "cms",
+			Password: "ali88",
+			Role:     ROLE_ADMIN,
+		}
+		db.Create(&adminUser)
+	}
+}
+
 func main() {
 	// 初始化数据库
 	InitDB()
+
+	// 初始化内置管理员用户
+	initAdminUser()
 
 	// 初始化 Gin
 	r := gin.Default()
