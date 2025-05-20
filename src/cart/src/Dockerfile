@@ -20,12 +20,6 @@ ARG TARGETARCH
 
 WORKDIR /usr/src/app/
 
-RUN apt-get update && apt-get install -y unzip
-# Unduh skrip instalasi otomatis OpenTelemetry .NET
-RUN curl -L -o otel-dotnet-auto-install.sh https://github.com/open-telemetry/opentelemetry-dotnet-instrumentation/releases/latest/download/otel-dotnet-auto-install.sh
-
-# Berikan izin eksekusi pada skrip dan jalankan
-RUN chmod +x /usr/src/app/otel-dotnet-auto-install.sh
 COPY ./src/cart/ ./
 COPY ./pb/ ./pb/
 RUN dotnet restore ./src/cart.csproj -r linux-musl-$TARGETARCH
@@ -34,15 +28,24 @@ RUN dotnet publish ./src/cart.csproj -r linux-musl-$TARGETARCH --no-restore -o /
 
 # -----------------------------------------------------------------------------
 
-# https://mcr.microsoft.com/v2/dotnet/runtime-deps/tags/list
+# https://mcr.microsoft.com/v2/dotnet/runtime-deps/tags/list  mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine3.20
 FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine3.20
 
 WORKDIR /usr/src/app/
+
+# 安装 curl（Alpine Linux 使用 apk）
+RUN apk add --no-cache curl
+RUN apk add --no-cache unzip
+
+# Unduh skrip instalasi otomatis OpenTelemetry .NET
+RUN curl -L -o otel-dotnet-auto-install.sh https://github.com/open-telemetry/opentelemetry-dotnet-instrumentation/releases/latest/download/otel-dotnet-auto-install.sh
+
+# Berikan izin eksekusi pada skrip dan jalankan
+RUN chmod +x otel-dotnet-auto-install.sh && ./otel-dotnet-auto-install.sh
+
 COPY --from=builder /cart/ ./
-COPY --from=builder /usr/src/app/otel-dotnet-auto-install.sh ./
 
 ENV DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE=false
-RUN chmod +x /usr/src/app/otel-dotnet-auto-install.sh && ./otel-dotnet-auto-install.sh
 
 EXPOSE ${CART_PORT}
 ENTRYPOINT [ "./cart" ]
