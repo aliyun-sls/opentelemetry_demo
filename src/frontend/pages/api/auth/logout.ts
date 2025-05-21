@@ -19,12 +19,20 @@ export default async function handler(
       method: 'POST',
       credentials: 'include',
     });
+
     const data: LogoutResponse = await response.json();
-    if (!response.ok) {  
-      return res.status(response.status).json(data);  
+
+    if (!response.ok) {
+      console.error('[Logout] 后端注销失败:', data.error);
+      throw new Error(data.error || '注销失败');
     }
-    return res.status(200).json(data);  
+
+    return res.status(200).json(data);
   } catch (error) {
-    console.error(error)
-  }  
+    console.error('[Logout] 请求异常:', error);
+    return res.status(500).json({
+      message: '注销过程中发生错误',
+      error: error instanceof Error ? error.message : '未知错误'
+    });
+  }
 }

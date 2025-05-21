@@ -27,6 +27,7 @@ func main() {
 
 	// 初始化 Gin
 	r := gin.Default()
+	r.Use(ExceptionLoggerMiddleware())
 
 	redisAddr := os.Getenv("REDIS_ADDR")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
@@ -35,7 +36,6 @@ func main() {
 		Password: redisPassword,
 		DB:       0,
 	})
-
 
 	//r.POST("/register", register)
 	r.POST("/user/api/login", login)
