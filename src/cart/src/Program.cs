@@ -4,6 +4,10 @@ using System;
 
 using cart.cartstore;
 using cart.services;
+using System.Diagnostics;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
