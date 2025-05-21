@@ -87,7 +87,7 @@ public class CheckFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        log.info("Filtering request {}", exchange.getRequest().getPath());
+        log.info("Filtering request path {}, headers: {}", exchange.getRequest().getPath(), exchange.getRequest().getHeaders());
         // 验证1：仅允许POST请求
         if (!exchange.getRequest().getMethod().equals(HttpMethod.POST)) {
             exchange.getResponse().setStatusCode(HttpStatus.METHOD_NOT_ALLOWED);

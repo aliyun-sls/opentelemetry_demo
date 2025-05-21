@@ -34,11 +34,12 @@ public class AuthFilter implements GlobalFilter {
     
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        log.info("AuthFilter: {}", exchange.getRequest().getURI());
+        log.info("AuthFilter Start URI: {}", exchange.getRequest().getURI());
         String sid = exchange.getRequest().getHeaders().getFirst(sidKey);
         if (StringUtils.isNotBlank(sid)) {
             exchange.getAttributes().put(sidKey, sid);
             Integer uid = getUidBySid(sid);
+            log.info("Sid: {}, Uid: {}", sid, uid);
             if (uid != null) {
                 userCaches.put(sid, uid);
                 exchange.getAttributes().put(uidKey, uid);
@@ -47,6 +48,7 @@ public class AuthFilter implements GlobalFilter {
                     .build();
             }
         }
+        log.info("AuthFilter End URI: {}, sid: {}, headers: {}", exchange.getRequest().getURI(), sid, exchange.getRequest().getHeaders());
         return chain.filter(exchange);
     }
 

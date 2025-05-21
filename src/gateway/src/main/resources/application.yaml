@@ -106,6 +106,14 @@ spring:
           uri: http://user:8080
           predicates:
             - Path=/user/api/**
+        - id: logistic-center
+          uri: http://logistic-center:8080
+          predicates:
+            - Path=/logistic/**
+        - id: order-center
+          uri: http://order-center:8080
+          predicates:
+            - Path=/order/**
         - id: default
           uri: http://frontend:8080
           predicates:
