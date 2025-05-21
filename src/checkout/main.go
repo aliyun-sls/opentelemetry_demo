@@ -131,6 +131,7 @@ type checkout struct {
 	notificationSvcAddr   string
 	promotionSvcAddr      string
 	orderSvcAddr          string
+	orderCenterSvcAddr    string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
 	KafkaProducerClient     sarama.AsyncProducer
@@ -207,6 +208,7 @@ func main() {
 	mustMapEnv(&svc.notificationSvcAddr, "NOTIFICATION_ADDR")
 	mustMapEnv(&svc.promotionSvcAddr, "PROMOTION_ADDR")
 	mustMapEnv(&svc.orderSvcAddr, "ORDER_ADDR")
+	mustMapEnv(&svc.orderCenterSvcAddr, "ORDER_CENTER_ADDR")
 
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
@@ -253,6 +255,31 @@ func httpCall(addr, path string) error {
 		return err
 	}
 	log.Infof("Response: %q", string(body))
+	return nil
+}
+
+func httpPostCall(addr, path string, data interface{}) error {
+	url := "http://" + addr + path
+	b, _ := json.Marshal(data)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		log.Warnf("Error %q %q", err, url)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Warnf("Unexpected status code: %d for URL %q", resp.StatusCode, url)
+		return errors.New("status code " + strconv.Itoa(resp.StatusCode))
+	}
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Warnf("Error reading response body: %q for URL %q", err, url)
+		return err
+	}
+
+	log.Infof("Response: %q", string(responseBody))
 	return nil
 }
 
@@ -341,6 +368,19 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	span.AddEvent("shipped", trace.WithAttributes(shippingTrackingAttribute))
 
 	_ = cs.emptyUserCart(ctx, req.UserId)
+	user_id, err := strconv.ParseInt(req.UserId, 10, 0)
+	orderRequest := &pb.OrderRequest{
+		OrderId:            orderID.String(),
+		UserId:             user_id,
+		ShippingTrackingId: shippingTrackingID,
+		ShippingCost:       prep.shippingCostLocalized,
+		ShippingAddress:    req.Address,
+		Items:              prep.orderItems,
+	}
+
+	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list order")
+	}
 
 	orderResult := &pb.OrderResult{
 		OrderId:            orderID.String(),
