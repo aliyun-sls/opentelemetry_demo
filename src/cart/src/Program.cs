@@ -132,7 +132,7 @@ public static class DiagnosticsConfig
     public string LicenseKey = "<your-license-key>";
     ServiceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME");
     HostName = Environment.GetEnvironmentVariable("HostName");
-    Endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
-    LicenseKey = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS");
+    Endpoint = Environment.GetEnvironmentVariable("Endpoint");
+    LicenseKey = Environment.GetEnvironmentVariable("LicenseKey");
     public static ActivitySource ActivitySource = new ActivitySource(ServiceName);
 }
