@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -236,6 +237,18 @@ func main() {
 	log.Fatal(err)
 }
 
+type OrderRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	OrderId            string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	ShippingTrackingId string                 `protobuf:"bytes,2,opt,name=shipping_tracking_id,json=shippingTrackingId,proto3" json:"shipping_tracking_id,omitempty"`
+	ShippingCost       *pb.Money              `protobuf:"bytes,3,opt,name=shipping_cost,json=shippingCost,proto3" json:"shipping_cost,omitempty"`
+	ShippingAddress    *pb.Address            `protobuf:"bytes,4,opt,name=shipping_address,json=shippingAddress,proto3" json:"shipping_address,omitempty"`
+	Items              []*pb.OrderItem        `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
+	UserId             int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
 func httpCall(addr, path string) error {
 	resp, err := http.Get("http://" + addr + path)
 	if err != nil {
@@ -369,7 +382,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 
 	_ = cs.emptyUserCart(ctx, req.UserId)
 	user_id, err := strconv.ParseInt(req.UserId, 10, 0)
-	orderRequest := &pb.OrderRequest{
+	orderRequest := &OrderRequest{
 		OrderId:            orderID.String(),
 		UserId:             user_id,
 		ShippingTrackingId: shippingTrackingID,
@@ -377,7 +390,8 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		ShippingAddress:    req.Address,
 		Items:              prep.orderItems,
 	}
-
+	marshal, err := json.Marshal(orderRequest)
+	log.Println(string(marshal))
 	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list order")
 	}
