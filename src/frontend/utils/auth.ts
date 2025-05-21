@@ -39,7 +39,7 @@ export function getAuthStatus(): AuthResult {
 
 export async function logout(): Promise<boolean> {
   try {
-    const response = await fetch('/api/auth/logout', {
+    const response = await fetch('/user/api/logout', {
       method: 'POST',
       credentials: 'include', // 包含 cookie
     });
