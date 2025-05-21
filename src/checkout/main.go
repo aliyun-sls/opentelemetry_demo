@@ -390,7 +390,11 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		ShippingAddress:    req.Address,
 		Items:              prep.orderItems,
 	}
+	re1json, err := json.Marshal(req)
+	log.Println("====================11111")
+	log.Println(string(re1json))
 	marshal, err := json.Marshal(orderRequest)
+	log.Println("====================2222")
 	log.Println(string(marshal))
 	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list order")
