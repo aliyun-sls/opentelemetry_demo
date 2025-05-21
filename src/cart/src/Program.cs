@@ -123,16 +123,31 @@ app.MapGet("/", async context =>
 
 app.Run();
 
-// 创建DiagnosticsConfig类
+// 创建 DiagnosticsConfig 类
 public static class DiagnosticsConfig
 {
-    public string ServiceName = "<your-service-name>"; // your service name
-    public string HostName = "<your-host-name>"; // your host name
-    public string Endpoint = "<your-host-name>"; // your host name
-    public string LicenseKey = "<your-license-key>";
-    ServiceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME");
-    HostName = Environment.GetEnvironmentVariable("HostName");
-    Endpoint = Environment.GetEnvironmentVariable("Endpoint");
-    LicenseKey = Environment.GetEnvironmentVariable("LicenseKey");
-    public static ActivitySource ActivitySource = new ActivitySource(ServiceName);
+    private static readonly string _serviceName = GetEnvironmentVariable("OTEL_SERVICE_NAME", "UnknownService");
+    private static readonly string _hostName = GetEnvironmentVariable("HostName", "UnknownHost");
+    private static readonly string _endpoint = GetEnvironmentVariable("Endpoint", string.Empty);
+    private static readonly string _licenseKey = GetEnvironmentVariable("LicenseKey", string.Empty);
+
+    public static string ServiceName => _serviceName;
+    public static string HostName => _hostName;
+    public static string Endpoint => _endpoint;
+    public static string LicenseKey => _licenseKey;
+
+    public static ActivitySource ActivitySource { get; }
+
+    // 静态构造函数用于初始化字段和 ActivitySource
+    static DiagnosticsConfig()
+    {
+        ActivitySource = new ActivitySource(_serviceName);
+    }
+
+    // 封装环境变量获取逻辑，便于测试和扩展
+    private static string GetEnvironmentVariable(string variableName, string defaultValue)
+    {
+        var value = Environment.GetEnvironmentVariable(variableName);
+        return value ?? defaultValue;
+    }
 }
