@@ -17,12 +17,6 @@
 # https://mcr.microsoft.com/v2/dotnet/sdk/tags/list
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS builder
 ARG TARGETARCH
-RUN apt-get update && apt-get install -y unzip
-# Unduh skrip instalasi otomatis OpenTelemetry .NET
-RUN curl -L -o otel-dotnet-auto-install.sh https://github.com/open-telemetry/opentelemetry-dotnet-instrumentation/releases/latest/download/otel-dotnet-auto-install.sh
-
-# Berikan izin eksekusi pada skrip dan jalankan
-RUN chmod +x otel-dotnet-auto-install.sh && ./otel-dotnet-auto-install.sh
 
 WORKDIR /usr/src/app/
 

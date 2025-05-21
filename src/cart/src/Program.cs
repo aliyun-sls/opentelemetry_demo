@@ -20,6 +20,34 @@ using OpenFeature.Contrib.Providers.Flagd;
 using OpenFeature.Contrib.Hooks.Otel;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// OpenTelemetry 初始化
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracerProviderBuilder =>
+        tracerProviderBuilder
+            .AddSource(DiagnosticsConfig.ActivitySource.Name)
+            .SetResourceBuilder(OpenTelemetry.Resources.ResourceBuilder.CreateDefault()
+                .AddAttributes(new Dictionary<string, object> {
+                    {"service.name", DiagnosticsConfig.ServiceName},
+                    {"host.name",DiagnosticsConfig.HostName},
+                    {"acs_cms_workspace","o11y-demo-cn-heyuan"}
+                }))
+            .AddAspNetCoreInstrumentation()
+            .AddConsoleExporter() // 在控制台输出Trace数据，可选
+            .AddOtlpExporter(opt =>
+            {
+                // 使用HTTP协议上报
+                opt.Endpoint = new Uri(DiagnosticsConfig.Endpoint);
+                opt.Headers = DiagnosticsConfig.LicenseKey;
+                opt.Protocol = OtlpExportProtocol.HttpProtobuf;
+
+                // 使用gRPC协议上报
+                // opt.Endpoint = new Uri("<grpc_endpoint>");
+                // opt.Headers = "Authentication=<token>";
+                // opt.Protocol = OtlpExportProtocol.Grpc;
+            })
+     );
+
 string valkeyAddress = builder.Configuration["VALKEY_ADDR"];
 if (string.IsNullOrEmpty(valkeyAddress))
 {
@@ -94,3 +122,17 @@ app.MapGet("/", async context =>
 });
 
 app.Run();
+
+// 创建DiagnosticsConfig类
+public static class DiagnosticsConfig
+{
+    public string ServiceName = "<your-service-name>"; // your service name
+    public string HostName = "<your-host-name>"; // your host name
+    public string Endpoint = "<your-host-name>"; // your host name
+    public string LicenseKey = "<your-license-key>";
+    ServiceName = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME")
+    HostName = Environment.GetEnvironmentVariable("HostName")
+    Endpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")
+    LicenseKey = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_HEADERS")
+    public static ActivitySource ActivitySource = new ActivitySource(ServiceName);
+}
