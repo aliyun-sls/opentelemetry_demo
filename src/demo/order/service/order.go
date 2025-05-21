@@ -175,6 +175,8 @@ func CreateOrder(c *gin.Context) {
 		util.Status400(c, err)
 		return
 	}
+	marshal, err := json.Marshal(orderRequest)
+	log.Println(string(marshal))
 
 	/*split := strings.Split(orderRequest.OrderId, "$")
 	var orderId string
