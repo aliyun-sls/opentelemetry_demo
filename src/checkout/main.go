@@ -243,7 +243,7 @@ type OrderRequest struct {
 	ShippingTrackingId string                 `protobuf:"bytes,2,opt,name=shipping_tracking_id,json=shippingTrackingId,proto3" json:"shipping_tracking_id,omitempty"`
 	ShippingCost       *pb.Money              `protobuf:"bytes,3,opt,name=shipping_cost,json=shippingCost,proto3" json:"shipping_cost,omitempty"`
 	ShippingAddress    *pb.Address            `protobuf:"bytes,4,opt,name=shipping_address,json=shippingAddress,proto3" json:"shipping_address,omitempty"`
-	Items              []*pb.OrderItem        `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
+	Items              []*pb.CartItem    `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
 	UserId             int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -388,9 +388,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		ShippingTrackingId: shippingTrackingID,
 		ShippingCost:       prep.shippingCostLocalized,
 		ShippingAddress:    req.Address,
-		Items:              prep.orderItems,
+		Items:              prep.cartItems,
 	}
-	re1json, err := json.Marshal(req)
+	re1json, err := json.Marshal(prep)
 	log.Println("====================11111")
 	log.Println(string(re1json))
 	marshal, err := json.Marshal(orderRequest)
