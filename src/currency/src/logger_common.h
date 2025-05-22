@@ -25,9 +25,9 @@ namespace
     std::string workspace_str = workspace ? workspace : "default";
 
     // 创建默认的 resource
-    auto resource = opentelemetry::sdk::resource::Resource::Create({
-        {"acs_cms_workspace", workspace_str}
-    });
+    opentelemetry::sdk::resource::ResourceAttributes attributes;
+    attributes["acs_cms_workspace"] = workspace_str;
+    auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
 
     otlp::OtlpHttpLogRecordExporterOptions loggerOptions;
     auto exporter  = otlp::OtlpHttpLogRecordExporterFactory::Create(loggerOptions);
