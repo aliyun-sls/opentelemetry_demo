@@ -120,11 +120,11 @@ void initTracer()
   std::string workspace_str = workspace ? workspace : "default";
 
   // 创建默认的 resource
-  auto resource = opentelemetry::sdk::resource::Resource::Create({
-      {opentelemetry::sdk::resource::SemanticConventions::HOST_NAME, get_hostname()},
-      {opentelemetry::sdk::resource::SemanticConventions::HOST_IP, get_ip_address()},
-      {"acs_cms_workspace", workspace_str}
-  });
+  opentelemetry::sdk::resource::ResourceAttributes attributes;
+  attributes[opentelemetry::sdk::resource::SemanticConventions::HOST_NAME] = get_hostname();
+  attributes[opentelemetry::sdk::resource::SemanticConventions::HOST_IP] = get_ip_address();
+  attributes["acs_cms_workspace"] = workspace_str;
+  auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
 
   auto context =
       opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), resource);
