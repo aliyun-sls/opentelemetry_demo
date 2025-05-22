@@ -1,5 +1,3 @@
-
-
 [package]
 name = "shipping"
 version = "1.8.0"
@@ -11,6 +9,8 @@ path = "src/main.rs"
 
 [features]
 dockerproto = [] # compile in docker or not
+reqwest-blocking = ["opentelemetry-otlp/reqwest-blocking-client"]
+default = ["reqwest-blocking"]
 
 [dependencies]
 tonic = "0.11"
@@ -23,7 +23,7 @@ opentelemetry = { version = "0.22", features = ["trace"] }
 opentelemetry_sdk = { version = "0.22", features = ["rt-tokio"]}
 opentelemetry-semantic-conventions = "0.15.0"
 opentelemetry-http = "0.11.0"
-opentelemetry-otlp = { version = "0.15.0", features = ["tonic"] }
+opentelemetry-otlp = { version = "0.15.0", features = ["http"] }
 log = "0.4.21"
 simplelog = "0.12"
 reqwest-middleware = "0.2.5"
