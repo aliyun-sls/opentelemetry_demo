@@ -4,8 +4,7 @@
 use opentelemetry::{global, KeyValue};
 use opentelemetry_sdk::logs::Config;
 use opentelemetry_sdk::Resource;
-use opentelemetry_otlp::WithExportConfig;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, Registry};
+use tracing_subscriber::{layer::SubscriberExt, Registry};
 use tracing_opentelemetry::OpenTelemetryLayer;
 
 pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,14 +26,12 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
     global::set_logger_provider(logger_provider);
 
     // 创建 tracing 层
-    let layer = OpenTelemetryLayer::new(tracing_opentelemetry::layer().with_tracer(
-        opentelemetry::global::tracer("shipping-service"),
-    ));
+    let tracer = opentelemetry::global::tracer("shipping-service");
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
     // 初始化 tracing 订阅者
-    Registry::default()
-        .with(layer)
-        .try_init()?;
+    let subscriber = Registry::default().with(telemetry);
+    tracing::subscriber::set_global_default(subscriber)?;
 
     Ok(())
 }
