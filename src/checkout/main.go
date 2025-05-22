@@ -243,7 +243,7 @@ type OrderRequest struct {
 	ShippingTrackingId string                 `protobuf:"bytes,2,opt,name=shipping_tracking_id,json=shippingTrackingId,proto3" json:"shipping_tracking_id,omitempty"`
 	ShippingCost       *pb.Money              `protobuf:"bytes,3,opt,name=shipping_cost,json=shippingCost,proto3" json:"shipping_cost,omitempty"`
 	ShippingAddress    *pb.Address            `protobuf:"bytes,4,opt,name=shipping_address,json=shippingAddress,proto3" json:"shipping_address,omitempty"`
-	Items              []*pb.CartItem    `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
+	Items              []*pb.OrderItem        `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
 	UserId             int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -381,24 +381,6 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	span.AddEvent("shipped", trace.WithAttributes(shippingTrackingAttribute))
 
 	_ = cs.emptyUserCart(ctx, req.UserId)
-	user_id, err := strconv.ParseInt(req.UserId, 10, 0)
-	orderRequest := &OrderRequest{
-		OrderId:            orderID.String(),
-		UserId:             user_id,
-		ShippingTrackingId: shippingTrackingID,
-		ShippingCost:       prep.shippingCostLocalized,
-		ShippingAddress:    req.Address,
-		Items:              prep.cartItems,
-	}
-	re1json, err := json.Marshal(prep)
-	log.Println("====================11111")
-	log.Println(string(re1json))
-	marshal, err := json.Marshal(orderRequest)
-	log.Println("====================2222")
-	log.Println(string(marshal))
-	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list order")
-	}
 
 	orderResult := &pb.OrderResult{
 		OrderId:            orderID.String(),
@@ -431,6 +413,27 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
 
+	user_id, err := strconv.ParseInt(req.UserId, 10, 0)
+	orderRequest := &OrderRequest{
+		OrderId:            orderID.String(),
+		UserId:             user_id,
+		ShippingTrackingId: shippingTrackingID,
+		ShippingCost:       prep.shippingCostLocalized,
+		ShippingAddress:    req.Address,
+		Items:              prep.orderItems,
+	}
+	re1json, err := json.Marshal(prep)
+	log.Println("====================11111")
+	log.Println(string(re1json))
+	marshal, err := json.Marshal(orderRequest)
+	log.Println("====================2222")
+	log.Println(string(marshal))
+	orderRequestJson, err := json.Marshal(orderRequest)
+	log.Println("====================33333")
+	log.Println(string(orderRequestJson))
+	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list order")
+	}
 	resp := &pb.PlaceOrderResponse{Order: orderResult}
 	return resp, nil
 }
