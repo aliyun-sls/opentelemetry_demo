@@ -7,8 +7,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.*;
+import io.grpc.stub.MetadataUtils;
 import org.example.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 public class CheckFilter implements GatewayFilter {
@@ -38,47 +39,66 @@ public class CheckFilter implements GatewayFilter {
     private ManagedChannel productCatalogChannel;
 
     public CheckFilter(Config config) {
-        checkOutChannel = ManagedChannelBuilder.forTarget(config.checkoutAddr).usePlaintext() // 明文通信（仅限开发环境）
+        checkOutChannel = ManagedChannelBuilder.forTarget(config.checkoutAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .enableRetry() // 启用重试
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
 
-        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
+        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr)
+                .usePlaintext()
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
-                .enableRetry() // 启用重试
+                .enableRetry()
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
     }
 
 
-    private Demo.OrderResult DoPlaceOrder(Demo.PlaceOrderRequest request) {
-//        String json = "{ \"orderId\": \"31666b2a-0acc-11f0-a0ef-cebd8fcb17e9\", \"shippingTrackingId\": \"5878abf2-88cd-41bb-b89b-b8c7abe079fb\", \"shippingCost\": { \"currencyCode\": \"USD\", \"units\": 69, \"nanos\": 500000000 }, \"shippingAddress\": { \"streetAddress\": \"1600 Amphitheatre Parkway\", \"city\": \"Mountain View\", \"state\": \"CA\", \"country\": \"United States\", \"zipCode\": \"94043\" }, \"items\": [ { \"cost\": { \"currencyCode\": \"USD\", \"units\": 101, \"nanos\": 959999999 }, \"item\": { \"productId\": \"OLJCESPC7Z\", \"quantity\": 1 } } ] }";
-//
-//        try {
-//            Demo.OrderResult.Builder builder = Demo.OrderResult.newBuilder();
-//            JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
-//            return builder.build();
-//        } catch (InvalidProtocolBufferException e) {
-//            throw new RuntimeException(e);
-//        }
-        CheckoutServiceGrpc.CheckoutServiceBlockingStub checkoutServiceStub = CheckoutServiceGrpc.newBlockingStub(checkOutChannel);
-        return checkoutServiceStub.placeOrder(request).getOrder();
+    private Demo.OrderResult DoPlaceOrder(Demo.PlaceOrderRequest request, ServerWebExchange exchange) {
+        final String uid = exchange.getRequest().getHeaders().getFirst("uid");
+        final String sid = exchange.getRequest().getHeaders().getFirst("sid");
+
+        log.info("DoPlaceOrder - Starting with uid: {}, sid: {}", uid, sid);
+
+        Metadata headers = new Metadata();
+        if (uid != null) {
+            Metadata.Key<String> uidKey = Metadata.Key.of("uid", Metadata.ASCII_STRING_MARSHALLER);
+            headers.put(uidKey, uid);
+            log.info("Added uid to metadata with key: {} value: {}", uidKey.name(), uid);
+        }
+        if (sid != null) {
+            Metadata.Key<String> sidKey = Metadata.Key.of("sid", Metadata.ASCII_STRING_MARSHALLER);
+            headers.put(sidKey, sid);
+            log.info("Added sid to metadata with key: {} value: {}", sidKey.name(), sid);
+        }
+
+        log.info("Created metadata with keys: {}", headers.keys());
+
+        ClientInterceptor headerInterceptor = MetadataUtils.newAttachHeadersInterceptor(headers);
+
+        log.info("Creating checkout service stub with headers");
+        CheckoutServiceGrpc.CheckoutServiceBlockingStub checkoutServiceStub = 
+            CheckoutServiceGrpc.newBlockingStub(checkOutChannel)
+            .withDeadlineAfter(10, TimeUnit.SECONDS)
+            .withInterceptors(headerInterceptor);
+
+        try {
+            log.info("Calling placeOrder with request: {}", request);
+            Demo.PlaceOrderResponse response = checkoutServiceStub.placeOrder(request);
+            log.info("Received placeOrder response");
+            return response.getOrder();
+        } catch (StatusRuntimeException e) {
+            log.error("gRPC call failed with status: {}, description: {}", e.getStatus(), e.getMessage());
+            throw e;
+        }
     }
 
     private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
-//        String json = "{ \"id\": \"OLJCESPC7Z\", \"name\": \"National Park Foundation Explorascope\", \"description\": \"The National Park Foundation’s (NPF) Explorascope 60AZ is a manual alt-azimuth, refractor telescope perfect for celestial viewing on the go. The NPF Explorascope 60 can view the planets, moon, star clusters and brighter deep sky objects like the Orion Nebula and Andromeda Galaxy.\", \"picture\": \"NationalParkFoundationExplorascope.jpg\", \"priceUsd\": { \"currencyCode\": \"USD\", \"units\": 101, \"nanos\": 960000000 }, \"categories\": [ \"telescopes\" ] }";
-//
-//        try {
-//            Demo.Product.Builder builder = Demo.Product.newBuilder();
-//            JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
-//            return builder.build();
-//        } catch (InvalidProtocolBufferException e) {
-//            throw new RuntimeException(e);
-//        }
-
         ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
         return productCatalogStub.getProduct(request);
     }
@@ -107,7 +127,7 @@ public class CheckFilter implements GatewayFilter {
 
 
                 return Mono.<Demo.OrderResult>create(sink -> {
-                    sink.success(DoPlaceOrder(requestBuilder.build()));
+                    sink.success(DoPlaceOrder(requestBuilder.build(), exchange));
                 }).flatMap(order -> {
                     try {
                         List<JsonObject> orderItems = new ArrayList<>();
