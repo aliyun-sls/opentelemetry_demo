@@ -1,6 +1,6 @@
 spring:
   redis:
-    host: ${REDIS_ADDR:localhost}
+    host: ${REDIS_ADDR:redis}
     port: ${REDIS_PORT:6379}
     lettuce:
       pool:
