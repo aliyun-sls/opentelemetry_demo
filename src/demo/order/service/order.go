@@ -2,8 +2,8 @@ package service
 
 import (
 	"bytes"
-	"encoding/json"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -44,10 +44,10 @@ func GenId() string {
 }
 
 type OrderResult struct {
-	OrderId            string       `json:"orderId,omitempty"`
-	ShippingTrackingId string       `json:"shippingTrackingId,omitempty"`
-	ShippingCost       *Money       `json:"shippingCost,omitempty"`
-	ShippingAddress    *Address     `json:"shippingAddress,omitempty"`
+	OrderId            string       `json:"order_id,omitempty"`
+	ShippingTrackingId string       `json:"shipping_tracking_id,omitempty"`
+	ShippingCost       *Money       `json:"shipping_cost,omitempty"`
+	ShippingAddress    *Address     `json:"shipping_address,omitempty"`
 	Items              []*OrderItem `json:"items,omitempty"`
 	TotalPrice         float64      `json:"totalPrice,omitempty"`
 	UserId             int64        `json:"userId,omitempty"`
@@ -55,7 +55,7 @@ type OrderResult struct {
 
 type Money struct {
 	// The 3-letter currency code defined in ISO 4217.
-	CurrencyCode string `json:"currencyCode,omitempty"`
+	CurrencyCode string `json:"currency_code,omitempty"`
 	// The whole units of the amount.
 	// For example if `currencyCode` is `"USD"`, then 1 unit is one US dollar.
 	Units int64 `json:"units,omitempty"`
@@ -69,15 +69,15 @@ type Money struct {
 }
 
 type Address struct {
-	StreetAddress string `json:"streetAddress,omitempty"`
+	StreetAddress string `json:"street_address,omitempty"`
 	City          string `json:"city,omitempty"`
 	State         string `json:"state,omitempty"`
 	Country       string `json:"country,omitempty"`
-	ZipCode       string `json:"zipCode,omitempty"`
+	ZipCode       string `json:"zip_code,omitempty"`
 }
 
 type OrderItem struct {
-	ProductId string   `json:"productId"`
+	ProductId string   `json:"product_id"`
 	Quantity  int64    `json:"quantity"`
 	Cost      *Money   `protobuf:"bytes,2,opt,name=cost,proto3" json:"cost,omitempty"`
 	Product   *Product `json:"product"`
@@ -288,13 +288,13 @@ func CreateShipping(c *gin.Context) {
 		return
 	}
 	// 创建物流 通过kafka通知 创建物流信息
-	SendKafka(LogisticsMsg{
+	/*SendKafka(LogisticsMsg{
 		OrderId:          order.OrderId,
 		UserId:           order.UserId,
 		Action:           Create,
 		LogisticStatus:   Shipping,
 		LogisticPosition: "",
-	})
+	})*/
 	util.Status200(c, true)
 }
 
