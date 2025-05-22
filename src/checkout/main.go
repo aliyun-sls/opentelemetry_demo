@@ -323,6 +323,11 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
 	var userId int64
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		marshal, err := json.Marshal(md)
+		if err != nil {
+			log.Errorf("Error parsing UID: %v", err)
+		}
+		log.Infof("[] PlaceOrder metadata headers: %s", string(marshal))
 		if uids := md["uid"]; len(uids) > 0 {
 			uid, err := strconv.ParseInt(uids[0], 10, 0)
 			if err != nil {
