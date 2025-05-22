@@ -15,7 +15,6 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
 
     // 配置 OTLP HTTP 导出器
     let otlp_exporter = opentelemetry_otlp::new_exporter()
-        .http()
         .with_endpoint(format!("{}/v1/logs", endpoint));
 
     // 创建日志配置
@@ -34,7 +33,6 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
     let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_batch_exporter(
             opentelemetry_otlp::new_exporter()
-                .http()
                 .with_endpoint(format!("{}/v1/traces", endpoint)),
             opentelemetry_sdk::runtime::Tokio,
         )
@@ -50,8 +48,6 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn get_resource_attr() -> Resource {
-    use std::env;
-    
     // 获取 workspace 环境变量
     let workspace = env::var("ACS_CMS_WORKSPACE").unwrap_or_else(|_| "default".to_string());
     
