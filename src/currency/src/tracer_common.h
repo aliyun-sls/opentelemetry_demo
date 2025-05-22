@@ -2,31 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
-#include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
-#include "opentelemetry/exporters/otlp/otlp_http_exporter_options.h"
 #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
 #include "opentelemetry/context/propagation/global_propagator.h"
 #include "opentelemetry/context/propagation/text_map_propagator.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"
 #include "opentelemetry/nostd/shared_ptr.h"
 #include "opentelemetry/sdk/trace/simple_processor_factory.h"
-#include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
 #include "opentelemetry/sdk/trace/tracer_context.h"
 #include "opentelemetry/sdk/trace/tracer_context_factory.h"
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h"
 #include "opentelemetry/trace/propagation/http_trace_context.h"
-#include "opentelemetry/sdk/resource/semantic_conventions.h"
 #include "opentelemetry/trace/provider.h"
 
 #include <grpcpp/grpcpp.h>
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include <cstdlib> 
 
 using grpc::ClientContext;
 using grpc::ServerContext;
-namespace resource = opentelemetry::sdk::resource;
 
 namespace
 {
@@ -76,25 +70,16 @@ public:
   ServerContext *context_;
 };
 
-opentelemetry::exporter::otlp::OtlpHttpExporterOptions opts;
 void initTracer()
 {
-  auto exporter  = otlp::OtlpHttpExporterFactory::Create(opts);
+  auto exporter = opentelemetry::exporter::otlp::OtlpGrpcExporterFactory::Create();
   auto processor =
-      opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(std::move(exporter));
+      opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
   std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
   processors.push_back(std::move(processor));
 
-  const char* workspace_env = std::getenv("ACS_CMS_WORKSPACE");
-  std::string workspace = workspace_env ? workspace_env : "default";
-
-  resource::ResourceAttributes attributes = {
-                {"acs_cms_workspace", workspace}
-  };
-  auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
-
   auto context =
-      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), std::move(resource));
+      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
   std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
       opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 
