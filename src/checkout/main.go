@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -131,6 +132,7 @@ type checkout struct {
 	notificationSvcAddr   string
 	promotionSvcAddr      string
 	orderSvcAddr          string
+	orderCenterSvcAddr    string
 	kafkaBrokerSvcAddr    string
 	pb.UnimplementedCheckoutServiceServer
 	KafkaProducerClient     sarama.AsyncProducer
@@ -207,6 +209,7 @@ func main() {
 	mustMapEnv(&svc.notificationSvcAddr, "NOTIFICATION_ADDR")
 	mustMapEnv(&svc.promotionSvcAddr, "PROMOTION_ADDR")
 	mustMapEnv(&svc.orderSvcAddr, "ORDER_ADDR")
+	mustMapEnv(&svc.orderCenterSvcAddr, "ORDER_CENTER_ADDR")
 
 	svc.kafkaBrokerSvcAddr = os.Getenv("KAFKA_ADDR")
 
@@ -234,6 +237,25 @@ func main() {
 	log.Fatal(err)
 }
 
+type OrderRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	OrderId            string                 `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	ShippingTrackingId string                 `protobuf:"bytes,2,opt,name=shipping_tracking_id,json=shippingTrackingId,proto3" json:"shipping_tracking_id,omitempty"`
+	ShippingCost       *pb.Money              `protobuf:"bytes,3,opt,name=shipping_cost,json=shippingCost,proto3" json:"shipping_cost,omitempty"`
+	ShippingAddress    *pb.Address            `protobuf:"bytes,4,opt,name=shipping_address,json=shippingAddress,proto3" json:"shipping_address,omitempty"`
+	Items              []*OrderItem           `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
+	UserId             int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+type OrderItem struct {
+	ProductId string      `json:"product_id"`
+	Quantity  int32       `json:"quantity"`
+	Cost      *pb.Money   `protobuf:"bytes,2,opt,name=cost,proto3" json:"cost,omitempty"`
+	Product   *pb.Product `json:"product"`
+}
+
 func httpCall(addr, path string) error {
 	resp, err := http.Get("http://" + addr + path)
 	if err != nil {
@@ -253,6 +275,31 @@ func httpCall(addr, path string) error {
 		return err
 	}
 	log.Infof("Response: %q", string(body))
+	return nil
+}
+
+func httpPostCall(addr, path string, data interface{}) error {
+	url := "http://" + addr + path
+	b, _ := json.Marshal(data)
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		log.Warnf("Error %q %q", err, url)
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Warnf("Unexpected status code: %d for URL %q", resp.StatusCode, url)
+		return errors.New("status code " + strconv.Itoa(resp.StatusCode))
+	}
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Warnf("Error reading response body: %q for URL %q", err, url)
+		return err
+	}
+
+	log.Infof("Response: %q", string(responseBody))
 	return nil
 }
 
@@ -373,6 +420,19 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
 
+	user_id, err := strconv.ParseInt(req.UserId, 10, 0)
+	orderRequest := &OrderRequest{
+		OrderId:            orderID.String(),
+		UserId:             user_id,
+		ShippingTrackingId: shippingTrackingID,
+		ShippingCost:       prep.shippingCostLocalized,
+		ShippingAddress:    req.Address,
+		Items:              prep.orderProduct,
+	}
+
+	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list order")
+	}
 	resp := &pb.PlaceOrderResponse{Order: orderResult}
 	return resp, nil
 }
@@ -380,7 +440,13 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 type orderPrep struct {
 	orderItems            []*pb.OrderItem
 	cartItems             []*pb.CartItem
+	orderProduct          []*OrderItem
 	shippingCostLocalized *pb.Money
+}
+
+type OrderItemAndOrderProduct struct {
+	orderItems   []*pb.OrderItem
+	orderProduct []*OrderItem
 }
 
 func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Context, userID, userCurrency string, address *pb.Address) (orderPrep, error) {
@@ -408,7 +474,8 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 
 	out.shippingCostLocalized = shippingPrice
 	out.cartItems = cartItems
-	out.orderItems = orderItems
+	out.orderItems = orderItems.orderItems
+	out.orderProduct = orderItems.orderProduct
 
 	var totalCart int32
 	for _, ci := range cartItems {
@@ -462,9 +529,10 @@ func (cs *checkout) emptyUserCart(ctx context.Context, userID string) error {
 	return nil
 }
 
-func (cs *checkout) prepOrderItems(ctx context.Context, items []*pb.CartItem, userCurrency string) ([]*pb.OrderItem, error) {
-	out := make([]*pb.OrderItem, len(items))
-
+func (cs *checkout) prepOrderItems(ctx context.Context, items []*pb.CartItem, userCurrency string) (*OrderItemAndOrderProduct, error) {
+	out := &OrderItemAndOrderProduct{}
+	orderItems := make([]*pb.OrderItem, len(items))
+	orderProduct := make([]*OrderItem, len(items))
 	for i, item := range items {
 		product, err := cs.productCatalogSvcClient.GetProduct(ctx, &pb.GetProductRequest{Id: item.GetProductId()})
 		if err != nil {
@@ -474,10 +542,18 @@ func (cs *checkout) prepOrderItems(ctx context.Context, items []*pb.CartItem, us
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert price of %q to %s", item.GetProductId(), userCurrency)
 		}
-		out[i] = &pb.OrderItem{
+		orderItems[i] = &pb.OrderItem{
 			Item: item,
 			Cost: price}
+		orderProduct[i] = &OrderItem{
+			ProductId: product.GetId(),
+			Quantity:  item.GetQuantity(),
+			Product:   product,
+			Cost:      price,
+		}
 	}
+	out.orderItems = orderItems
+	out.orderProduct = orderProduct
 	return out, nil
 }
 
