@@ -5,23 +5,15 @@ use opentelemetry::{global, trace::TraceError};
 use opentelemetry_otlp;
 use opentelemetry_sdk::{propagation::TraceContextPropagator, runtime, trace as sdktrace};
 use tracing_subscriber::{layer::SubscriberExt, Registry};
-use std::env;
-use opentelemetry::trace::TracerProvider;
 
 use super::get_resource_attr;
 
 pub fn init_tracer() -> Result<sdktrace::Tracer, TraceError> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let endpoint = env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
-        .unwrap_or_else(|_| "http://localhost:4318".to_string());
-
     opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .with_endpoint(format!("{}/v1/traces", endpoint))
-        )
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
         .with_trace_config(sdktrace::config().with_resource(get_resource_attr()))
         .install_batch(runtime::Tokio)
 }
