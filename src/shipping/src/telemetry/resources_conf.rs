@@ -10,6 +10,7 @@ use opentelemetry_sdk::{
 };
 use std::time::Duration;
 use std::env;
+use opentelemetry::KeyValue;
 
 pub fn get_resource_attr() -> Resource {
     let os_resource = OsResourceDetector.detect(Duration::from_secs(0));
@@ -23,7 +24,7 @@ pub fn get_resource_attr() -> Resource {
     
     // 创建带有 workspace 的 resource
     let workspace_resource = Resource::new(vec![
-        ("acs_cms_workspace".into(), workspace.into()),
+        KeyValue::new("acs_cms_workspace", workspace),
     ]);
 
     os_resource

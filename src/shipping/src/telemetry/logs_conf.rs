@@ -4,13 +4,13 @@
 use opentelemetry::{global, KeyValue};
 use opentelemetry_sdk::logs::Config;
 use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::trace::Tracer;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
 use tracing_opentelemetry::OpenTelemetryLayer;
 
 pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
     // 配置 OTLP HTTP 导出器
     let otlp_exporter = opentelemetry_otlp::new_exporter()
-        .http()
         .with_endpoint("http://localhost:4318/v1/logs");
 
     // 创建日志配置
@@ -26,7 +26,14 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
     global::set_logger_provider(logger_provider);
 
     // 创建 tracing 层
-    let tracer = opentelemetry::global::tracer("shipping-service");
+    let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
+        .with_batch_exporter(
+            opentelemetry_otlp::new_exporter()
+                .with_endpoint("http://localhost:4318/v1/traces"),
+            opentelemetry_sdk::runtime::Tokio,
+        )
+        .build();
+    let tracer = tracer_provider.tracer("shipping-service");
     let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
 
     // 初始化 tracing 订阅者
