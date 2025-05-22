@@ -13,11 +13,15 @@
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h"
 #include "opentelemetry/trace/propagation/http_trace_context.h"
 #include "opentelemetry/trace/provider.h"
+#include "opentelemetry/sdk/resource/resource.h"
+#include "opentelemetry/sdk/resource/resource_detector.h"
+#include "opentelemetry/sdk/resource/resource_detector_factory.h"
 
 #include <grpcpp/grpcpp.h>
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <cstdlib>  // 添加用于获取环境变量的头文件
 
 using grpc::ClientContext;
 using grpc::ServerContext;
@@ -72,14 +76,23 @@ public:
 
 void initTracer()
 {
+  // 从环境变量获取 workspace，如果未设置则使用默认值
+  const char* workspace_env = std::getenv("ACS_CMS_WORKSPACE");
+  std::string workspace = workspace_env ? workspace_env : "default";
+
   auto exporter = opentelemetry::exporter::otlp::OtlpGrpcExporterFactory::Create();
   auto processor =
       opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
   std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
   processors.push_back(std::move(processor));
 
+  // 创建带有默认 resource 的 TracerContext
+  auto resource = opentelemetry::sdk::resource::Resource::Create({
+      {"acs_cms_workspace", workspace}
+  });
+  
   auto context =
-      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
+      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), resource);
   std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
       opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 

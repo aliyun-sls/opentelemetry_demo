@@ -43,5 +43,9 @@ FROM alpine:3.18 AS release
 RUN apk update && apk add grpc-dev protobuf-dev
 COPY --from=builder /usr/local /usr/local
 
+# 设置默认环境变量
+ENV ACS_CMS_WORKSPACE=default
+ENV CURRENCY_PORT=7000
+
 EXPOSE ${CURRENCY_PORT}
 ENTRYPOINT ["sh", "-c", "./usr/local/bin/currency ${CURRENCY_PORT}"]
