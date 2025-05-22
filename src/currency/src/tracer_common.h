@@ -90,9 +90,9 @@ void initTracer()
   auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
 
   auto context =
-      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
+      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), std::move(resource));
   std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-      opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context), std::move(resource));
+      opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 
   // Set the global trace provider
   opentelemetry::trace::Provider::SetTracerProvider(provider);
