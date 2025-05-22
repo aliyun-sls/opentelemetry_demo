@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/runtime/protoimpl"
 	"io/ioutil"
 	"net"
@@ -320,6 +321,18 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	var userId int64
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if uids := md["uid"]; len(uids) > 0 {
+			uid, err := strconv.ParseInt(uids[0], 10, 0)
+			if err != nil {
+				log.Errorf("Error parsing UID: %v", err)
+			}
+			userId = uid
+			log.Infof("Extracted UID from header: %s", uids[0])
+		}
+	}
+
 	if err := httpCall(cs.marketingSvcAddr, "/listMarketing"); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list marketing")
 	}
@@ -419,19 +432,15 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		log.Infof("sending to postProcessor")
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
-
-	user_id, err := strconv.ParseInt(req.UserId, 10, 0)
 	orderRequest := &OrderRequest{
 		OrderId:            orderID.String(),
-		UserId:             user_id,
+		UserId:             userId,
 		ShippingTrackingId: shippingTrackingID,
 		ShippingCost:       prep.shippingCostLocalized,
 		ShippingAddress:    req.Address,
 		Items:              prep.orderProduct,
 	}
-	marshal, err := json.Marshal(orderRequest)
-	log.Println("====================2222")
-	log.Println(string(marshal))
+
 	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list order")
 	}
