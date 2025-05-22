@@ -17,7 +17,7 @@
 FROM alpine:3.18 AS builder
 
 # 安装基础依赖
-RUN apk update && apk add git cmake make g++ protobuf-dev linux-headers
+RUN apk update && apk add git cmake make g++ protobuf-dev linux-headers curl-dev
 
 # 安装 Abseil 库
 RUN git clone --depth 1 --branch 20230802.1 https://github.com/abseil/abseil-cpp.git \
@@ -52,7 +52,7 @@ RUN cd /currency \
 
 FROM alpine:3.18 AS release
 
-RUN apk update && apk add protobuf-dev
+RUN apk update && apk add protobuf-dev curl
 COPY --from=builder /usr/local /usr/local
 
 # 设置默认环境变量
