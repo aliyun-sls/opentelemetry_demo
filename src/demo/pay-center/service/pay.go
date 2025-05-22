@@ -1,14 +1,12 @@
 package service
 
 import (
-	"context"
 	"github.com/gin-gonic/gin"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/util"
-	"time"
 )
 
 var flagClient *openfeature.Client
@@ -87,8 +85,7 @@ func (Order) TableName() string {
 }
 
 func PayOrder(c *gin.Context) {
-	ctx, cancelFunc := context.WithTimeout(c.Request.Context(), 5*time.Second)
-	defer cancelFunc()
+	ctx := c.Request.Context()
 	var order Order
 	err := c.BindJSON(&order)
 	if err != nil {
@@ -97,15 +94,27 @@ func PayOrder(c *gin.Context) {
 	}
 
 	//todo 故障注入
-	db := util.MDB.WithContext(ctx).Model(&order).
-		Where("user_id = ? AND order_id = ?", order.UserId, order.OrderId)
+	db := util.MDB
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	tx1 := tx.WithContext(ctx).Model(&order).
+		Where("user_id = ? AND order_id = ?", order.UserId, order.OrderId).Update("order_status", WaitForSending)
 
-	// 执行更新
-	tx := db.Update("order_status", WaitForSending)
-	if tx.Error != nil {
-		util.Status500(c, tx.Error)
+	if tx1.Error != nil {
+		tx.Rollback()
+		util.Status500(c, tx1.Error)
 		return
 	}
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		util.Status500(c, err)
+		return
+	}
+
 	util.Status200(c, true)
 }
 
