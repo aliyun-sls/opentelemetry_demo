@@ -13,11 +13,18 @@
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h"
 #include "opentelemetry/trace/propagation/http_trace_context.h"
 #include "opentelemetry/trace/provider.h"
+#include "opentelemetry/sdk/resource/resource.h"
+#include "opentelemetry/sdk/resource/resource_detector.h"
+#include "opentelemetry/sdk/resource/semantic_conventions.h"
 
 #include <grpcpp/grpcpp.h>
 #include <cstring>
 #include <iostream>
 #include <vector>
+#include <cstdlib>
+#include <unistd.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 using grpc::ClientContext;
 using grpc::ServerContext;
@@ -70,6 +77,27 @@ public:
   ServerContext *context_;
 };
 
+std::string get_hostname() {
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) == 0) {
+        return std::string(hostname);
+    }
+    return "unknown";
+}
+
+std::string get_ip_address() {
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) == 0) {
+        struct hostent *host = gethostbyname(hostname);
+        if (host != nullptr) {
+            struct in_addr addr;
+            memcpy(&addr, host->h_addr_list[0], sizeof(struct in_addr));
+            return std::string(inet_ntoa(addr));
+        }
+    }
+    return "unknown";
+}
+
 void initTracer()
 {
   opentelemetry::exporter::otlp::OtlpHttpExporterOptions opts;
@@ -87,8 +115,19 @@ void initTracer()
   std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
   processors.push_back(std::move(processor));
 
+  // 获取环境变量中的 workspace
+  const char* workspace = std::getenv("ACS_CMS_WORKSPACE");
+  std::string workspace_str = workspace ? workspace : "default";
+
+  // 创建默认的 resource
+  auto resource = opentelemetry::sdk::resource::Resource::Create({
+      {opentelemetry::sdk::resource::SemanticConventions::HOST_NAME, get_hostname()},
+      {opentelemetry::sdk::resource::SemanticConventions::HOST_IP, get_ip_address()},
+      {"acs_cms_workspace", workspace_str}
+  });
+
   auto context =
-      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors));
+      opentelemetry::sdk::trace::TracerContextFactory::Create(std::move(processors), resource);
   std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
       opentelemetry::sdk::trace::TracerProviderFactory::Create(std::move(context));
 

@@ -1,11 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-#include "opentelemetry/exporters/otlp/otlp_grpc_metric_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h"
 #include "opentelemetry/metrics/provider.h"
 #include "opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h"
 #include "opentelemetry/sdk/metrics/meter.h"
 #include "opentelemetry/sdk/metrics/meter_provider.h"
+#include "opentelemetry/sdk/resource/resource.h"
+#include "opentelemetry/sdk/resource/semantic_conventions.h"
 
 // namespaces
 namespace common        = opentelemetry::common;
@@ -18,15 +20,29 @@ namespace
 {
   void initMeter() 
   {
+    // 获取环境变量中的 workspace
+    const char* workspace = std::getenv("ACS_CMS_WORKSPACE");
+    std::string workspace_str = workspace ? workspace : "default";
+
+    // 创建默认的 resource
+    auto resource = opentelemetry::sdk::resource::Resource::Create({
+        {"acs_cms_workspace", workspace_str}
+    });
+
     // Build MetricExporter
-    otlp_exporter::OtlpGrpcMetricExporterOptions otlpOptions;
-    auto exporter = otlp_exporter::OtlpGrpcMetricExporterFactory::Create(otlpOptions);
+    otlp_exporter::OtlpHttpMetricExporterOptions opts;
+    auto exporter = otlp_exporter::OtlpHttpMetricExporterFactory::Create(opts);
 
     // Build MeterProvider and Reader
     metric_sdk::PeriodicExportingMetricReaderOptions options;
+    options.export_interval_millis = std::chrono::milliseconds(5000);
+    options.export_timeout_millis = std::chrono::milliseconds(30000);
+    
     std::unique_ptr<metric_sdk::MetricReader> reader{
         new metric_sdk::PeriodicExportingMetricReader(std::move(exporter), options) };
-    auto provider = std::shared_ptr<metrics_api::MeterProvider>(new metric_sdk::MeterProvider());
+    
+    auto provider = std::shared_ptr<metrics_api::MeterProvider>(
+        new metric_sdk::MeterProvider(std::move(resource)));
     auto p = std::static_pointer_cast<metric_sdk::MeterProvider>(provider);
     p->AddMetricReader(std::move(reader));
     metrics_api::Provider::SetMeterProvider(provider);
