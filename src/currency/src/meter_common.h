@@ -39,6 +39,8 @@ namespace
 
     // Build MeterProvider and Reader
     metric_sdk::PeriodicExportingMetricReaderOptions options;
+    options.export_interval_millis = std::chrono::milliseconds(1000);  // 每秒导出一次
+    options.export_timeout_millis = std::chrono::milliseconds(500);    // 导出超时时间
     std::unique_ptr<metric_sdk::MetricReader> reader{
         new metric_sdk::PeriodicExportingMetricReader(std::move(exporter), options) };
     auto provider = std::shared_ptr<metrics_api::MeterProvider>(new metric_sdk::MeterProvider(resource));
