@@ -8,6 +8,7 @@ WORKDIR /usr/src/app/
 
 COPY ./src/fraud-detection/ ./
 COPY ./pb/ ./src/main/proto/
+COPY ./tools/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
 
 RUN gradle shadowJar
 
@@ -19,7 +20,7 @@ ARG OTEL_JAVA_AGENT_VERSION
 
 ENV JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
 
-ADD --chmod=644 https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v$OTEL_JAVA_AGENT_VERSION/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
+#ADD --chmod=644 https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v$OTEL_JAVA_AGENT_VERSION/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
 
 WORKDIR /usr/src/app/
 
