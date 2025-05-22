@@ -61,5 +61,8 @@ WORKDIR /app
 COPY --from=builder /app/target/release/shipping /app/shipping
 COPY --from=builder /bin/grpc_health_probe /bin/grpc_health_probe
 
+# 设置默认环境变量
+ENV ACS_CMS_WORKSPACE=default
+
 EXPOSE ${SHIPPING_PORT}
 ENTRYPOINT ["/app/shipping"]

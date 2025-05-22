@@ -16,7 +16,19 @@
 
 FROM alpine:3.18 AS builder
 
+# 安装基础依赖
 RUN apk update && apk add git cmake make g++ protobuf-dev linux-headers
+
+# 安装 Abseil 库
+RUN git clone --depth 1 --branch 20230802.1 https://github.com/abseil/abseil-cpp.git \
+    && cd abseil-cpp \
+    && mkdir build && cd build \
+    && cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=/usr/local \
+          .. \
+    && make -j$(nproc || sysctl -n hw.ncpu || echo 1) install \
+    && cd ../..
 
 ARG OPENTELEMETRY_CPP_VERSION
 
@@ -46,6 +58,8 @@ COPY --from=builder /usr/local /usr/local
 # 设置默认环境变量
 ENV ACS_CMS_WORKSPACE=default
 ENV CURRENCY_PORT=7000
+ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 
 EXPOSE ${CURRENCY_PORT}
 ENTRYPOINT ["sh", "-c", "./usr/local/bin/currency ${CURRENCY_PORT}"]
