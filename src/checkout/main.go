@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/runtime/protoimpl"
 	"io/ioutil"
 	"net"
@@ -228,7 +229,7 @@ func main() {
 	}
 
 	var srv = grpc.NewServer(
-	//grpc.StatsHandler(otelgrpc.NewServerHandler()),
+		//grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 	pb.RegisterCheckoutServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
@@ -320,6 +321,12 @@ func (cs *checkout) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Health_W
 }
 
 func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (*pb.PlaceOrderResponse, error) {
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if uids := md["uid"]; len(uids) > 0 {
+			log.Infof("Extracted UID from header: %s", uids[0])
+		}
+	}
+
 	if err := httpCall(cs.marketingSvcAddr, "/listMarketing"); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list marketing")
 	}
@@ -338,6 +345,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 	span := trace.SpanFromContext(ctx)
 	span.SetAttributes(
 		attribute.String("app.user.id", req.UserId),
+		//attribute.String("app.uid", uids[0]),
 		attribute.String("app.user.currency", req.UserCurrency),
 	)
 	log.Infof("[PlaceOrder] user_id=%q user_currency=%q", req.UserId, req.UserCurrency)
