@@ -6,7 +6,7 @@ import SessionGateway from '../gateways/Session.gateway';
 
 interface LoginResponse {
   message: string;
-  sessionid: string;
+  sid: string;
   role: number;
 }
 
@@ -33,10 +33,10 @@ const Login = () => {
         throw new Error(errorData.error || '登录失败');
       }
       const data: LoginResponse = await response.json();
-      // 存储会话 ID 和角色信息
-      localStorage.setItem('sid', data.sessionid);
-      SessionGateway.setSessionValue('sid', data.sessionid);
-      // 重定向到首页
+
+      localStorage.setItem('sid', data.sid);
+      SessionGateway.setSessionValue('sid', data.sid);
+
       router.push('/');
     } catch (error) {
       setError(error instanceof Error ? error.message : '未知错误');
