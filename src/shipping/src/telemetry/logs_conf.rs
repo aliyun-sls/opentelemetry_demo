@@ -4,14 +4,19 @@
 use opentelemetry::{global, KeyValue};
 use opentelemetry_sdk::logs::Config;
 use opentelemetry_sdk::Resource;
-use opentelemetry_sdk::trace::Tracer;
 use tracing_subscriber::{layer::SubscriberExt, Registry};
-use tracing_opentelemetry::OpenTelemetryLayer;
+use std::env;
+use opentelemetry::trace::TracerProvider;
 
 pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
+    // 通过环境变量获取 endpoint
+    let endpoint = env::var("OTEL_EXPORTER_OTLP_ENDPOINT")
+        .unwrap_or_else(|_| "http://localhost:4318".to_string());
+
     // 配置 OTLP HTTP 导出器
     let otlp_exporter = opentelemetry_otlp::new_exporter()
-        .with_endpoint("http://localhost:4318/v1/logs");
+        .http()
+        .with_endpoint(format!("{}/v1/logs", endpoint));
 
     // 创建日志配置
     let config = Config::default().with_resource(get_resource_attr());
@@ -29,7 +34,8 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
     let tracer_provider = opentelemetry_sdk::trace::TracerProvider::builder()
         .with_batch_exporter(
             opentelemetry_otlp::new_exporter()
-                .with_endpoint("http://localhost:4318/v1/traces"),
+                .http()
+                .with_endpoint(format!("{}/v1/traces", endpoint)),
             opentelemetry_sdk::runtime::Tokio,
         )
         .build();
