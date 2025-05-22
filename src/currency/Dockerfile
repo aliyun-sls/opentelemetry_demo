@@ -16,7 +16,21 @@
 
 FROM alpine:3.18 AS builder
 
-RUN apk update && apk add git cmake make g++ grpc-dev protobuf-dev linux-headers
+RUN apk update && apk add \
+    git \
+    cmake \
+    make \
+    g++ \
+    grpc-dev \
+    protobuf-dev \
+    linux-headers \
+    curl-dev \
+    openssl-dev \
+    zlib-dev \
+    autoconf \
+    automake \
+    libtool \
+    pkgconfig
 
 ARG OPENTELEMETRY_CPP_VERSION
 
@@ -40,7 +54,13 @@ RUN cd /currency \
 
 FROM alpine:3.18 AS release
 
-RUN apk update && apk add grpc-dev protobuf-dev
+RUN apk update && apk add \
+    grpc-dev \
+    protobuf-dev \
+    curl-dev \
+    openssl-dev \
+    zlib-dev
+
 COPY --from=builder /usr/local /usr/local
 
 EXPOSE ${CURRENCY_PORT}
