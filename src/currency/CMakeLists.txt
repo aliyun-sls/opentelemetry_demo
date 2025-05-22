@@ -3,6 +3,8 @@ project(currency)
 
 find_package(Protobuf REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
+find_package(CURL)
+find_package(nlohmann_json)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 
 set(GENERATED_PROTOBUF_PATH "${CMAKE_BINARY_DIR}/generated/proto")
