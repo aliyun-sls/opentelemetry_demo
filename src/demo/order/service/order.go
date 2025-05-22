@@ -206,6 +206,7 @@ func CreateOrder(c *gin.Context) {
 		}
 		orderDetails = append(orderDetails, orderDetail)
 	}
+
 	order := Order{
 		OrderId:            orderRequest.OrderId,
 		ShippingTrackingId: orderRequest.ShippingTrackingId,
@@ -234,7 +235,7 @@ func CreateOrder(c *gin.Context) {
 	wg.Add(1)
 	go func(o *Order) {
 		defer wg.Done()
-		ServiceCallPost(ctx, os.Getenv("OrderHost"), "/order/Pay", o, &util.Result{})
+		ServiceCallPost(ctx, os.Getenv("PayHost"), "/pay/Create", o, &util.Result{})
 	}(&order)
 	urlShelve := "http://product:8080/api/v1/products/put_products"
 
@@ -263,11 +264,6 @@ func PayOrder(c *gin.Context) {
 
 	tx := util.MDB.WithContext(ctx).Model(&order).Where("user_id = ? and order_id = ?", order.UserId, order.OrderId).
 		Update("order_status", WaitForSending)
-	affected := tx.RowsAffected
-	if affected < 1 {
-		util.Status400(c, errors.New("订单不存在"))
-		return
-	}
 	err = tx.Error
 	if err != nil {
 		util.Status500(c, err)
