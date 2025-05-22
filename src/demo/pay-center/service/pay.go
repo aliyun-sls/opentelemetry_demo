@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"github.com/gin-gonic/gin"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
