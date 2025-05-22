@@ -1,12 +1,14 @@
 package service
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
 	"log"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/util"
+	"time"
 )
 
 var flagClient *openfeature.Client
@@ -85,13 +87,15 @@ func (Order) TableName() string {
 }
 
 func PayOrder(c *gin.Context) {
-	ctx := c.Request.Context()
+	ctx, cancelFunc := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancelFunc()
 	var order Order
 	err := c.BindJSON(&order)
 	if err != nil {
 		util.Status400(c, err)
 		return
 	}
+
 	//todo 故障注入
 	tx := util.MDB.WithContext(ctx).Model(&order).Where("user_id = ? and order_id = ?", order.UserId, order.OrderId).
 		Update("order_status", WaitForSending)
