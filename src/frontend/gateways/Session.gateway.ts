@@ -10,7 +10,7 @@ interface ISession {
 }
 
 const sessionKey = 'session';
-const sessionIdKey = 'sessionId'
+const sIdKey = 'sid'
 const defaultSession = {
   userId: v4(),
   currencyCode: 'USD',
@@ -21,7 +21,6 @@ const SessionGateway = () => ({
   getSession(): ISession {
     if (typeof window === 'undefined') return defaultSession;
     const sessionString = localStorage.getItem(sessionKey);
-
     if (!sessionString) localStorage.setItem(sessionKey, JSON.stringify(defaultSession));
     return JSON.parse(sessionString || JSON.stringify(defaultSession)) as ISession;
   },
