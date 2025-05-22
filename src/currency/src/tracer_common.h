@@ -121,8 +121,8 @@ void initTracer()
 
   // 创建默认的 resource
   opentelemetry::sdk::resource::ResourceAttributes attributes;
-  attributes[opentelemetry::sdk::resource::SemanticConventions::HOST_NAME] = get_hostname();
-  attributes[opentelemetry::sdk::resource::SemanticConventions::HOST_IP] = get_ip_address();
+  attributes[opentelemetry::sdk::resource::SemanticConventions::kHostName] = get_hostname();
+  attributes[opentelemetry::sdk::resource::SemanticConventions::kHostIp] = get_ip_address();
   attributes["acs_cms_workspace"] = workspace_str;
   auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
 

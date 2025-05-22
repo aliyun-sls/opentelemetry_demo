@@ -41,8 +41,9 @@ namespace
     std::unique_ptr<metric_sdk::MetricReader> reader{
         new metric_sdk::PeriodicExportingMetricReader(std::move(exporter), options) };
     
+    auto views = std::unique_ptr<metric_sdk::ViewRegistry>(new metric_sdk::ViewRegistry());
     auto provider = std::shared_ptr<metrics_api::MeterProvider>(
-        new metric_sdk::MeterProvider(std::move(resource)));
+        new metric_sdk::MeterProvider(std::move(views), resource));
     auto p = std::static_pointer_cast<metric_sdk::MeterProvider>(provider);
     p->AddMetricReader(std::move(reader));
     metrics_api::Provider::SetMeterProvider(provider);
