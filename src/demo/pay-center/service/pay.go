@@ -56,6 +56,10 @@ type OrderDetail struct {
 	Description    string `json:"description"`
 }
 
+func (OrderDetail) TableName() string {
+	return "order_detail" // 使用单数形式
+}
+
 type Order struct {
 	model.Model
 	UserId             int64           `gorm:"column:user_id" json:"user_id" form:"user_id"`
