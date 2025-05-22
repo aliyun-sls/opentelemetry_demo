@@ -13,7 +13,7 @@ pub fn init_tracer() -> Result<sdktrace::Tracer, TraceError> {
 
     opentelemetry_otlp::new_pipeline()
         .tracing()
-        .with_exporter(opentelemetry_otlp::new_exporter().http())
+        .with_exporter(opentelemetry_otlp::new_exporter().tonic())
         .with_trace_config(sdktrace::config().with_resource(get_resource_attr()))
         .install_batch(runtime::Tokio)
 }
