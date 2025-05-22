@@ -16,7 +16,7 @@
 
 FROM alpine:3.18 AS builder
 
-RUN apk update && apk add git cmake make g++ grpc-dev protobuf-dev linux-headers libcurl4-openssl-dev
+RUN apk update && apk add git cmake make g++ grpc-dev protobuf-dev linux-headers
 
 ARG OPENTELEMETRY_CPP_VERSION
 
