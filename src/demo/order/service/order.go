@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
