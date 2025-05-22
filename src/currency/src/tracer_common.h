@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
-#include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
+#include "opentelemetry/exporters/otlp/otlp_http_exporter_factory.h"
 #include "opentelemetry/context/propagation/global_propagator.h"
 #include "opentelemetry/context/propagation/text_map_propagator.h"
 #include "opentelemetry/exporters/ostream/span_exporter_factory.h"
 #include "opentelemetry/nostd/shared_ptr.h"
-#include "opentelemetry/sdk/trace/simple_processor_factory.h"
+#include "opentelemetry/sdk/trace/batch_span_processor_factory.h"
 #include "opentelemetry/sdk/trace/tracer_context.h"
 #include "opentelemetry/sdk/trace/tracer_context_factory.h"
 #include "opentelemetry/sdk/trace/tracer_provider_factory.h"
@@ -72,9 +72,18 @@ public:
 
 void initTracer()
 {
-  auto exporter = opentelemetry::exporter::otlp::OtlpGrpcExporterFactory::Create();
-  auto processor =
-      opentelemetry::sdk::trace::SimpleSpanProcessorFactory::Create(std::move(exporter));
+  opentelemetry::exporter::otlp::OtlpHttpExporterOptions opts;
+  auto exporter = opentelemetry::exporter::otlp::OtlpHttpExporterFactory::Create(opts);
+  
+  // 配置 BatchSpanProcessor 选项
+  opentelemetry::sdk::trace::BatchSpanProcessorOptions batch_options;
+  batch_options.max_queue_size = 2048;  // 最大队列大小
+  batch_options.schedule_delay_millis = std::chrono::milliseconds(5000);  // 调度延迟
+  batch_options.max_export_batch_size = 512;  // 最大导出批次大小
+  
+  auto processor = opentelemetry::sdk::trace::BatchSpanProcessorFactory::Create(
+      std::move(exporter), batch_options);
+      
   std::vector<std::unique_ptr<opentelemetry::sdk::trace::SpanProcessor>> processors;
   processors.push_back(std::move(processor));
 
