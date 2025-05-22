@@ -97,11 +97,13 @@ func PayOrder(c *gin.Context) {
 	}
 
 	//todo 故障注入
-	tx := util.MDB.WithContext(ctx).Model(&order).Where("user_id = ? and order_id = ?", order.UserId, order.OrderId).
-		Update("order_status", WaitForSending)
-	err = tx.Error
-	if err != nil {
-		util.Status500(c, err)
+	db := util.MDB.WithContext(ctx).Model(&order).
+		Where("user_id = ? AND order_id = ?", order.UserId, order.OrderId)
+
+	// 执行更新
+	tx := db.Update("order_status", WaitForSending)
+	if tx.Error != nil {
+		util.Status500(c, tx.Error)
 		return
 	}
 	util.Status200(c, true)
