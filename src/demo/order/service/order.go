@@ -284,13 +284,13 @@ func CreateShipping(c *gin.Context) {
 		return
 	}
 	// 创建物流 通过kafka通知 创建物流信息
-	/*SendKafka(LogisticsMsg{
+	SendKafka(LogisticsMsg{
 		OrderId:          order.OrderId,
 		UserId:           order.UserId,
 		Action:           Create,
 		LogisticStatus:   Shipping,
 		LogisticPosition: "",
-	})*/
+	})
 	util.Status200(c, true)
 }
 
