@@ -1,4 +1,4 @@
-
+import SessionGateway from '../gateways/Session.gateway';
 
 export interface AuthResult {
   isAuthenticated: boolean;
@@ -7,8 +7,10 @@ export interface AuthResult {
 
 export function checkAuth(): boolean {
   if (typeof window !== 'undefined') {
-      const sessionId = localStorage.getItem('sid');
-      return sessionId !== null;
+      const localSid = localStorage.getItem('sid');
+      const session = SessionGateway.getSession();
+      const sessionSid = session.sid;
+      return !!localSid && !!sessionSid && localSid === sessionSid;
     }
   return false;
 }
@@ -48,6 +50,7 @@ export async function logout(): Promise<boolean> {
       throw new Error('注销失败');
     }
 
+    SessionGateway.removeSessionValue('sid');
     localStorage.clear();
 
     return true;

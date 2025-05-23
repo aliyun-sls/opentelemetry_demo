@@ -4,22 +4,30 @@ import Link from 'next/link';
 import styles from '../../styles/orders.module.css';
 import { ordersDemoData, Order } from '../../utils/demoData';
 import Header from '../../components/Header/Header';
+import SessionGateway from '../../gateways/Session.gateway';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [useDemoData, setUseDemoData] = useState<boolean>(false);
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [useDemoData]);
 
   const fetchOrders = async () => {
-    const useDemoData = false;
     if (useDemoData) {
       setOrders(ordersDemoData.data);
       return;
     }
 
     try {
+      const session = SessionGateway.getSession(); // 获取会话对象
+      const { sid } = session;
+      if (!sid) {
+        console.error('当前会话不存在 sid');
+        setOrders([]);
+        return;
+      }
       const response = await fetch('/order/list', {
         method: 'POST',
         headers: {
@@ -28,7 +36,7 @@ const OrdersPage = () => {
         body: JSON.stringify({
           limit: 10,
           offset: 0,
-          user_id: 1
+          user_id: sid
         })
       });
 
@@ -65,6 +73,17 @@ const OrdersPage = () => {
     <>
       <Header />
       <div className={styles.container}>
+        <div className={styles.toggleContainer}>
+          <label className={styles.switch}>
+            <input
+              type="checkbox"
+              checked={useDemoData}
+              onChange={(e) => setUseDemoData(e.target.checked)}
+            />
+            <span className={styles.slider}></span>
+          </label>
+          <span>使用测试数据</span>
+        </div>
         <h1 className={styles.title}>我的订单</h1>
         {orders.length === 0 ? (
           <p className={styles.emptyMessage}>暂无订单数据，请稍后再试或联系管理员。</p>

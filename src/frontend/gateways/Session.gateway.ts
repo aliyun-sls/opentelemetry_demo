@@ -29,6 +29,11 @@ const SessionGateway = () => ({
 
     localStorage.setItem(sessionKey, JSON.stringify({ ...session, [key]: value }));
   },
+  removeSessionValue<K extends keyof ISession>(key: K) {
+      const session = this.getSession();
+      const { [key]: _, ...rest } = session;
+      localStorage.setItem(sessionKey, JSON.stringify(rest));
+   }
 });
 
 export default SessionGateway();
