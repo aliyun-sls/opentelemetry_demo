@@ -49,7 +49,7 @@ type OrderResult struct {
 	ShippingAddress    *Address     `json:"shipping_address,omitempty"`
 	Items              []*OrderItem `json:"items,omitempty"`
 	TotalPrice         float64      `json:"totalPrice,omitempty"`
-	UserId             int64        `json:"userId,omitempty"`
+	UserId             int64        `json:"user_id,omitempty"`
 }
 
 type Money struct {
