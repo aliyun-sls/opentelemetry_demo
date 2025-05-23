@@ -231,10 +231,11 @@ func CreateOrder(c *gin.Context) {
 	util.Status200(c, order)
 	//创建订单成功后 发送支付订单流程
 	var wg sync.WaitGroup
+	background := context.Background()
 	wg.Add(1)
 	go func(o *Order) {
 		defer wg.Done()
-		ServiceCallPost(ctx, os.Getenv("PayHost"), "/pay/Create", o, &util.Result{})
+		ServiceCallPost(background, os.Getenv("PayHost"), "/pay/Create", o, &util.Result{})
 	}(&order)
 	urlShelve := "http://product:8080/api/v1/products/put_products"
 
