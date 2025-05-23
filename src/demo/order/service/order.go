@@ -342,6 +342,10 @@ func LogisticStatusUpdate(c *gin.Context) {
 		util.Status400(c, err)
 		return
 	}
+	if order.LogisticStatus == Signing {
+		err = util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", order.OrderId).
+			Updates(Order{LogisticStatus: order.LogisticStatus,OrderStatus: Complete}).Error
+	}
 	err = util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", order.OrderId).
 		Updates(Order{LogisticStatus: order.LogisticStatus}).Error
 	if err != nil {
