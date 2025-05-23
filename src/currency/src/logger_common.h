@@ -26,7 +26,7 @@ namespace
 
     // 创建默认的 resource
     opentelemetry::sdk::resource::ResourceAttributes attributes;
-    attributes["acs_cms_workspace"] = workspace_str;
+    attributes["acs.cms.workspace"] = workspace_str;
     auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
 
     otlp::OtlpHttpLogRecordExporterOptions loggerOptions;

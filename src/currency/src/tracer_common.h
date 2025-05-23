@@ -123,7 +123,7 @@ void initTracer()
   opentelemetry::sdk::resource::ResourceAttributes attributes;
   attributes[opentelemetry::sdk::resource::SemanticConventions::kHostName] = get_hostname();
   attributes[opentelemetry::sdk::resource::SemanticConventions::kHostIp] = get_ip_address();
-  attributes["acs_cms_workspace"] = workspace_str;
+  attributes["acs.cms.workspace"] = workspace_str;
   auto resource = opentelemetry::sdk::resource::Resource::Create(attributes);
 
   auto context =

@@ -26,7 +26,7 @@ namespace
 
     // 创建默认的 resource
     auto resource = opentelemetry::sdk::resource::Resource::Create({
-        {"acs_cms_workspace", workspace_str}
+        {"acs.cms.workspace", workspace_str}
     });
 
     // Build MetricExporter
