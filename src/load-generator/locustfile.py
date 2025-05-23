@@ -171,6 +171,91 @@ class WebsiteUser(HttpUser):
         for _ in range(0, get_flagd_value("loadGeneratorFloodHomepage")):
             self.client.get("/")
 
+    @task(2)
+    def auto_shipping(self):
+        logging.info("auto_shipping start")
+        res = self.client.post("/order/list", json={"offset": 0, "limit": 10, "order_status": 2})
+        response_data = res.json()
+        if response_data.get("code") == 200:
+            orders = response_data.get("data", [])
+            for order in orders:
+                order_id = order.get("order_id")
+                self.wait_time
+                self.client.get("/order/shipping?order_id=" + order_id)
+
+    @task(1)
+    def auto_logistics_collecting(self):
+        logging.info("auto_logistics_collecting  start ")
+        res = self.client.post("/logistic/list", json={"offset": 0, "limit": 10, "order_status": 3})
+        response_data = res.json()
+        if response_data.get("code") == 200:
+            ordersAndLogistic = response_data.get("data", [])
+            for orderLogistic in ordersAndLogistic:
+                order_id = orderLogistic.get("order_id")
+                user_id = orderLogistic.get("user_id")
+                logging.info("==="+order_id)
+                logistics = orderLogistic.get("logistics",[])
+                if len(logistics) == 1:
+                    self.client.post("/logistic/Create",
+                                     json={"order_id": order_id, "user_id": user_id, "logistic_status": 2})
+
+                    break
+
+    @task(1)
+    def auto_logistics_transportationg(self):
+        logging.info("auto_logistics_collecting  start ")
+        res = self.client.post("/logistic/list", json={"offset": 0, "limit": 10, "order_status": 3})
+        response_data = res.json()
+        if response_data.get("code") == 200:
+            ordersAndLogistic = response_data.get("data", [])
+            for orderLogistic in ordersAndLogistic:
+                order_id = orderLogistic.get("order_id")
+                user_id = orderLogistic.get("user_id")
+                logging.info("==="+order_id)
+                logistics = orderLogistic.get("logistics",[])
+                if len(logistics) == 2:
+                    self.client.post("/logistic/Create",
+                                     json={"order_id": order_id, "user_id": user_id, "logistic_status": 3})
+
+                    break
+
+    @task(1)
+    def auto_logistics_delivery(self):
+        logging.info("auto_logistics_collecting  start ")
+        res = self.client.post("/logistic/list", json={"offset": 0, "limit": 10, "order_status": 3})
+        response_data = res.json()
+        if response_data.get("code") == 200:
+            ordersAndLogistic = response_data.get("data", [])
+            for orderLogistic in ordersAndLogistic:
+                order_id = orderLogistic.get("order_id")
+                user_id = orderLogistic.get("user_id")
+                logging.info("==="+order_id)
+                logistics = orderLogistic.get("logistics",[])
+                if len(logistics) == 3:
+                    self.client.post("/logistic/Create",
+                                     json={"order_id": order_id, "user_id": user_id, "logistic_status": 4})
+
+                    break
+
+    @task(3)
+    def auto_logistics_signing(self):
+        logging.info("auto_logistics_collecting  start ")
+        res = self.client.post("/logistic/list", json={"offset": 0, "limit": 10, "order_status": 3})
+        response_data = res.json()
+        if response_data.get("code") == 200:
+            ordersAndLogistic = response_data.get("data", [])
+            for orderLogistic in ordersAndLogistic:
+                order_id = orderLogistic.get("order_id")
+                user_id = orderLogistic.get("user_id")
+                logging.info("==="+order_id)
+                logistics = orderLogistic.get("logistics",[])
+                if len(logistics) == 4:
+                    self.client.post("/logistic/Create",
+                                     json={"order_id": order_id, "user_id": user_id, "logistic_status": 5})
+
+                    break
+
+
     def on_start(self):
         ctx = baggage.set_baggage("session.id", str(uuid.uuid4()))
         ctx = baggage.set_baggage("synthetic_request", "true", context=ctx)
