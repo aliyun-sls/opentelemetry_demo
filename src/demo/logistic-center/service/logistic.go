@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"os"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/util"
@@ -104,25 +106,40 @@ func AddLogistic(c *gin.Context) {
 		util.Status400(c, err)
 		return
 	}
+	// 查询是否存在
+	var existingLogistic Logistic
 
-	//如果状态不是 Shipping 则调用订单服务更新订单状态
-	if logistic.LogisticStatus != Shipping {
-		req := map[string]interface{}{
-			"order_id":        logistic.OrderId,
-			"logistic_status": logistic.LogisticStatus,
+	if err := util.MDB.WithContext(ctx).Where("order_id = ? and logistic_status = ?",
+		logistic.OrderId, logistic.LogisticStatus).First(&existingLogistic).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			//如果状态不是 Shipping 则调用订单服务更新订单状态
+			if logistic.LogisticStatus != Shipping {
+				req := map[string]interface{}{
+					"order_id":        logistic.OrderId,
+					"logistic_status": logistic.LogisticStatus,
+				}
+				err = ServiceCallPost(ctx, os.Getenv("OrderHost"), "/order/LogisticStatusUpdate", req, &util.Result{})
+				if err != nil {
+					util.Status500(c, err)
+					return
+				}
+			}
+			err = util.MDB.WithContext(ctx).Save(&logistic).Error
+			// 处理并发冲突（如另一个请求已创建）
+			if isUniqueConstraintViolation(err) {
+				util.Status500(c, err)
+				return
+			}
+			if err != nil {
+				util.Status500(c, err)
+				return
+			}
 		}
-		err = ServiceCallPost(ctx, os.Getenv("OrderHost"), "/order/LogisticStatusUpdate", req, &util.Result{})
-		if err != nil {
-			util.Status500(c, err)
-			return
-		}
-	}
-
-	err = util.MDB.WithContext(ctx).Save(&logistic).Error
-	if err != nil {
-		util.Status500(c, err)
+	} else {
+		util.Status500(c, errors.New("Logistic already exists"))
 		return
 	}
+
 	util.Status200(c, true)
 }
 
@@ -159,4 +176,13 @@ func CreateMsg(msg *LogisticsMsg) {
 			ServiceCallPost(background, os.Getenv("LogisticHost"), "/logistic/Create", msg, &util.Result{})
 		}(msg)
 	}
+}
+
+// 检查是否是唯一约束冲突（MySQL 示例）
+func isUniqueConstraintViolation(err error) bool {
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return true
+	}
+
+	return false
 }
