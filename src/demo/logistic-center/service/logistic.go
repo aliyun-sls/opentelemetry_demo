@@ -149,7 +149,7 @@ func ListLogistics(c *gin.Context) {
 }
 
 func CreateMsg(msg *LogisticsMsg) {
-	if msg.OrderId != "" && msg.UserId != 0 {
+	if msg.OrderId != "" {
 		background := context.Background()
 		//创建订单成功后 发送支付订单流程
 		var wg sync.WaitGroup
