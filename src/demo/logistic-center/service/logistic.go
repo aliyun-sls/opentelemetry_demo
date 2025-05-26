@@ -53,9 +53,13 @@ type LogisticsMsg struct {
 }
 
 type ListLogisticsRequest struct {
+	Parms
+	util.Page
+}
+
+type Parms struct {
 	Logistic
 	OrderStatus OrderStatus `gorm:"column:order_status" json:"order_status"`
-	util.Page
 }
 
 type Order struct {
@@ -158,7 +162,7 @@ func ListLogistics(c *gin.Context) {
 		listLogisticsRequest.Limit = 10
 	}
 	err = util.MDB.WithContext(ctx).Model(Order{}).Preload("Logistics").
-		Where(&listLogisticsRequest.Logistic).
+		Where(&listLogisticsRequest.Parms).
 		Limit(listLogisticsRequest.Limit).Offset(listLogisticsRequest.Offset).Find(&orders).Error
 	if err != nil {
 		util.Status500(c, err)
