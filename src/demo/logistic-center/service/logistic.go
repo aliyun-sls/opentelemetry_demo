@@ -54,6 +54,7 @@ type LogisticsMsg struct {
 
 type ListLogisticsRequest struct {
 	Logistic
+	OrderStatus OrderStatus `gorm:"column:order_status" json:"order_status"`
 	util.Page
 }
 
