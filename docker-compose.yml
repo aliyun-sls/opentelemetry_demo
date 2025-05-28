@@ -607,6 +607,8 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=recommendation
       - PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+      - OPENAI_BASE_URL
+      - OPENAI_API_KEY
     depends_on:
       product-catalog:
         condition: service_started

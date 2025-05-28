@@ -2,15 +2,20 @@
 
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
-
-
+from opentelemetry.instrumentation.grpc import GrpcInstrumentorClient, GrpcInstrumentorServer
+GrpcInstrumentorClient().instrument()
+GrpcInstrumentorServer().instrument()
 # Python
 import os
 import random
 from concurrent import futures
+import time
 
 # Pip
 import grpc
+from langchain.llms.openai import OpenAI
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import HumanMessage, SystemMessage
 from opentelemetry import trace, metrics
 from opentelemetry._logs import set_logger_provider
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
@@ -39,6 +44,10 @@ from metrics import (
 cached_ids = []
 first_run = True
 
+# 添加全局变量用于控制token黑洞触发时间
+last_blackhole_trigger_time = 0
+BLACKHOLE_COOLDOWN = 30  # 冷却时间（秒）
+
 class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
     def ListRecommendations(self, request, context):
         prod_list = get_product_list(request.product_ids)
@@ -64,6 +73,108 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
             status=health_pb2.HealthCheckResponse.UNIMPLEMENTED)
 
 
+def get_model_config():
+    """从flagd获取模型配置"""
+    client = api.get_client()
+    try:
+        model_config = client.get_object_value("recommendationModelConfig", {
+            "model": "qwen-plus",
+            "temperature": 0.7,
+            "max_tokens": 100,
+            "ai_probability": 0.01
+        })
+        logger.info(f"从flagd获取的模型配置: {model_config}")
+        return model_config
+    except Exception as e:
+        logger.warning(f"无法从flagd获取模型配置，使用默认配置: {str(e)}")
+        default_config = {
+            "model": "qwen-plus",
+            "temperature": 0.7,
+            "max_tokens": 100,
+            "ai_probability": 0.01
+        }
+        logger.info(f"使用默认模型配置: {default_config}")
+        return default_config
+
+def check_fault_flag(flag_name: str):
+    """检查故障注入flag"""
+    client = api.get_client()
+    return client.get_boolean_value(flag_name, False)
+
+def get_token_blackhole_config():
+    """获取token黑洞配置"""
+    client = api.get_client()
+    try:
+        config = client.get_object_value("tokenBlackholeConfig", {
+            "enabled": False,
+            "waste_tokens": 1000
+        })
+        logger.info(f"从flagd获取的token黑洞配置: {config}")
+        return config
+    except Exception as e:
+        logger.warning(f"无法从flagd获取token黑洞配置，使用默认配置: {str(e)}")
+        default_config = {
+            "enabled": False,
+            "waste_tokens": 1000
+        }
+        logger.info(f"使用默认token黑洞配置: {default_config}")
+        return default_config
+
+def can_trigger_blackhole() -> bool:
+    """检查是否可以触发token黑洞"""
+    global last_blackhole_trigger_time
+    current_time = time.time()
+    if current_time - last_blackhole_trigger_time >= BLACKHOLE_COOLDOWN:
+        last_blackhole_trigger_time = current_time
+        return True
+    return False
+
+def create_blackhole_prompt(base_prompt: str, waste_tokens: int) -> str:
+    """创建用于消耗token的提示词"""
+    analysis_requirements = [
+        "请详细分析每个商品的以下方面：",
+        "1. 价格合理性：分析价格是否合理，是否具有竞争力",
+        "2. 产品质量：分析产品的材质、工艺、耐用性等",
+        "3. 用户评价：分析用户反馈和评价",
+        "4. 市场定位：分析产品的目标用户群体",
+        "5. 竞品对比：与同类产品进行详细对比",
+        "6. 使用场景：分析产品的适用场景",
+        "7. 性价比：分析产品的性价比",
+        "8. 品牌价值：分析品牌的影响力和价值",
+        "9. 售后服务：分析售后服务的质量和保障",
+        "10. 创新特点：分析产品的创新点和特色"
+    ]
+    
+    # 根据waste_tokens计算需要重复的次数
+    repeat_times = waste_tokens // 200  # 假设每个分析要求大约消耗200个token
+    return base_prompt + "\n\n" + "\n".join(analysis_requirements * int(repeat_times))
+
+def handle_token_blackhole(prompt: str, model_config: dict, waste_tokens: int) -> None:
+    """处理token黑洞故障"""
+    logger.info(f"触发Token黑洞故障: 消耗{waste_tokens}个token")
+    
+    # 创建用于消耗token的提示词
+    long_prompt = create_blackhole_prompt(prompt, waste_tokens)
+    
+    # 创建OpenAI客户端
+    client = ChatOpenAI(
+        api_key=os.getenv('OPENAI_API_KEY'),
+        base_url=os.getenv('OPENAI_BASE_URL'),
+        model=model_config["model"],
+        temperature=model_config.get("temperature", 0.7),
+        max_tokens=model_config.get("max_tokens", 10000)
+    )
+    
+    # 构建消息
+    messages = [
+        SystemMessage(content="你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"),
+        HumanMessage(content=long_prompt)
+    ]
+    
+    # 调用API消耗token，但忽略结果
+    client.invoke(messages)
+    logger.info(f"Token黑洞故障API调用完成，消耗了约{waste_tokens}个token")
+
 def get_product_list(request_product_ids):
     global first_run
     global cached_ids
@@ -74,42 +185,102 @@ def get_product_list(request_product_ids):
         request_product_ids_str = ''.join(request_product_ids)
         request_product_ids = request_product_ids_str.split(',')
 
-        # Feature flag scenario - Cache Leak
-        if check_feature_flag("recommendationCacheFailure"):
-            span.set_attribute("app.recommendation.cache_enabled", True)
-            if random.random() < 0.5 or first_run:
-                first_run = False
-                span.set_attribute("app.cache_hit", False)
-                logger.info("get_product_list: cache miss")
-                cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
-                response_ids = [x.id for x in cat_response.products]
-                cached_ids = cached_ids + response_ids
-                cached_ids = cached_ids + cached_ids[:len(cached_ids) // 4]
-                product_ids = cached_ids
+        # 获取所有商品信息
+        cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
+        all_products = cat_response.products
+        
+        # 获取请求的商品详情
+        requested_products = []
+        for product_id in request_product_ids:
+            product = next((p for p in all_products if p.id == product_id), None)
+            if product:
+                requested_products.append(product)
             else:
-                span.set_attribute("app.cache_hit", True)
-                logger.info("get_product_list: cache hit")
-                product_ids = cached_ids
+                logger.warning(f"未找到商品ID: {product_id}")
+
+        # 获取模型配置
+        model_config = get_model_config()
+        span.set_attribute("app.recommendation.model", model_config["model"])
+        span.set_attribute("app.recommendation.ai_probability", model_config.get("ai_probability", 0.01))
+
+        # 构建提示词
+        if requested_products:
+            prompt = f"""基于以下用户正在查看的商品，推荐5个相关的商品：
+
+用户正在查看的商品：
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in requested_products])}
+
+可选的商品列表：
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products if p.id not in request_product_ids])}
+
+请只返回商品ID列表，用逗号分隔。"""
         else:
-            span.set_attribute("app.recommendation.cache_enabled", False)
-            cat_response = product_catalog_stub.ListProducts(demo_pb2.Empty())
-            product_ids = [x.id for x in cat_response.products]
+            prompt = f"""请从以下商品列表中随机推荐5个商品：
 
-        span.set_attribute("app.products.count", len(product_ids))
+可选的商品列表：
+{', '.join([f"ID:{p.id}, 名称:{p.name}, 描述:{p.description}" for p in all_products])}
 
-        # Create a filtered list of products excluding the products received as input
-        filtered_products = list(set(product_ids) - set(request_product_ids))
-        num_products = len(filtered_products)
-        span.set_attribute("app.filtered_products.count", num_products)
-        num_return = min(max_responses, num_products)
+请只返回商品ID列表，用逗号分隔。"""
 
-        # Sample list of indicies to return
-        indices = random.sample(range(num_products), num_return)
-        # Fetch product ids from indices
-        prod_list = [filtered_products[i] for i in indices]
+        # 检查是否需要触发token黑洞
+        blackhole_config = get_token_blackhole_config()
+        if blackhole_config.get("enabled", False):
+            if can_trigger_blackhole():
+                handle_token_blackhole(prompt, model_config, blackhole_config.get("waste_tokens", 1000))
+                return []
+            else:
+                logger.info("Token黑洞在冷却中，跳过触发")
+                # 如果黑洞在冷却中，使用随机推荐
+                filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+                num_products = len(filtered_products)
+                num_return = min(max_responses, num_products)
+                indices = random.sample(range(num_products), num_return)
+                return [filtered_products[i] for i in indices]
+
+        # 根据概率决定是否使用AI推荐
+        if random.random() > model_config.get("ai_probability", 0.01):
+            logger.info("使用随机推荐")
+            filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+            num_products = len(filtered_products)
+            num_return = min(max_responses, num_products)
+            indices = random.sample(range(num_products), num_return)
+            return [filtered_products[i] for i in indices]
+
+        try:
+            # 正常调用AI API
+            client = ChatOpenAI(
+                api_key=os.getenv('OPENAI_API_KEY'),
+                base_url=os.getenv('OPENAI_BASE_URL'),
+                model=model_config["model"],
+                temperature=model_config.get("temperature", 0.7),
+                max_tokens=model_config.get("max_tokens", 100)
+            )
+            
+            messages = [
+                SystemMessage(content="你是一个专业的商品推荐助手。请根据用户正在查看的商品，推荐最相关的商品。只返回商品ID列表，用逗号分隔。"),
+                HumanMessage(content=prompt)
+            ]
+            
+            response = client.invoke(messages)
+            logger.info(f"AI API调用结果: {response}")
+            
+            # 解析推荐结果
+            recommended_ids = response.content.strip().split(',')
+            recommended_ids = [id.strip() for id in recommended_ids if id.strip()]
+            
+            # 确保返回的商品数量不超过max_responses
+            prod_list = recommended_ids[:max_responses]
+            
+        except Exception as e:
+            logger.error(f"AI API调用失败: {str(e)}")
+            # 如果API调用失败，回退到随机推荐
+            filtered_products = list(set([p.id for p in all_products]) - set(request_product_ids))
+            num_products = len(filtered_products)
+            num_return = min(max_responses, num_products)
+            indices = random.sample(range(num_products), num_return)
+            prod_list = [filtered_products[i] for i in indices]
 
         span.set_attribute("app.filtered_products.list", prod_list)
-
         return prod_list
 
 
