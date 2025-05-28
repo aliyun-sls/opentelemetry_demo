@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/runtime/protoimpl"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -249,6 +251,7 @@ type OrderRequest struct {
 	ShippingAddress    *pb.Address            `protobuf:"bytes,4,opt,name=shipping_address,json=shippingAddress,proto3" json:"shipping_address,omitempty"`
 	Items              []*OrderItem           `protobuf:"bytes,5,rep,name=items,proto3" json:"items,omitempty"`
 	UserId             int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	TotalPrice         float64                `json:"total_price,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -447,6 +450,7 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		ShippingCost:       prep.shippingCostLocalized,
 		ShippingAddress:    req.Address,
 		Items:              prep.orderProduct,
+		TotalPrice:         totalPriceFloat,
 	}
 
 	if err := httpPostCall(cs.orderCenterSvcAddr, "/order/Create", orderRequest); err != nil {

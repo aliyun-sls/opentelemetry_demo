@@ -48,7 +48,7 @@ type OrderResult struct {
 	ShippingCost       *Money       `json:"shipping_cost,omitempty"`
 	ShippingAddress    *Address     `json:"shipping_address,omitempty"`
 	Items              []*OrderItem `json:"items,omitempty"`
-	TotalPrice         float64      `json:"totalPrice,omitempty"`
+	TotalPrice         float64      `json:"total_price,omitempty"`
 	UserId             int64        `json:"user_id,omitempty"`
 }
 
@@ -344,7 +344,7 @@ func LogisticStatusUpdate(c *gin.Context) {
 	}
 	if order.LogisticStatus == Signing {
 		err = util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", order.OrderId).
-			Updates(Order{LogisticStatus: order.LogisticStatus,OrderStatus: Complete}).Error
+			Updates(Order{LogisticStatus: order.LogisticStatus, OrderStatus: Complete}).Error
 	}
 	err = util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", order.OrderId).
 		Updates(Order{LogisticStatus: order.LogisticStatus}).Error
