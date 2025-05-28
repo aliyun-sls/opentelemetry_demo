@@ -45,6 +45,48 @@ chaosblade-operator:
     pullSecrets: <demo>
     downloadUrl: ""
 
+prometheus:
+  # 镜像凭证Secret
+  imagePullSecrets:
+    - name: <demo>
+  server:
+    image:
+      # 镜像仓库地址
+      repository: <registryAdress>/<namespace>/<registryName>
+      tag: ""
+      pullPolicy: Always
+
+jaeger:
+  allInOne:
+    image:
+      # 镜像仓库地址
+      repository: <registryAdress>/<namespace>/<registryName>
+      tag: ""
+      pullPolicy: Always
+      # 镜像凭证Secret
+      pullSecrets:
+        - name: <demo>
+
+opensearch:
+  image:
+    # 镜像仓库地址
+    repository: <registryAdress>/<namespace>/<registryName>
+    tag: ""
+    pullPolicy: Always
+  # 镜像凭证Secret
+  imagePullSecrets:
+    - name: <demo>
+
+opentelemetry-collector:
+  image:
+    # 镜像仓库地址
+    repository: <registryAdress>/<namespace>/<registryName>
+    tag: ""
+    pullPolicy: Always
+  # 镜像凭证Secret
+  imagePullSecrets:
+    - name: <demo>
+
 components:
   flagd:
     schedulingRules:
