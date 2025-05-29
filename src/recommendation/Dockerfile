@@ -14,10 +14,7 @@ RUN apt-get -qq update \
 
 WORKDIR /usr/src/app/
 COPY ./src/recommendation/requirements.txt ./
-
-RUN pip install --upgrade pip
 RUN pip install --prefix="/reqs" -r requirements.txt
-RUN pip install aliyun-bootstrap && ARMS_REGION_ID=cn-heyuan aliyun-bootstrap -a install 
 
 #
 # Runtime
@@ -27,7 +24,8 @@ WORKDIR /usr/src/app/
 COPY --from=builder /reqs /usr/local
 COPY ./src/recommendation/ ./
 
-RUN opentelemetry-bootstrap -a install
+RUN pip install --upgrade pip
+RUN pip install aliyun-bootstrap && ARMS_REGION_ID=cn-heyuan aliyun-bootstrap -a install
 
 EXPOSE ${RECOMMENDATION_PORT}
 ENTRYPOINT [ "aliyun-instrument", "python", "recommendation_server.py" ]
