@@ -22,6 +22,8 @@ secret:
     REDIS_PASSWORD: ""
     ALIBABA_CLOUD_ACCESS_KEY_ID: ""
     ALIBABA_CLOUD_ACCESS_KEY_SECRET: ""
+    ALIBABA_CLOUD_RUM_ENDPOINT: ""
+    ALIBABA_CLOUD_RUM_PID: ""
 
 chaosblade-operator:
   operator:
