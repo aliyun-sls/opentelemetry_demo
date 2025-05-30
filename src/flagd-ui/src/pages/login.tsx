@@ -10,7 +10,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'cms' && password === 'ali88') {
+    if (username === 'cmsdemo' && password === 'ali88cmsdemo') {
       document.cookie = 'isLoggedIn=true; path=/';
       router.push('/');
     } else {
