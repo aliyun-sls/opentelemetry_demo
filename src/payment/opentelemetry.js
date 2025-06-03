@@ -3,8 +3,8 @@
 
 const opentelemetry = require("@opentelemetry/sdk-node")
 const {getNodeAutoInstrumentations} = require("@opentelemetry/auto-instrumentations-node")
-const {OTLPTraceExporter} = require('@opentelemetry/exporter-trace-otlp-grpc')
-const {OTLPMetricExporter} = require('@opentelemetry/exporter-metrics-otlp-grpc')
+const {OTLPTraceExporter} = require('@opentelemetry/exporter-trace-otlp-http')
+const {OTLPMetricExporter} = require('@opentelemetry/exporter-metrics-otlp-http')
 const {PeriodicExportingMetricReader} = require('@opentelemetry/sdk-metrics')
 const {alibabaCloudEcsDetector} = require('@opentelemetry/resource-detector-alibaba-cloud')
 const {awsEc2Detector, awsEksDetector} = require('@opentelemetry/resource-detector-aws')
