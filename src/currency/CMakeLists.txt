@@ -17,9 +17,8 @@ add_dependencies(currency demo-proto)
 target_link_libraries(
     currency demo-proto protobuf::libprotobuf
      ${OPENTELEMETRY_CPP_LIBRARIES} opentelemetry_trace opentelemetry_common 
-     opentelemetry_exporter_otlp_http opentelemetry_exporter_otlp_http_client 
-     opentelemetry_proto opentelemetry_otlp_recordable opentelemetry_resources 
-     opentelemetry_metrics opentelemetry_exporter_otlp_http_metrics 
-     opentelemetry_exporter_otlp_http_log CURL::libcurl gRPC::grpc++)
+     opentelemetry_exporter_otlp_http opentelemetry_proto opentelemetry_otlp_recordable 
+     opentelemetry_resources opentelemetry_metrics opentelemetry_logs 
+     CURL::libcurl gRPC::grpc++)
 
 install(TARGETS currency DESTINATION bin)
