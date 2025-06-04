@@ -14,7 +14,6 @@
 #include "opentelemetry/trace/propagation/http_trace_context.h"
 #include "opentelemetry/trace/provider.h"
 #include "opentelemetry/sdk/resource/resource.h"
-#include "opentelemetry/semconv/resource_attributes.h"
 
 #include <grpcpp/grpcpp.h>
 #include <cstring>
@@ -79,17 +78,17 @@ opentelemetry::sdk::resource::Resource createResource()
   std::map<std::string, std::string> resource_attributes;
   
   // Set default service name
-  resource_attributes[opentelemetry::semconv::resource::kServiceName] = "currency";
+  resource_attributes["service.name"] = "currency";
   
   // Check for environment variables and override defaults
   const char* service_name = std::getenv("OTEL_SERVICE_NAME");
   if (service_name) {
-    resource_attributes[opentelemetry::semconv::resource::kServiceName] = service_name;
+    resource_attributes["service.name"] = service_name;
   }
   
   const char* service_version = std::getenv("OTEL_SERVICE_VERSION");
   if (service_version) {
-    resource_attributes[opentelemetry::semconv::resource::kServiceVersion] = service_version;
+    resource_attributes["service.version"] = service_version;
   }
   
   const char* cms_workspace = std::getenv("CMS_WORKSPACE");
@@ -99,17 +98,17 @@ opentelemetry::sdk::resource::Resource createResource()
   
   const char* deployment_environment = std::getenv("OTEL_DEPLOYMENT_ENVIRONMENT");
   if (deployment_environment) {
-    resource_attributes[opentelemetry::semconv::resource::kDeploymentEnvironment] = deployment_environment;
+    resource_attributes["deployment.environment"] = deployment_environment;
   }
   
   const char* service_namespace = std::getenv("OTEL_SERVICE_NAMESPACE");
   if (service_namespace) {
-    resource_attributes[opentelemetry::semconv::resource::kServiceNamespace] = service_namespace;
+    resource_attributes["service.namespace"] = service_namespace;
   }
   
   const char* service_instance_id = std::getenv("OTEL_SERVICE_INSTANCE_ID");
   if (service_instance_id) {
-    resource_attributes[opentelemetry::semconv::resource::kServiceInstanceId] = service_instance_id;
+    resource_attributes["service.instance.id"] = service_instance_id;
   }
 
   return opentelemetry::sdk::resource::Resource::Create(resource_attributes);
