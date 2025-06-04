@@ -23,7 +23,7 @@ namespace
 {
   opentelemetry::sdk::resource::Resource createLogResource()
   {
-    std::map<std::string, std::string> resource_attributes;
+    opentelemetry::sdk::resource::ResourceAttributes resource_attributes;
     
     // Set default service name
     resource_attributes["service.name"] = "currency";

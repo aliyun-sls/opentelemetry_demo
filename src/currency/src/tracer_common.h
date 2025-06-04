@@ -75,7 +75,7 @@ public:
 
 opentelemetry::sdk::resource::Resource createResource()
 {
-  std::map<std::string, std::string> resource_attributes;
+  opentelemetry::sdk::resource::ResourceAttributes resource_attributes;
   
   // Set default service name
   resource_attributes["service.name"] = "currency";

@@ -6,6 +6,7 @@
 #include "opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h"
 #include "opentelemetry/sdk/metrics/meter.h"
 #include "opentelemetry/sdk/metrics/meter_provider.h"
+#include "opentelemetry/sdk/metrics/view/view_registry.h"
 #include "opentelemetry/sdk/resource/resource.h"
 
 #include <cstdlib>
@@ -22,7 +23,7 @@ namespace
 {
   opentelemetry::sdk::resource::Resource createMetricResource()
   {
-    std::map<std::string, std::string> resource_attributes;
+    opentelemetry::sdk::resource::ResourceAttributes resource_attributes;
     
     // Set default service name
     resource_attributes["service.name"] = "currency";
@@ -73,7 +74,14 @@ namespace
     metric_sdk::PeriodicExportingMetricReaderOptions options;
     std::unique_ptr<metric_sdk::MetricReader> reader{
         new metric_sdk::PeriodicExportingMetricReader(std::move(exporter), options) };
-    auto provider = std::shared_ptr<metrics_api::MeterProvider>(new metric_sdk::MeterProvider(resource));
+    
+    // Create MeterProvider with ViewRegistry and Resource
+    auto provider = std::shared_ptr<metrics_api::MeterProvider>(
+        new metric_sdk::MeterProvider(
+            std::unique_ptr<metric_sdk::ViewRegistry>(new metric_sdk::ViewRegistry()),
+            resource
+        )
+    );
     auto p = std::static_pointer_cast<metric_sdk::MeterProvider>(provider);
     p->AddMetricReader(std::move(reader));
     metrics_api::Provider::SetMeterProvider(provider);
