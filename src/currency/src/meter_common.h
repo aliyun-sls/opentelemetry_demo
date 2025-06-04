@@ -6,6 +6,11 @@
 #include "opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader.h"
 #include "opentelemetry/sdk/metrics/meter.h"
 #include "opentelemetry/sdk/metrics/meter_provider.h"
+#include "opentelemetry/sdk/resource/resource.h"
+#include "opentelemetry/semconv/resource_attributes.h"
+
+#include <cstdlib>
+#include <map>
 
 // namespaces
 namespace common        = opentelemetry::common;
@@ -16,8 +21,51 @@ namespace otlp_exporter = opentelemetry::exporter::otlp;
 
 namespace
 {
+  opentelemetry::sdk::resource::Resource createMetricResource()
+  {
+    std::map<std::string, std::string> resource_attributes;
+    
+    // Set default service name
+    resource_attributes[opentelemetry::semconv::resource::kServiceName] = "currency";
+    
+    // Check for environment variables and override defaults
+    const char* service_name = std::getenv("OTEL_SERVICE_NAME");
+    if (service_name) {
+      resource_attributes[opentelemetry::semconv::resource::kServiceName] = service_name;
+    }
+    
+    const char* service_version = std::getenv("OTEL_SERVICE_VERSION");
+    if (service_version) {
+      resource_attributes[opentelemetry::semconv::resource::kServiceVersion] = service_version;
+    }
+    
+    const char* cms_workspace = std::getenv("CMS_WORKSPACE");
+    if (cms_workspace) {
+      resource_attributes["acs.cms.workspace"] = cms_workspace;
+    }
+
+    const char* deployment_environment = std::getenv("OTEL_DEPLOYMENT_ENVIRONMENT");
+    if (deployment_environment) {
+      resource_attributes[opentelemetry::semconv::resource::kDeploymentEnvironment] = deployment_environment;
+    }
+    
+    const char* service_namespace = std::getenv("OTEL_SERVICE_NAMESPACE");
+    if (service_namespace) {
+      resource_attributes[opentelemetry::semconv::resource::kServiceNamespace] = service_namespace;
+    }
+    
+    const char* service_instance_id = std::getenv("OTEL_SERVICE_INSTANCE_ID");
+    if (service_instance_id) {
+      resource_attributes[opentelemetry::semconv::resource::kServiceInstanceId] = service_instance_id;
+    }
+
+    return opentelemetry::sdk::resource::Resource::Create(resource_attributes);
+  }
+
   void initMeter() 
   {
+    auto resource = createMetricResource();
+    
     // Build MetricExporter
     otlp_exporter::OtlpHttpMetricExporterOptions otlpOptions;
     auto exporter = otlp_exporter::OtlpHttpMetricExporterFactory::Create(otlpOptions);
@@ -26,7 +74,7 @@ namespace
     metric_sdk::PeriodicExportingMetricReaderOptions options;
     std::unique_ptr<metric_sdk::MetricReader> reader{
         new metric_sdk::PeriodicExportingMetricReader(std::move(exporter), options) };
-    auto provider = std::shared_ptr<metrics_api::MeterProvider>(new metric_sdk::MeterProvider());
+    auto provider = std::shared_ptr<metrics_api::MeterProvider>(new metric_sdk::MeterProvider(resource));
     auto p = std::static_pointer_cast<metric_sdk::MeterProvider>(provider);
     p->AddMetricReader(std::move(reader));
     metrics_api::Provider::SetMeterProvider(provider);
