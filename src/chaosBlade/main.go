@@ -12,7 +12,12 @@ import (
 
 func main() {
 	command.Dynamic, command.Gvr = client.Client()
-	fmt.Println("初始化客户端")
+	fmt.Println("初始化 Kubernetes 客户端")
+	
+	// 初始化阿里云客户端
+	command.InitAliyunClients()
+	fmt.Println("初始化阿里云客户端")
+	
 	time.Sleep(2 * time.Second)
 
 	//清理环境
@@ -47,7 +52,7 @@ func main() {
 
 	for {
 		nodeloss.NodeLossFlagd()
-		region.RegionLossFlagd()
+		region.RegionLossAPIFlagd()  // 使用新的基于阿里云 API 的方法
 		podnetdelay.PodNetDelayFlagd()
 		podcpu.PodCpuFlagd()
 		podmem.PodMemFlagd()

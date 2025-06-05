@@ -1,6 +1,8 @@
 package command
 
 import (
+	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
+	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/open-feature/go-sdk/openfeature"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -80,4 +82,13 @@ var Gvr schema.GroupVersionResource
 var (
 	FlagClient *openfeature.Client
 	Once       sync.Once
+
+	// 阿里云客户端 - 只初始化一次
+	EcsClient  *ecs.Client
+	CsClient   *cs.Client
+	AliyunOnce sync.Once
+
+	// 阿里云混沌工程实例 - 全局单例
+	AliyunRegionChaosInstance *AliyunRegionChaos
+	AliyunRegionChaosOnce     sync.Once
 )
