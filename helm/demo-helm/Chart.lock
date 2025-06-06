@@ -1,0 +1,18 @@
+dependencies:
+- name: chaosblade-operator
+  repository: file://../chaosblade-operator
+  version: 1.7.4
+- name: opentelemetry-collector
+  repository: file://../opentelemetry-collector
+  version: 0.118.0
+- name: prometheus
+  repository: file://../prometheus
+  version: 27.4.0
+- name: jaeger
+  repository: file://../jaeger
+  version: 3.4.0
+- name: opensearch
+  repository: file://../opensearch
+  version: 2.31.0
+digest: sha256:528ab0bfb0fb6c1452e73c63d30c299a231d4e0ddfee7e33f1d4ccb6a9544d08
+generated: "2025-04-24T14:26:27.483206+08:00"

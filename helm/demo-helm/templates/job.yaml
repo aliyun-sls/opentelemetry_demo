@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: initrds
+spec:
+  template:
+    spec:
+      restartPolicy: Never  
+      imagePullSecrets:
+        - name: {{ .Values.job.imagePullSecrets }}
+      containers:
+        - env: 
+            {{- toYaml .Values.job.env | nindent 12 }}
+          image: {{ .Values.job.image.repository }}:{{ .Values.job.image.tag }}
+          imagePullPolicy: Always
+          name: initrds
+  backoffLimit: 4

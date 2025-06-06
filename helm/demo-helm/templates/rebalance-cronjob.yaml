@@ -1,0 +1,519 @@
+{{- if .Values.rebalance.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "otel-demo.name" . }}-rebalance
+  labels:
+    {{- include "otel-demo.labels" . | nindent 4 }}
+  {{- with .Values.rebalance.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.rebalance.schedule | quote }}
+  successfulJobsHistoryLimit: {{ .Values.rebalance.successfulJobsHistoryLimit | default 3 }}
+  failedJobsHistoryLimit: {{ .Values.rebalance.failedJobsHistoryLimit | default 1 }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.rebalance.backoffLimit | default 2 }}
+      template:
+        metadata:
+          labels:
+            {{- include "otel-demo.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: rebalance-job
+          {{- with .Values.rebalance.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        spec:
+          restartPolicy: OnFailure
+          {{- if .Values.serviceAccount.create }}
+          serviceAccountName: {{ include "otel-demo.serviceAccountName" . }}
+          {{- end }}
+          {{- with .Values.rebalance.imagePullSecrets | default .Values.default.image.pullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.rebalance.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.rebalance.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.rebalance.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.rebalance.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+          - name: rebalance
+            image: {{ .Values.rebalance.image.repository }}:{{ .Values.rebalance.image.tag }}
+            imagePullPolicy: {{ .Values.rebalance.image.pullPolicy | default "IfNotPresent" }}
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "=================================================="
+              echo "🔄 Pod 分布均匀性检测与重新平衡任务开始"
+              echo "时间: $(date)"
+              echo "=================================================="
+              
+              # 获取当前命名空间
+              echo "🔧 [STEP 1] 初始化配置参数..."
+              NAMESPACE="${NAMESPACE:-{{ .Release.Namespace }}}"
+              echo "📍 操作命名空间: $NAMESPACE"
+              
+              # 配置参数
+              IMBALANCE_THRESHOLD={{ .Values.rebalance.imbalanceThreshold | default 0.3 }}
+              MIN_PODS_PER_COMPONENT={{ .Values.rebalance.minPodsPerComponent | default 2 }}
+              
+              # 将浮点数阈值转换为整数 避免shell算术运算问题
+              THRESHOLD_X100=30  # 0.3 * 100 = 30
+              
+              echo "⚙️  配置参数:"
+              echo "   - 不均匀阈值: ${IMBALANCE_THRESHOLD} 超过此值视为不均匀"
+              echo "   - 最小 Pod 数量: ${MIN_PODS_PER_COMPONENT} 低于此数量跳过检测"
+              
+              # 获取所有需要检查的组件
+              echo "🔧 [STEP 2] 获取待检查组件列表..."
+              COMPONENTS="{{ range $key, $value := .Values.components }}{{- if $value.enabled }}{{ $key }} {{ end }}{{- end }}"
+              echo "📋 需要检查的组件: $COMPONENTS"
+              
+              # 函数：计算分布不均匀度
+              calculate_imbalance() {
+                local component="$1"
+                echo "🔍 [FUNC] calculate_imbalance 开始分析组件: $component"
+                
+                # 获取该组件的所有运行中的 Pod 及其节点信息
+                echo "   🔧 [SUB-STEP] 获取组件 $component 的运行中 Pod 列表..."
+                local pod_nodes
+                pod_nodes=$(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
+                  --field-selector=status.phase=Running \
+                  -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' 2>/dev/null)
+                
+                if [ -z "$pod_nodes" ]; then
+                  echo "   ⚠️  [RESULT] 组件 $component 没有运行中的 Pod"
+                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 跳过"
+                  return 1
+                fi
+                
+                echo "   📊 [SUB-STEP] 统计节点和AZ分布..."
+                # 创建临时文件来存储统计信息
+                local temp_dir="/tmp/rebalance_$$"
+                mkdir -p "$temp_dir"
+                echo "$pod_nodes" > "$temp_dir/pod_nodes"
+                
+                # 获取所有可用节点（用于计算真实的分布不均匀度）
+                echo "   🔧 [SUB-STEP] 获取集群所有可用节点..."
+                kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name > "$temp_dir/all_nodes" 2>/dev/null
+                local total_nodes
+                total_nodes=$(wc -l < "$temp_dir/all_nodes" 2>/dev/null || echo 0)
+                echo "   📊 [INFO] 集群总节点数: $total_nodes"
+                
+                local total_pods=0
+                local nodes_with_pods=0
+                
+                # 统计每个节点的Pod数量
+                sort "$temp_dir/pod_nodes" | uniq -c > "$temp_dir/node_counts"
+                
+                # 🎯 新增：AZ感知的保守策略检查
+                echo "   🔧 [SUB-STEP] 执行AZ感知的分布检查（保守策略）..."
+                
+                # 获取每个Pod所在节点的AZ信息
+                > "$temp_dir/az_distribution"
+                while read count node; do
+                  if [ -n "$node" ]; then
+                    echo "   🔍 [LOOP] 节点 $node: $count 个Pod"
+                    local az
+                    az=$(kubectl get node "$node" -o jsonpath='{.metadata.labels.topology\.kubernetes.io/zone}' 2>/dev/null || echo "unknown")
+                    echo "   📍 [INFO] 节点 $node 属于 AZ: $az"
+                    total_pods=$((total_pods + count))
+                    nodes_with_pods=$((nodes_with_pods + 1))
+                    
+                    # 记录AZ分布信息
+                    local i=1
+                    while [ "$i" -le "$count" ]; do
+                      echo "$az" >> "$temp_dir/az_distribution"
+                      i=$((i + 1))
+                    done
+                  fi
+                done < "$temp_dir/node_counts"
+                
+                echo "   📊 统计信息:"
+                echo "      - 总 Pod 数: $total_pods"
+                echo "      - 有Pod的节点数: $nodes_with_pods"
+                echo "      - 集群总节点数: $total_nodes"
+                
+                # 如果 Pod 数量太少，跳过检测
+                echo "   🔍 [CHECK] 检查 Pod 数量是否达到最小阈值..."
+                if [ "$total_pods" -lt "$MIN_PODS_PER_COMPONENT" ]; then
+                  echo "   ✅ [RESULT] Pod 数量 $total_pods 少于最小阈值 $MIN_PODS_PER_COMPONENT，跳过检测"
+                  rm -rf "$temp_dir"
+                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 跳过"
+                  return 1
+                fi
+                
+                # 🎯 保守策略：优先检查AZ分布
+                echo "   🔧 [SUB-STEP] 分析AZ分布情况..."
+                
+                # 统计不同AZ的数量
+                sort "$temp_dir/az_distribution" | uniq -c > "$temp_dir/az_counts"
+                local unique_azs
+                unique_azs=$(wc -l < "$temp_dir/az_counts")
+                echo "   📊 [INFO] Pod分布在 $unique_azs 个不同的AZ中"
+                
+                # 显示AZ分布详情
+                echo "   📊 [INFO] AZ分布详情:"
+                while read az_count az_name; do
+                  echo "      AZ $az_name: $az_count 个Pod"
+                done < "$temp_dir/az_counts"
+                
+                # 🎯 保守策略判断逻辑
+                if [ "$unique_azs" -eq 1 ]; then
+                  echo "   🔴 [CRITICAL] 所有Pod都集中在单个AZ中 - 高可用风险！"
+                  echo "   🔄 [DECISION] 保守策略: 单AZ集中必须重新平衡"
+                  rm -rf "$temp_dir"
+                  echo "   ❌ [RESULT] 分布不均匀，需要重新平衡（AZ集中）"
+                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 需要重新平衡"
+                  return 0
+                elif [ "$unique_azs" -ge 2 ]; then
+                  echo "   🟢 [GOOD] Pod已跨多个AZ分布 - 高可用保障OK"
+                  echo "   ✅ [DECISION] 保守策略: 跨AZ分布无需重新平衡"
+                  rm -rf "$temp_dir"
+                  echo "   ✅ [RESULT] AZ分布良好，跳过重新平衡（保守策略）"
+                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 无需重新平衡"
+                  return 1
+                else
+                  echo "   ⚠️  [WARNING] AZ信息异常，回退到传统节点分布检查"
+                fi
+                
+                # 🔄 回退逻辑：如果AZ信息异常，使用原有的节点级检查
+                echo "   🔧 [SUB-STEP] 回退到传统节点分布检查..."
+                
+                # 初始化所有节点的Pod计数为0
+                awk '{print $1 " 0"}' "$temp_dir/all_nodes" > "$temp_dir/all_node_counts"
+                
+                # 更新有Pod的节点计数 - 使用BusyBox兼容的方法
+                while read count node; do
+                  if [ -n "$node" ]; then
+                    # 使用更安全的方法：重新生成文件而不是sed替换
+                    # 转义节点名中的特殊字符
+                    local escaped_node
+                    escaped_node=$(echo "$node" | sed 's/\./\\./g')
+                    # 使用awk进行安全的替换
+                    awk -v target="$node" -v newcount="$count" \
+                      '$1 == target {print $1 " " newcount; next} {print}' \
+                      "$temp_dir/all_node_counts" > "$temp_dir/all_node_counts.tmp"
+                    mv "$temp_dir/all_node_counts.tmp" "$temp_dir/all_node_counts"
+                  fi
+                done < "$temp_dir/node_counts"
+                
+                # 计算理想分布（基于所有节点）
+                echo "   🔧 [SUB-STEP] 计算理想分布..."
+                local ideal_per_node=0
+                local remainder=0
+                if [ "$total_nodes" -gt 0 ]; then
+                  ideal_per_node=$((total_pods / total_nodes))
+                  remainder=$((total_pods % total_nodes))
+                fi
+                
+                echo "   🎯 理想分布: 每节点 $ideal_per_node 个 Pod (基于 $total_nodes 个节点)"
+                if [ "$remainder" -gt 0 ]; then
+                  echo "      有 $remainder 个节点需要额外 1 个 Pod"
+                fi
+                
+                # 计算不均匀度 使用标准差/平均值
+                echo "   🔧 [SUB-STEP] 计算不均匀度..."
+                
+                # 避免除零错误
+                if [ "$total_nodes" -eq 0 ]; then
+                  echo "   ❌ [ERROR] 节点数为0，无法计算"
+                  rm -rf "$temp_dir"
+                  return 1
+                fi
+                
+                # 计算平均值 (×100 避免浮点数)
+                local mean_x100=$((total_pods * 100 / total_nodes))
+                local sum_sq_diff=0
+                
+                echo "   📊 [INFO] 平均每节点Pod数: $mean_x100/100"
+                
+                # 遍历所有节点计算方差
+                while read node count; do
+                  if [ -n "$node" ]; then
+                    echo "   🔍 [LOOP] 处理节点 $node: $count 个Pod"
+                    local count_x100=$((count * 100))
+                    local diff=$((count_x100 - mean_x100))
+                    if [ "$diff" -lt 0 ]; then
+                      diff=$((-diff))
+                    fi
+                    local sq_diff=$((diff * diff))
+                    sum_sq_diff=$((sum_sq_diff + sq_diff))
+                    echo "   📊 [CALC] 节点$node 差值: $diff/100, 平方差: $sq_diff"
+                  fi
+                done < "$temp_dir/all_node_counts"
+                
+                local variance=$((sum_sq_diff / total_nodes))
+                echo "   📊 [CALC] 方差: $variance"
+                
+                # 计算标准差的近似值（避免使用bc和sqrt）
+                local std_dev_x100=0
+                if [ "$variance" -gt 0 ]; then
+                  # 使用整数近似 sqrt(variance)
+                  # 简化计算：如果方差很大，标准差约等于方差的平方根
+                  if [ "$variance" -ge 10000 ]; then
+                    std_dev_x100=$((variance / 100))
+                  elif [ "$variance" -ge 2500 ]; then
+                    std_dev_x100=50
+                  elif [ "$variance" -ge 900 ]; then
+                    std_dev_x100=30
+                  elif [ "$variance" -ge 400 ]; then
+                    std_dev_x100=20
+                  elif [ "$variance" -ge 100 ]; then
+                    std_dev_x100=10
+                  else
+                    std_dev_x100=5
+                  fi
+                fi
+                
+                echo "   📊 [CALC] 标准差近似值: $std_dev_x100/100"
+                
+                # 计算不均匀度比率 (标准差/平均值)
+                local imbalance_x100=0
+                if [ "$mean_x100" -gt 0 ] && [ "$std_dev_x100" -gt 0 ]; then
+                  imbalance_x100=$((std_dev_x100 * 100 / mean_x100))
+                fi
+                local threshold_x100=$((THRESHOLD_X100))
+                
+                echo "   📊 不均匀度: $imbalance_x100/100 阈值: $threshold_x100/100"
+                echo "   ⚠️  [FALLBACK] 使用传统节点级检查（AZ分布异常时的回退机制）"
+                
+                # 比较不均匀度
+                echo "   🔍 [CHECK] 比较不均匀度与阈值..."
+                local needs_rebalance=0
+                if [ "$imbalance_x100" -gt "$threshold_x100" ]; then
+                  needs_rebalance=1
+                fi
+                echo "   📊 [CALC] 需要重新平衡: $needs_rebalance (1=是 0=否)"
+                
+                # 清理临时文件
+                echo "   🔧 [SUB-STEP] 清理临时文件..."
+                rm -rf "$temp_dir"
+                
+                if [ "$needs_rebalance" -eq 1 ]; then
+                  echo "   ❌ [RESULT] 分布不均匀，需要重新平衡（传统算法）"
+                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 需要重新平衡"
+                  return 0
+                else
+                  echo "   ✅ [RESULT] 分布相对均匀，无需重新平衡（传统算法）"
+                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 无需重新平衡"
+                  return 1
+                fi
+              }
+              
+              # 函数：执行重新平衡
+              perform_rebalance() {
+                local component="$1"
+                echo "🔄 [FUNC] perform_rebalance 开始执行组件重新平衡: $component"
+                
+                # 获取该组件的所有运行中的 Pod
+                echo "   🔧 [SUB-STEP] 获取组件 $component 的运行中 Pod 列表..."
+                local pods
+                pods=$(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
+                  --field-selector=status.phase=Running \
+                  -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+                
+                if [ -z "$pods" ]; then
+                  echo "   ⚠️  [RESULT] 没有找到需要重新平衡的 Pod"
+                  echo "   ✅ [FUNC] perform_rebalance 结束 - 无Pod可操作"
+                  return 0
+                fi
+                
+                # 将pods转换为数组
+                local temp_dir="/tmp/rebalance_$$"
+                mkdir -p "$temp_dir"
+                echo "$pods" | tr ' ' '\n' > "$temp_dir/pod_list"
+                local total_pods
+                total_pods=$(wc -l < "$temp_dir/pod_list")
+                echo "   📊 [INFO] 找到 $total_pods 个运行中的 Pod"
+                
+                # 计算需要删除的 Pod 数量
+                echo "   🔧 [SUB-STEP] 计算删除策略..."
+                local delete_count
+                {{- if eq .Values.rebalance.strategy "conservative" }}
+                delete_count=$((total_pods / 4))
+                echo "   📊 [STRATEGY] 使用保守策略: 删除 1/4"
+                {{- else if eq .Values.rebalance.strategy "aggressive" }}
+                delete_count=$((total_pods / 2))
+                echo "   📊 [STRATEGY] 使用激进策略: 删除 1/2"
+                {{- else }}
+                delete_count=$((total_pods / 3))
+                echo "   📊 [STRATEGY] 使用平衡策略: 删除 1/3"
+                {{- end }}
+                
+                echo "   📊 [CALC] 初始删除数量: $delete_count"
+                
+                # 确保至少删除 1 个，但不超过总数的 80%
+                echo "   🔍 [CHECK] 调整删除数量范围..."
+                if [ "$delete_count" -eq 0 ] && [ "$total_pods" -gt 1 ]; then
+                  delete_count=1
+                  echo "   📊 [ADJUST] 最少删除数量调整为: $delete_count"
+                elif [ "$delete_count" -gt $((total_pods * 4 / 5)) ]; then
+                  delete_count=$((total_pods * 4 / 5))
+                  echo "   📊 [ADJUST] 最大删除数量调整为: $delete_count"
+                fi
+                
+                echo "   📊 重新平衡策略: 删除 $delete_count 个 Pod 总共 $total_pods 个"
+                
+                # 随机选择要删除的 Pod
+                echo "   🔧 [SUB-STEP] 随机选择要删除的 Pod..."
+                # 使用BusyBox兼容的随机排序方法
+                awk 'BEGIN{srand()} {print rand(), $0}' "$temp_dir/pod_list" | sort -n | cut -d' ' -f2- > "$temp_dir/shuffled_pods"
+                
+                local deleted_count=0
+                echo "   🔧 [SUB-STEP] 开始删除 Pod..."
+                local i=1
+                while [ "$i" -le "$delete_count" ] && [ "$i" -le "$total_pods" ]; do
+                  echo "   🔍 [LOOP] 处理删除序号: $i"
+                  local pod_to_delete
+                  pod_to_delete=$(sed -n "${i}p" "$temp_dir/shuffled_pods")
+                  if [ -n "$pod_to_delete" ]; then
+                    echo "   🔧 [SUB-STEP] 获取 Pod $pod_to_delete 的节点和AZ信息..."
+                    local pod_node
+                    pod_node=$(kubectl get pod "$pod_to_delete" -n "$NAMESPACE" -o jsonpath='{.spec.nodeName}' 2>/dev/null)
+                    local pod_az
+                    pod_az=$(kubectl get node "$pod_node" -o jsonpath='{.metadata.labels.topology\.kubernetes.io/zone}' 2>/dev/null || echo "unknown")
+                    echo "   🗑️  删除 Pod: $pod_to_delete Node: $pod_node AZ: $pod_az"
+                    echo "   🔧 [COMMAND] 执行 kubectl delete..."
+                    kubectl delete pod "$pod_to_delete" -n "$NAMESPACE" --wait=false --ignore-not-found=true
+                    deleted_count=$((deleted_count + 1))
+                    echo "   ⏱️  [WAIT] 等待 2s 避免过快删除..."
+                    sleep 2
+                  else
+                    echo "   ⚠️  [SKIP] 跳过序号 $i，Pod名称为空"
+                  fi
+                  i=$((i + 1))
+                done
+                
+                echo "   ✅ [RESULT] 已删除 $deleted_count 个 Pod，等待重新调度..."
+                echo "   ✅ [FUNC] perform_rebalance 结束 - 删除了 $deleted_count 个Pod"
+                rm -rf "$temp_dir"
+                return $deleted_count
+              }
+              
+              # 主要检测和平衡逻辑
+              echo ""
+              echo "🔍 [STEP 3] 开始检测各组件的分布均匀性..."
+              
+              total_rebalanced=0
+              component_index=0
+              
+              for component in $COMPONENTS; do
+                if [ -n "$component" ]; then
+                  component_index=$((component_index + 1))
+                  echo ""
+                  echo "=========================================="
+                  echo "📋 [COMPONENT $component_index] 处理组件: $component"
+                  echo "=========================================="
+                  
+                  if calculate_imbalance "$component"; then
+                    echo "🔄 [ACTION] 组件 $component 需要重新平衡，开始执行..."
+                    perform_rebalance "$component"
+                    rebalanced_pods=$?
+                    total_rebalanced=$((total_rebalanced + rebalanced_pods))
+                    echo "📊 [SUMMARY] 组件 $component 重新平衡完成，删除了 $rebalanced_pods 个Pod"
+                    
+                    echo "   ⏱️  [WAIT] 等待 {{ .Values.rebalance.componentWaitTime | default 10 }}s 后处理下一个组件..."
+                    sleep {{ .Values.rebalance.componentWaitTime | default 10 }}
+                  else
+                    echo "   ✅ [SKIP] 组件 $component 分布均匀，跳过重新平衡"
+                  fi
+                fi
+              done
+              
+              echo ""
+              echo "=================================================="
+              echo "🎉 [STEP 4] Pod 分布检测任务完成！"
+              echo "📊 总共重新平衡的 Pod 数量: $total_rebalanced"
+              echo "时间: $(date)"
+              echo "=================================================="
+              
+              # 如果有重新平衡操作，等待一段时间后显示最终状态
+              if [ "$total_rebalanced" -gt 0 ]; then
+                echo ""
+                echo "⏳ [STEP 5] 等待 {{ .Values.rebalance.waitTime | default 30 }}s 后显示最终分布状态..."
+                sleep {{ .Values.rebalance.waitTime | default 30 }}
+                
+                echo ""
+                echo "📈 [STEP 6] 最终分布状态:"
+                component_index=0
+                for component in $COMPONENTS; do
+                  if [ -n "$component" ]; then
+                    component_index=$((component_index + 1))
+                    echo "🔍 [$component_index] 检查组件 $component 的最终状态..."
+                    local pod_count
+                    pod_count=$(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
+                      --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
+                    if [ "$pod_count" -gt 0 ]; then
+                      echo "组件 $component $pod_count 个 Pod:"
+                      kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
+                        --field-selector=status.phase=Running \
+                        -o custom-columns="POD:.metadata.name,NODE:.spec.nodeName" | head -10
+                      echo ""
+                    else
+                      echo "组件 $component: 无运行中的 Pod"
+                    fi
+                  fi
+                done
+              else
+                echo ""
+                echo "✅ [RESULT] 所有组件分布均匀，无需重新平衡操作"
+              fi
+              
+              echo ""
+              echo "=================================================="
+              echo "🏁 [COMPLETE] 重新平衡任务全部完成！"
+              echo "📊 最终统计: 重新平衡了 $total_rebalanced 个 Pod"
+              echo "结束时间: $(date)"
+              echo "=================================================="
+              
+              echo ""
+              echo "🔧 [DEBUG] 为便于查看日志，Pod 将保持运行 10 分钟后退出..."
+              echo "🔧 [DEBUG] 可以使用以下命令查看日志:"
+              echo "   kubectl logs -f POD_NAME -c rebalance"
+              echo "🔧 [DEBUG] 开始等待..."
+              
+              # 使用seq替代brace expansion
+              for i in $(seq 1 600); do
+                remainder=$((i % 60))
+                if [ "$remainder" -eq 0 ]; then
+                  minutes=$((i / 60))
+                  remaining=$((10 - minutes))
+                  echo "🔧 [DEBUG] 已等待 $minutes 分钟，还剩 $remaining 分钟..."
+                fi
+                sleep 1
+              done
+              
+              echo "🔧 [DEBUG] 等待时间结束，任务即将退出"
+              echo "🏁 [EXIT] Pod 任务完成，正常退出"
+            env:
+            - name: NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            {{- with .Values.rebalance.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.rebalance.resources }}
+            resources:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- with .Values.rebalance.containerSecurityContext }}
+            securityContext:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+{{- end }} 

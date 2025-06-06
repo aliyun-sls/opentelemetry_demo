@@ -1,0 +1,38 @@
+# Default values for chaosblade.
+
+# chaosblade-operator
+operator:
+  repository: o11y-demo-cn-heyuan-registry.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/demo
+  version: latest-chaosblade-operator
+  # image.pullPolicy: must be Always|IfNotPresent|Never
+  pullPolicy: Always
+  pullSecrets: acr-credential-secret-aggregation
+  # qps of kubernetes client
+  qps: 20
+  reconcileCount: 20
+
+blade:
+  repository: o11y-demo-cn-heyuan-registry.cn-heyuan.cr.aliyuncs.com/o11y-demo-cn-heyuan/demo
+  version: latest-chaosblade-tool
+  pullPolicy: Always
+  pullSecrets: acr-credential-secret-aggregation
+  downloadUrl: ""
+
+
+env:
+  logLevel: info
+
+webhook:
+  enable: true
+
+daemonset:
+  enable: true
+
+remove:
+  blade:
+    interval: 72h
+
+network:
+  host: false
+  dns:
+    policy: ClusterFirst
