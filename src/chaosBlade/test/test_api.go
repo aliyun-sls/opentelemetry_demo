@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
+	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"os"
 	"strings"
 	"time"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
-	cs "github.com/alibabacloud-go/cs-20151215/v5/client"
-	"github.com/alibabacloud-go/tea/tea"
 )
 
 func main() {
@@ -108,12 +108,12 @@ func main() {
 			nodesRequest.NodepoolId = tea.String(nodePoolId)
 		}
 		nodesResponse, err := csClient.DescribeClusterNodes(tea.String(clusterId), nodesRequest)
-		
+
 		var allInstanceIds []string
-		
+
 		if err != nil {
 			log.Printf("❌ 调用 DescribeClusterNodes 失败: %v", err)
-			
+
 			// 检查是否是网络连接问题
 			if strings.Contains(err.Error(), "connectex") || strings.Contains(err.Error(), "dial tcp") {
 				fmt.Println("🔍 检测到网络连接问题，可能是防火墙或代理设置导致")
@@ -121,7 +121,7 @@ func main() {
 				fmt.Println("   1. 检查防火墙设置，确保允许访问 443 端口")
 				fmt.Println("   2. 检查是否需要配置代理")
 				fmt.Println("   3. 联系网络管理员开放对阿里云API的访问")
-				
+
 				// 使用模拟数据继续测试
 				fmt.Println("\n🔄 使用模拟实例数据继续测试...")
 				allInstanceIds = []string{
@@ -140,7 +140,7 @@ func main() {
 					}
 				}
 			}
-			
+
 			if nodePoolId != "" {
 				fmt.Printf("✅ DescribeClusterNodes 调用成功，集群 %s 的节点池 %s 有 %d 个节点\n", clusterId, nodePoolId, nodeCount)
 			} else {
@@ -159,12 +159,12 @@ func main() {
 					RegionId:   tea.String(regionId),
 				}
 				filterResponse, err := ecsClient.DescribeInstanceStatus(filterRequest)
-				
+
 				var filteredIds []string
-				
+
 				if err != nil {
 					log.Printf("❌ 过滤实例失败: %v", err)
-					
+
 					// 如果使用的是模拟数据，继续使用模拟结果
 					if strings.Contains(allInstanceIds[0], "bp1234567890") {
 						fmt.Println("🔄 使用模拟过滤结果继续测试...")
@@ -183,27 +183,27 @@ func main() {
 					}
 					fmt.Printf("✅ 在可用区 %s 中过滤出 %d 个实例: %v\n", zoneId, filteredCount, filteredIds)
 				}
-				
+
 				allInstanceIds = filteredIds // 使用过滤后的实例列表
 			}
 
 			// 真实停机测试
 			if len(allInstanceIds) > 0 {
 				fmt.Println("\n=== 🚨 真实停机测试 ===")
-				
+
 				// 选择第一台实例进行停机测试
 				targetInstanceId := allInstanceIds[0]
-				
+
 				// 判断是否使用真实数据
 				isRealData := !strings.Contains(targetInstanceId, "bp1234567890")
-				
+
 				if !isRealData {
 					fmt.Printf("⚠️  检测到模拟数据，跳过真实停机操作\n")
 					fmt.Printf("💡 如果要进行真实停机测试，请确保网络连接正常\n")
 				} else {
 					fmt.Printf("🎯 选择实例进行真实停机测试: %s\n", targetInstanceId)
 					fmt.Printf("📅 停机时间: %s\n", time.Now().Format("2006-01-02 15:04:05"))
-					
+
 					// 真实调用 StopInstances API
 					fmt.Println("\n🔥 开始真实停机操作...")
 					stopRequest := &ecs.StopInstancesRequest{
@@ -211,7 +211,7 @@ func main() {
 						ForceStop:  tea.Bool(true),
 						RegionId:   tea.String(regionId),
 					}
-					
+
 					stopResponse, err := ecsClient.StopInstances(stopRequest)
 					if err != nil {
 						log.Printf("❌ 停机失败: %v", err)
@@ -224,35 +224,35 @@ func main() {
 						if zoneId != "" {
 							fmt.Printf("   - 可用区: %s\n", zoneId)
 						}
-						
+
 						if stopResponse.Body.RequestId != nil {
 							fmt.Printf("   - 请求ID: %s\n", *stopResponse.Body.RequestId)
 						}
-						
+
 						fmt.Printf("⏱️  实例停机中，通常需要30-60秒完成\n")
-						
+
 						// 等待几秒后检查实例状态
 						fmt.Println("\n⏳ 等待5秒后检查实例状态...")
 						time.Sleep(5 * time.Second)
-						
+
 						// 检查实例状态
 						checkRequest := &ecs.DescribeInstanceStatusRequest{
 							InstanceId: tea.StringSlice([]string{targetInstanceId}),
 							RegionId:   tea.String(regionId),
 						}
-						
+
 						checkResponse, err := ecsClient.DescribeInstanceStatus(checkRequest)
 						if err != nil {
 							log.Printf("❌ 检查实例状态失败: %v", err)
 						} else {
-							if checkResponse.Body.InstanceStatuses != nil && 
+							if checkResponse.Body.InstanceStatuses != nil &&
 								checkResponse.Body.InstanceStatuses.InstanceStatus != nil &&
 								len(checkResponse.Body.InstanceStatuses.InstanceStatus) > 0 {
-								
+
 								status := checkResponse.Body.InstanceStatuses.InstanceStatus[0]
 								if status.Status != nil {
 									fmt.Printf("📊 当前实例状态: %s\n", *status.Status)
-									
+
 									switch *status.Status {
 									case "Stopping":
 										fmt.Printf("🔄 实例正在停止中...\n")
@@ -266,12 +266,12 @@ func main() {
 								}
 							}
 						}
-						
+
 						fmt.Println("\n🎉 真实停机测试完成!")
 						fmt.Println("📝 注意事项:")
 						fmt.Println("   - 实例已被真实停止，不会自动重启")
 						fmt.Println("   - 如需重启，请手动在阿里云控制台操作")
-						fmt.Printf("   - 或运行: go run test/test_restart.go\n")
+						fmt.Printf("   - 或运行: go run test/test_region_node_batch_restart.go\n")
 					}
 				}
 			}
@@ -287,4 +287,4 @@ func main() {
 		fmt.Printf("   - ACK API endpoint: cs.%s.aliyuncs.com\n", regionId)
 		fmt.Printf("   - ECS API endpoint: ecs.%s.aliyuncs.com\n", regionId)
 	}
-} 
+}

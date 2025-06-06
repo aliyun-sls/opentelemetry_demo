@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
+	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
+	"github.com/alibabacloud-go/tea/tea"
 	"log"
 	"os"
 	"strings"
 	"time"
-	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
-	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
-	"github.com/alibabacloud-go/tea/tea"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 	// 要重启的实例列表 (从环境变量获取，用逗号分隔)
 	instancesEnv := os.Getenv("RESTART_INSTANCES")
 	var instancesToRestart []string
-	
+
 	if instancesEnv != "" {
 		// 如果环境变量有设置，解析实例列表
 		instancesToRestart = strings.Split(strings.TrimSpace(instancesEnv), ",")
@@ -41,7 +41,7 @@ func main() {
 		fmt.Println("   或单个实例: export RESTART_INSTANCES=\"i-bp1xxx\"")
 		fmt.Println("")
 		fmt.Println("🔍 正在检查是否有已停止的实例...")
-		
+
 		// 尝试通过可用区查找已停止的实例
 		if zoneId != "" {
 			foundInstances, err := findStoppedInstances(accessKeyId, accessKeySecret, regionId, zoneId)
@@ -100,8 +100,8 @@ func main() {
 	}
 
 	// 分析实例状态
-	var stoppedInstances []string    // 需要启动的实例（Stopped/Shutted）
-	var runningInstances []string    // 需要重启的实例（Running）
+	var stoppedInstances []string     // 需要启动的实例（Stopped/Shutted）
+	var runningInstances []string     // 需要重启的实例（Running）
 	var otherStatusInstances []string // 其他状态的实例
 
 	if statusResponse.Body.InstanceStatuses != nil && statusResponse.Body.InstanceStatuses.InstanceStatus != nil {
@@ -109,9 +109,9 @@ func main() {
 			if status.InstanceId != nil && status.Status != nil {
 				instanceId := *status.InstanceId
 				instanceStatus := *status.Status
-				
+
 				fmt.Printf("📊 实例 %s 状态: %s\n", instanceId, instanceStatus)
-				
+
 				switch instanceStatus {
 				case "Stopped", "Shutted": // 已停止状态，需要启动
 					stoppedInstances = append(stoppedInstances, instanceId)
@@ -155,11 +155,11 @@ func main() {
 			fmt.Printf("   - 实例列表: %v\n", stoppedInstances)
 			fmt.Printf("   - 地域: %s\n", regionId)
 			fmt.Printf("   - 操作类型: StartInstances (启动已停止的实例)\n")
-			
+
 			if startResponse.Body.RequestId != nil {
 				fmt.Printf("   - 请求ID: %s\n", *startResponse.Body.RequestId)
 			}
-			
+
 			fmt.Printf("⏱️  实例启动中，通常需要60-120秒完成\n")
 
 			// 等待并检查启动进度
@@ -168,12 +168,12 @@ func main() {
 
 			for i := 0; i < 6; i++ { // 检查6次，共约60秒
 				fmt.Printf("\n🔍 第 %d 次状态检查 (%s):\n", i+1, time.Now().Format("15:04:05"))
-				
+
 				checkRequest := &ecs.DescribeInstanceStatusRequest{
 					InstanceId: tea.StringSlice(stoppedInstances),
 					RegionId:   tea.String(regionId),
 				}
-				
+
 				checkResponse, err := ecsClient.DescribeInstanceStatus(checkRequest)
 				if err != nil {
 					log.Printf("❌ 检查状态失败: %v", err)
@@ -189,9 +189,9 @@ func main() {
 						if status.InstanceId != nil && status.Status != nil {
 							instanceId := *status.InstanceId
 							instanceStatus := *status.Status
-							
+
 							fmt.Printf("   📊 %s: %s\n", instanceId, instanceStatus)
-							
+
 							switch instanceStatus {
 							case "Running":
 								runningCount++
@@ -241,11 +241,11 @@ func main() {
 			fmt.Printf("   - 实例列表: %v\n", runningInstances)
 			fmt.Printf("   - 地域: %s\n", regionId)
 			fmt.Printf("   - 操作类型: RebootInstances (重启正在运行的实例)\n")
-			
+
 			if rebootResponse.Body.RequestId != nil {
 				fmt.Printf("   - 请求ID: %s\n", *rebootResponse.Body.RequestId)
 			}
-			
+
 			fmt.Printf("⏱️  实例重启中，通常需要60-120秒完成\n")
 		}
 	}
@@ -263,7 +263,7 @@ func main() {
 	fmt.Println("   - 检查应用服务是否正常运行")
 	fmt.Println("   - 验证集群节点是否重新加入")
 	fmt.Println("   - 确认相关业务功能正常")
-	
+
 	fmt.Println("\n=== 程序执行完成 ===")
 }
 
@@ -304,4 +304,4 @@ func findStoppedInstances(accessKeyId, accessKeySecret, regionId, zoneId string)
 	}
 
 	return stoppedInstances, nil
-} 
+}

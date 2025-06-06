@@ -91,4 +91,8 @@ var (
 	// 阿里云混沌工程实例 - 全局单例
 	AliyunRegionChaosInstance *AliyunRegionChaos
 	AliyunRegionChaosOnce     sync.Once
+
+	// 节点混沌工程实例 - 全局单例
+	AliyunNodeChaosInstance *AliyunNodeChaos
+	AliyunNodeChaosOnce     sync.Once
 )

@@ -16,6 +16,15 @@ func (node *NodeLoss) NodeNetLoss() {
 	fmt.Println("创建NodeNetLoss资源:", data)
 }
 
+// NodeAPILoss 基于阿里云 API 的节点故障注入
+func (node *NodeLoss) NodeAPILoss() {
+	AliyunNodeChaosOnce.Do(func() {
+		AliyunNodeChaosInstance = NewAliyunNodeChaos()
+	})
+
+	AliyunNodeChaosInstance.ExecuteChaos(node.flagdValue)
+}
+
 func (region *RegionLoss) RegionNetLoss() {
 	// 生成 yaml 文件
 	nodeNetLoss := region.RegionNetLossYaml()

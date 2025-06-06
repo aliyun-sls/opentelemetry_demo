@@ -21,6 +21,23 @@ func (node *NodeLoss) NodeLossFlagd() {
 	}
 }
 
+// NodeLossAPIFlagd 基于阿里云 API 的节点故障注入 flagd 监控
+func (node *NodeLoss) NodeLossAPIFlagd() {
+	// 获取feature flag值
+	node.flagdValue = FlagClient.Int(
+		context.Background(),
+		"NodeLoss",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 NodeLossAPIFlagd feature : %v,last flagd: %v", node.flagdValue, node.nodeLossLastConfig)
+
+	if node.flagdValue != node.nodeLossLastConfig {
+		node.NodeAPILoss()
+		node.nodeLossLastConfig = node.flagdValue
+	}
+}
+
 func (region *RegionLoss) RegionLossFlagd() {
 	// 获取feature flag值
 	region.flagdValue = FlagClient.Int(
