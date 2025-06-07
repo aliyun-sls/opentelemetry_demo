@@ -62,17 +62,20 @@ public class RecommendationFilter implements GatewayFilter {
 
 
     private Demo.ListRecommendationsResponse DoListRecommendations(Demo.ListRecommendationsRequest request) {
-        RecommendationServiceGrpc.RecommendationServiceBlockingStub recommendationServiceBlockingStub = RecommendationServiceGrpc.newBlockingStub(recommendationChannel);
+        RecommendationServiceGrpc.RecommendationServiceBlockingStub recommendationServiceBlockingStub = RecommendationServiceGrpc.newBlockingStub(recommendationChannel)
+                .withDeadlineAfter(10, TimeUnit.SECONDS); // 添加10秒超时 - 推荐算法可能较慢
         return recommendationServiceBlockingStub.listRecommendations(request);
     }
 
     private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
-        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品查询
         return productCatalogStub.getProduct(request);
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
-        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel);
+        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币转换
         return currencyServiceBlockingStub.convert(request);
     }
 

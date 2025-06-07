@@ -51,14 +51,15 @@ public class ListProductFilter implements GatewayFilter {
     }
 
 
-    private Demo.ListProductsResponse DoListProductCatalog(Demo.Empty request) {
-
-        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
+    private Demo.ListProductsResponse DoListProducts(Demo.Empty request) {
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品列表查询
         return productCatalogStub.listProducts(request);
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
-        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel);
+        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币转换
         return currencyServiceBlockingStub.convert(request);
     }
 
@@ -80,7 +81,7 @@ public class ListProductFilter implements GatewayFilter {
 
 
         return Mono.<List<Demo.Product>>create(sink-> {
-            Demo.ListProductsResponse listProductsResponse = DoListProductCatalog(Demo.Empty.newBuilder().build());
+            Demo.ListProductsResponse listProductsResponse = DoListProducts(Demo.Empty.newBuilder().build());
             sink.success(listProductsResponse.getProductsList());
         }).flatMap(products -> {
 

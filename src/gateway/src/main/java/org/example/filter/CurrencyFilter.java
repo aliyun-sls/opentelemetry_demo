@@ -40,7 +40,8 @@ public class CurrencyFilter implements GatewayFilter {
     }
 
     private Demo.GetSupportedCurrenciesResponse DoGetSupportedCurrencies(Demo.Empty request) {
-        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel);
+        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 获取支持的货币列表
         return currencyServiceBlockingStub.getSupportedCurrencies(request);
     }
 

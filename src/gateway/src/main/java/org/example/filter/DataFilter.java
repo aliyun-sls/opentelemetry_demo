@@ -40,7 +40,8 @@ public class DataFilter implements GatewayFilter {
     }
 
     private Demo.AdResponse DoGetAds(Demo.AdRequest request) {
-        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(dataChannel);
+        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(dataChannel)
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 广告查询
         return adServiceStub.getAds(request);
     }
 

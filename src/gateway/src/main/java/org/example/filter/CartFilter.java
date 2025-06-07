@@ -70,27 +70,32 @@ public class CartFilter implements GatewayFilter {
 
 
     private Demo.Cart DoGetCart(Demo.GetCartRequest request) {
-        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel);
+        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel)
+                .withDeadlineAfter(8, TimeUnit.SECONDS); // 添加8秒超时 - cart操作中等复杂度
         return cartServiceStub.getCart(request);
     }
 
     private Demo.Empty DoAddCartItem(Demo.AddItemRequest request) {
-        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel);
+        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel)
+                .withDeadlineAfter(8, TimeUnit.SECONDS); // 添加8秒超时
         return cartServiceStub.addItem(request);
     }
 
     private Demo.Empty DoEmptyCart(Demo.EmptyCartRequest request) {
-        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel);
+        CartServiceGrpc.CartServiceBlockingStub cartServiceStub = CartServiceGrpc.newBlockingStub(cartChannel)
+                .withDeadlineAfter(8, TimeUnit.SECONDS); // 添加8秒超时
         return cartServiceStub.emptyCart(request);
     }
 
     private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
-        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品查询
         return productCatalogStub.getProduct(request);
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
-        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel);
+        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币转换简单快速
         return currencyServiceBlockingStub.convert(request);
     }
 
