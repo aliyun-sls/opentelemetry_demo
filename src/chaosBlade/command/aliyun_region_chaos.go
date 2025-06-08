@@ -205,35 +205,98 @@ func (chaos *AliyunRegionChaos) getClusterInstances() ([]string, error) {
 		return nil, fmt.Errorf("CLUSTER_ID 环境变量未设置")
 	}
 
-	// 1. 调用 DescribeClusterNodes 获取集群节点
-	request := &cs.DescribeClusterNodesRequest{}
-	if nodePoolId != "" {
-		request.NodepoolId = tea.String(nodePoolId)
-	}
-
-	response, err := CsClient.DescribeClusterNodes(tea.String(clusterId), request)
+	// 1. 调用 DescribeClusterNodes 获取集群节点（支持分页）
+	log.Printf("🔍 [getClusterInstances] 开始获取集群实例列表（支持分页查询）")
+	allInstanceIds, err := chaos.getAllClusterNodesWithPagination(clusterId, nodePoolId)
 	if err != nil {
-		return nil, fmt.Errorf("调用 DescribeClusterNodes 失败: %v", err)
+		return nil, fmt.Errorf("获取集群节点失败: %v", err)
 	}
 
-	var allInstanceIds []string
-	if response.Body.Nodes != nil {
-		for _, node := range response.Body.Nodes {
-			if node.InstanceId != nil {
-				allInstanceIds = append(allInstanceIds, *node.InstanceId)
-			}
-		}
-	}
+	log.Printf("✅ [getClusterInstances] 获取到 %d 个集群实例", len(allInstanceIds))
+	log.Printf("📋 [getClusterInstances] 原始实例列表: %v", allInstanceIds)
 
 	if len(allInstanceIds) == 0 {
+		log.Printf("⚠️  [getClusterInstances] 未找到任何实例")
 		return []string{}, nil
 	}
 
 	// 2. 如果指定了 ZONE_ID，使用 DescribeInstanceStatus 过滤特定区域的实例
 	if zoneId != "" {
-		return chaos.filterInstancesByZone(allInstanceIds, zoneId)
+		log.Printf("🔍 [getClusterInstances] 按可用区 %s 过滤实例", zoneId)
+		filteredIds, err := chaos.filterInstancesByZone(allInstanceIds, zoneId)
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("✅ [getClusterInstances] 可用区过滤后剩余 %d 个实例", len(filteredIds))
+		log.Printf("📋 [getClusterInstances] 可用区过滤后实例列表: %v", filteredIds)
+		return filteredIds, nil
 	}
 
+	return allInstanceIds, nil
+}
+
+// getAllClusterNodesWithPagination 获取集群所有节点，支持分页
+func (chaos *AliyunRegionChaos) getAllClusterNodesWithPagination(clusterId, nodePoolId string) ([]string, error) {
+	var allInstanceIds []string
+	pageNumber := 1
+	pageSize := 10 // 设置每页大小
+
+	log.Printf("🔍 [getAllClusterNodesWithPagination] 开始分页查询集群节点")
+	if nodePoolId != "" {
+		log.Printf("🎯 [getAllClusterNodesWithPagination] 限定节点池: %s", nodePoolId)
+	} else {
+		log.Printf("🌍 [getAllClusterNodesWithPagination] 查询整个集群节点")
+	}
+
+	for {
+		request := &cs.DescribeClusterNodesRequest{
+			PageNumber: tea.String(fmt.Sprintf("%d", pageNumber)),
+			PageSize:   tea.String(fmt.Sprintf("%d", pageSize)),
+		}
+		
+		if nodePoolId != "" {
+			request.NodepoolId = tea.String(nodePoolId)
+		}
+
+		log.Printf("📄 [getAllClusterNodesWithPagination] 查询第 %d 页（每页 %d 条）", pageNumber, pageSize)
+		
+		response, err := CsClient.DescribeClusterNodes(tea.String(clusterId), request)
+		if err != nil {
+			return nil, fmt.Errorf("查询第 %d 页失败: %v", pageNumber, err)
+		}
+
+		// 处理当前页的数据
+		currentPageNodes := 0
+		if response.Body.Nodes != nil {
+			currentPageNodes = len(response.Body.Nodes)
+			for _, node := range response.Body.Nodes {
+				if node.InstanceId != nil {
+					allInstanceIds = append(allInstanceIds, *node.InstanceId)
+				}
+			}
+		}
+
+		log.Printf("   ✅ 第 %d 页返回 %d 个节点", pageNumber, currentPageNodes)
+
+		// 检查分页信息
+		if response.Body.Page != nil {
+			if response.Body.Page.TotalCount != nil {
+				log.Printf("   📊 总记录数: %d", *response.Body.Page.TotalCount)
+			}
+		}
+
+		// 判断是否还有下一页
+		if currentPageNodes < pageSize {
+			log.Printf("   ✅ 已到最后一页")
+			break
+		}
+
+		pageNumber++
+	}
+
+	log.Printf("🎉 [getAllClusterNodesWithPagination] 分页查询完成")
+	log.Printf("📊 [getAllClusterNodesWithPagination] 共获取 %d 个实例", len(allInstanceIds))
+	log.Printf("📋 [getAllClusterNodesWithPagination] 实例列表: %v", allInstanceIds)
 	return allInstanceIds, nil
 }
 
@@ -247,6 +310,11 @@ func (chaos *AliyunRegionChaos) filterInstancesByZone(instanceIds []string, zone
 	if regionId == "" {
 		regionId = "cn-heyuan" // 默认值
 	}
+
+	log.Printf("🔍 [filterInstancesByZone] 开始按可用区过滤实例:")
+	log.Printf("   - 输入实例数: %d", len(instanceIds))
+	log.Printf("   - 目标可用区: %s", zoneId)
+	log.Printf("   - 输入实例列表: %v", instanceIds)
 
 	// 调用 DescribeInstanceStatus
 	request := &ecs.DescribeInstanceStatusRequest{
@@ -268,6 +336,11 @@ func (chaos *AliyunRegionChaos) filterInstancesByZone(instanceIds []string, zone
 			}
 		}
 	}
+
+	log.Printf("✅ [filterInstancesByZone] 可用区过滤完成:")
+	log.Printf("   - 输出实例数: %d", len(filteredIds))
+	log.Printf("   - 过滤掉的实例数: %d", len(instanceIds)-len(filteredIds))
+	log.Printf("   - 输出实例列表: %v", filteredIds)
 
 	return filteredIds, nil
 }
@@ -633,29 +706,95 @@ func (chaos *AliyunNodeChaos) getCurrentZoneInstances() ([]string, error) {
 		return nil, fmt.Errorf("ZONE_ID 环境变量未设置")
 	}
 
-	// 1. 调用 DescribeClusterNodes 获取集群节点
-	request := &cs.DescribeClusterNodesRequest{}
-
-	response, err := CsClient.DescribeClusterNodes(tea.String(clusterId), request)
+	// 1. 调用 DescribeClusterNodes 获取集群节点（支持分页）
+	log.Printf("🔍 [getCurrentZoneInstances] 开始获取当前可用区实例列表（支持分页查询）")
+	allInstanceIds, err := chaos.getAllClusterNodesWithPagination(clusterId, "")
 	if err != nil {
-		return nil, fmt.Errorf("调用 DescribeClusterNodes 失败: %v", err)
+		return nil, fmt.Errorf("获取集群节点失败: %v", err)
 	}
 
-	var allInstanceIds []string
-	if response.Body.Nodes != nil {
-		for _, node := range response.Body.Nodes {
-			if node.InstanceId != nil {
-				allInstanceIds = append(allInstanceIds, *node.InstanceId)
-			}
-		}
-	}
+	log.Printf("✅ [getCurrentZoneInstances] 获取到 %d 个集群实例", len(allInstanceIds))
+	log.Printf("📋 [getCurrentZoneInstances] 原始实例列表: %v", allInstanceIds)
 
 	if len(allInstanceIds) == 0 {
+		log.Printf("⚠️  [getCurrentZoneInstances] 未找到任何实例")
 		return []string{}, nil
 	}
 
 	// 2. 使用 DescribeInstanceStatus 过滤特定区域的实例
-	return chaos.filterInstancesByZone(allInstanceIds, zoneId)
+	log.Printf("🔍 [getCurrentZoneInstances] 按可用区 %s 过滤实例", zoneId)
+	filteredIds, err := chaos.filterInstancesByZone(allInstanceIds, zoneId)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("✅ [getCurrentZoneInstances] 可用区过滤后剩余 %d 个实例", len(filteredIds))
+	log.Printf("📋 [getCurrentZoneInstances] 可用区过滤后实例列表: %v", filteredIds)
+	return filteredIds, nil
+}
+
+// getAllClusterNodesWithPagination 获取集群所有节点，支持分页（NodeChaos版本）
+func (chaos *AliyunNodeChaos) getAllClusterNodesWithPagination(clusterId, nodePoolId string) ([]string, error) {
+	var allInstanceIds []string
+	pageNumber := 1
+	pageSize := 10 // 设置每页大小
+
+	log.Printf("🔍 [NodeChaos getAllClusterNodesWithPagination] 开始分页查询集群节点")
+	if nodePoolId != "" {
+		log.Printf("🎯 [NodeChaos getAllClusterNodesWithPagination] 限定节点池: %s", nodePoolId)
+	} else {
+		log.Printf("🌍 [NodeChaos getAllClusterNodesWithPagination] 查询整个集群节点")
+	}
+
+	for {
+		request := &cs.DescribeClusterNodesRequest{
+			PageNumber: tea.String(fmt.Sprintf("%d", pageNumber)),
+			PageSize:   tea.String(fmt.Sprintf("%d", pageSize)),
+		}
+		
+		if nodePoolId != "" {
+			request.NodepoolId = tea.String(nodePoolId)
+		}
+
+		log.Printf("📄 [NodeChaos getAllClusterNodesWithPagination] 查询第 %d 页（每页 %d 条）", pageNumber, pageSize)
+		
+		response, err := CsClient.DescribeClusterNodes(tea.String(clusterId), request)
+		if err != nil {
+			return nil, fmt.Errorf("查询第 %d 页失败: %v", pageNumber, err)
+		}
+
+		// 处理当前页的数据
+		currentPageNodes := 0
+		if response.Body.Nodes != nil {
+			currentPageNodes = len(response.Body.Nodes)
+			for _, node := range response.Body.Nodes {
+				if node.InstanceId != nil {
+					allInstanceIds = append(allInstanceIds, *node.InstanceId)
+				}
+			}
+		}
+
+		log.Printf("   ✅ 第 %d 页返回 %d 个节点", pageNumber, currentPageNodes)
+
+		// 检查分页信息
+		if response.Body.Page != nil {
+			if response.Body.Page.TotalCount != nil {
+				log.Printf("   📊 总记录数: %d", *response.Body.Page.TotalCount)
+			}
+		}
+
+		// 判断是否还有下一页
+		if currentPageNodes < pageSize {
+			log.Printf("   ✅ 已到最后一页")
+			break
+		}
+
+		pageNumber++
+	}
+
+	log.Printf("🎉 [NodeChaos getAllClusterNodesWithPagination] 分页查询完成")
+	log.Printf("📊 [NodeChaos getAllClusterNodesWithPagination] 共获取 %d 个实例", len(allInstanceIds))
+	log.Printf("📋 [NodeChaos getAllClusterNodesWithPagination] 实例列表: %v", allInstanceIds)
+	return allInstanceIds, nil
 }
 
 // selectRandomInstance 从实例列表中随机选择一台机器
@@ -694,6 +833,11 @@ func (chaos *AliyunNodeChaos) filterInstancesByZone(instanceIds []string, zoneId
 		regionId = "cn-heyuan" // 默认值
 	}
 
+	log.Printf("🔍 [NodeChaos filterInstancesByZone] 开始按可用区过滤实例:")
+	log.Printf("   - 输入实例数: %d", len(instanceIds))
+	log.Printf("   - 目标可用区: %s", zoneId)
+	log.Printf("   - 输入实例列表: %v", instanceIds)
+
 	// 调用 DescribeInstanceStatus
 	request := &ecs.DescribeInstanceStatusRequest{
 		InstanceId: tea.StringSlice(instanceIds),
@@ -714,6 +858,11 @@ func (chaos *AliyunNodeChaos) filterInstancesByZone(instanceIds []string, zoneId
 			}
 		}
 	}
+
+	log.Printf("✅ [NodeChaos filterInstancesByZone] 可用区过滤完成:")
+	log.Printf("   - 输出实例数: %d", len(filteredIds))
+	log.Printf("   - 过滤掉的实例数: %d", len(instanceIds)-len(filteredIds))
+	log.Printf("   - 输出实例列表: %v", filteredIds)
 
 	return filteredIds, nil
 }

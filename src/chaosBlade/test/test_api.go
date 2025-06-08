@@ -7,19 +7,19 @@ import (
 	ecs "github.com/alibabacloud-go/ecs-20140526/v4/client"
 	"github.com/alibabacloud-go/tea/tea"
 	"log"
-	"os"
+
 	"strings"
 	"time"
 )
 
 func main() {
+	// 硬编码配置（用于测试）
 	// 从环境变量获取配置
 	accessKeyId := os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")
 	accessKeySecret := os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
 	regionId := os.Getenv("ALIBABA_CLOUD_REGION_ID")
-	clusterId := os.Getenv("CLUSTER_ID")
-	nodePoolId := os.Getenv("NODEPOOL_ID")
-	zoneId := os.Getenv("ZONE_ID")
+	clusterId := os.Getenv("ALIBABA_CLOUD_CLUSTER_ID")
+	zoneId := os.Getenv("ALIBABA_CLOUD_ZONE_ID")
 
 	// 检查必需的环境变量
 	if accessKeyId == "" || accessKeySecret == "" || regionId == "" {
@@ -102,17 +102,12 @@ func main() {
 	} else {
 		fmt.Println("✅ ACK 客户端创建成功")
 
-		// 测试 DescribeClusterNodes (指定节点池)
-		nodesRequest := &cs.DescribeClusterNodesRequest{}
-		if nodePoolId != "" {
-			nodesRequest.NodepoolId = tea.String(nodePoolId)
-		}
-		nodesResponse, err := csClient.DescribeClusterNodes(tea.String(clusterId), nodesRequest)
-
-		var allInstanceIds []string
+		// 测试 DescribeClusterNodes (指定节点池，支持分页)
+		fmt.Println("🔍 开始分页查询集群节点...")
+		allInstanceIds, err := getAllClusterNodesWithPagination(csClient, clusterId, nodePoolId)
 
 		if err != nil {
-			log.Printf("❌ 调用 DescribeClusterNodes 失败: %v", err)
+			log.Printf("❌ 分页查询集群节点失败: %v", err)
 
 			// 检查是否是网络连接问题
 			if strings.Contains(err.Error(), "connectex") || strings.Contains(err.Error(), "dial tcp") {
@@ -131,20 +126,10 @@ func main() {
 				fmt.Printf("📝 [模拟] 集群实例 ID 列表: %v\n", allInstanceIds)
 			}
 		} else {
-			nodeCount := 0
-			if nodesResponse.Body.Nodes != nil {
-				nodeCount = len(nodesResponse.Body.Nodes)
-				for _, node := range nodesResponse.Body.Nodes {
-					if node.InstanceId != nil {
-						allInstanceIds = append(allInstanceIds, *node.InstanceId)
-					}
-				}
-			}
-
 			if nodePoolId != "" {
-				fmt.Printf("✅ DescribeClusterNodes 调用成功，集群 %s 的节点池 %s 有 %d 个节点\n", clusterId, nodePoolId, nodeCount)
+				fmt.Printf("✅ 分页查询成功，集群 %s 的节点池 %s 有 %d 个节点\n", clusterId, nodePoolId, len(allInstanceIds))
 			} else {
-				fmt.Printf("✅ DescribeClusterNodes 调用成功，集群 %s 有 %d 个节点\n", clusterId, nodeCount)
+				fmt.Printf("✅ 分页查询成功，集群 %s 有 %d 个节点\n", clusterId, len(allInstanceIds))
 			}
 			fmt.Printf("集群实例 ID 列表: %v\n", allInstanceIds)
 		}
@@ -287,4 +272,67 @@ func main() {
 		fmt.Printf("   - ACK API endpoint: cs.%s.aliyuncs.com\n", regionId)
 		fmt.Printf("   - ECS API endpoint: ecs.%s.aliyuncs.com\n", regionId)
 	}
+}
+
+// getAllClusterNodesWithPagination 获取集群所有节点，支持分页（与主代码逻辑完全一致）
+func getAllClusterNodesWithPagination(csClient *cs.Client, clusterId, nodePoolId string) ([]string, error) {
+	var allInstanceIds []string
+	pageNumber := 1
+	pageSize := 10 // 设置每页大小
+
+	fmt.Printf("🔍 [getAllClusterNodesWithPagination] 开始分页查询集群节点\n")
+	if nodePoolId != "" {
+		fmt.Printf("🎯 [getAllClusterNodesWithPagination] 限定节点池: %s\n", nodePoolId)
+	} else {
+		fmt.Printf("🌍 [getAllClusterNodesWithPagination] 查询整个集群节点\n")
+	}
+
+	for {
+		request := &cs.DescribeClusterNodesRequest{
+			PageNumber: tea.String(fmt.Sprintf("%d", pageNumber)),
+			PageSize:   tea.String(fmt.Sprintf("%d", pageSize)),
+		}
+		
+		if nodePoolId != "" {
+			request.NodepoolId = tea.String(nodePoolId)
+		}
+
+		fmt.Printf("📄 [getAllClusterNodesWithPagination] 查询第 %d 页（每页 %d 条）\n", pageNumber, pageSize)
+		
+		response, err := csClient.DescribeClusterNodes(tea.String(clusterId), request)
+		if err != nil {
+			return nil, fmt.Errorf("查询第 %d 页失败: %v", pageNumber, err)
+		}
+
+		// 处理当前页的数据
+		currentPageNodes := 0
+		if response.Body.Nodes != nil {
+			currentPageNodes = len(response.Body.Nodes)
+			for _, node := range response.Body.Nodes {
+				if node.InstanceId != nil {
+					allInstanceIds = append(allInstanceIds, *node.InstanceId)
+				}
+			}
+		}
+
+		fmt.Printf("   ✅ 第 %d 页返回 %d 个节点\n", pageNumber, currentPageNodes)
+
+		// 检查分页信息
+		if response.Body.Page != nil {
+			if response.Body.Page.TotalCount != nil {
+				fmt.Printf("   📊 总记录数: %d\n", *response.Body.Page.TotalCount)
+			}
+		}
+
+		// 判断是否还有下一页
+		if currentPageNodes < pageSize {
+			fmt.Printf("   ✅ 已到最后一页\n")
+			break
+		}
+
+		pageNumber++
+	}
+
+	fmt.Printf("🎉 [getAllClusterNodesWithPagination] 分页查询完成，共获取 %d 个实例\n", len(allInstanceIds))
+	return allInstanceIds, nil
 }

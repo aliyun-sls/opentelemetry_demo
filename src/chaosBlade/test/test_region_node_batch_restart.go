@@ -16,7 +16,8 @@ func main() {
 	accessKeyId := os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_ID")
 	accessKeySecret := os.Getenv("ALIBABA_CLOUD_ACCESS_KEY_SECRET")
 	regionId := os.Getenv("ALIBABA_CLOUD_REGION_ID")
-	zoneId := os.Getenv("ZONE_ID")
+	clusterId := os.Getenv("ALIBABA_CLOUD_CLUSTER_ID")
+	zoneId := os.Getenv("ALIBABA_CLOUD_ZONE_ID")
 
 	// 检查必需的环境变量
 	if accessKeyId == "" || accessKeySecret == "" || regionId == "" {
