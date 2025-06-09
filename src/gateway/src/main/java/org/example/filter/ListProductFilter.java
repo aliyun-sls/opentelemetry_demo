@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
@@ -125,11 +127,13 @@ public class ListProductFilter implements GatewayFilter {
         }
 
         MultiValueMap<String, String> queryParams = exchange.getRequest().getQueryParams();
-        String currencyCode = queryParams.getFirst("currencyCode");
-        if (currencyCode == null || currencyCode.isEmpty()) {
-            currencyCode = "USD";
+        var ref = new Object() {
+            String currencyCode = queryParams.getFirst("currencyCode");
+        };
+        if (ref.currencyCode == null || ref.currencyCode.isEmpty()) {
+            ref.currencyCode = "USD";
         }
-        String finalCurrencyCode = currencyCode;
+        String finalCurrencyCode = ref.currencyCode;
 
 
         return Mono.<List<Demo.Product>>create(sink-> {
@@ -142,10 +146,10 @@ public class ListProductFilter implements GatewayFilter {
                 for (Demo.Product product : products) {
                     JsonObject productJson = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
 
-                    if (currencyCode != null && !currencyCode.isEmpty()) {
+                    if (ref.currencyCode != null && !ref.currencyCode.isEmpty()) {
                         Demo.CurrencyConversionRequest.Builder request = Demo.CurrencyConversionRequest.newBuilder();
                         request.setFrom(product.getPriceUsd());
-                        request.setToCode(currencyCode);
+                        request.setToCode(ref.currencyCode);
                         Demo.Money money = DoCurrencyConvert(request.build());
                         JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
                         productJson.add("priceUsd", moneyJson);
