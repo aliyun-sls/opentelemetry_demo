@@ -94,12 +94,16 @@ func _main(args []*string) (_err error) {
 		return _err
 	}
 	DBInstanceId := os.Getenv("MYSQL_HOST")
+	fmt.Printf("[DEBUG] MYSQL_HOST-DBInstanceId: %s\n", DBInstanceId)
 	DBInstanceId = strings.Split(DBInstanceId, ".")[0]
-	fmt.Println("DBInstanceId:", DBInstanceId)
+	fmt.Printf("[DEBUG] Split - DBInstanceId: %s\n", DBInstanceId)
+
 	params := DescribeDBInstanceHAConfig()
 	// query params
 	queries := map[string]interface{}{}
 	queries["DBInstanceId"] = tea.String(DBInstanceId)
+	fmt.Printf("[DEBUG] DescribeDBInstanceHAConfig Request: %v\n", queries)
+
 	// runtime options
 	runtime := &util.RuntimeOptions{}
 	request := &openapi.OpenApiRequest{
@@ -111,6 +115,8 @@ func _main(args []*string) (_err error) {
 	if _err != nil {
 		return _err
 	}
+
+	fmt.Printf("[DEBUG] DescribeDBInstanceHAConfig Response: %v\n", resp)
 
 	// 提取Slave的NodeId
 	var body ResponseBody
@@ -132,6 +138,8 @@ func _main(args []*string) (_err error) {
 	// runtime options
 	queries["DBInstanceId"] = tea.String(DBInstanceId)
 	queries["NodeId"] = tea.String(nodeid)
+	fmt.Printf("[DEBUG] SwitchDBInstanceHA Request: %v\n", queries)
+
 	runtime = &util.RuntimeOptions{}
 	request = &openapi.OpenApiRequest{
 		Query: openapiutil.Query(queries),
@@ -142,6 +150,8 @@ func _main(args []*string) (_err error) {
 	if _err != nil {
 		return _err
 	}
+
+	fmt.Printf("[DEBUG] SwitchDBInstanceHA Response: %v\n", resp)
 
 	console.Log(util.ToJSONString(resp))
 	return _err
