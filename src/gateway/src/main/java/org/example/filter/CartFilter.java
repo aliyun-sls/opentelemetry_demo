@@ -330,10 +330,38 @@ public class CartFilter implements GatewayFilter {
                 dataBuffer.read(bytes);
                 DataBufferUtils.release(dataBuffer);
                 String request = new String(bytes, StandardCharsets.UTF_8);
+                
+                // 打印原始请求内容
+                log.info("Cart POST raw request: {}", request);
+                
                 JsonObject requestJson = new Gson().fromJson(request, JsonObject.class);
+                
+                // 打印解析后的JSON对象
+                log.info("Cart POST parsed JSON: {}", requestJson);
+                
+                // 添加空值检查，避免NullPointerException
+                if (!requestJson.has("userId") || requestJson.get("userId").isJsonNull()) {
+                    log.error("Missing or null userId in request: {}", requestJson);
+                    exchange.getResponse().setStatusCode(HttpStatus.OK);
+                    return exchange.getResponse().setComplete();
+                }
+                
+                if (!requestJson.has("productId") || requestJson.get("productId").isJsonNull()) {
+                    log.error("Missing or null productId in request: {}", requestJson);
+                    exchange.getResponse().setStatusCode(HttpStatus.OK);
+                    return exchange.getResponse().setComplete();
+                }
+                
+                if (!requestJson.has("quantity") || requestJson.get("quantity").isJsonNull()) {
+                    log.error("Missing or null quantity in request: {}", requestJson);
+                    exchange.getResponse().setStatusCode(HttpStatus.OK);
+                    return exchange.getResponse().setComplete();
+                }
+                
                 String userId = requestJson.get("userId").getAsString();
                 String productId = requestJson.get("productId").getAsString();
                 int quantity = requestJson.get("quantity").getAsInt();
+                
                 log.info("handlePostRequest userId: {} productId: {} quantity: {}", userId, productId, quantity);
                 Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
                 builder.setUserId(userId);
