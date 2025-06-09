@@ -2,8 +2,6 @@ package org.example.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -15,9 +13,11 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 import oteldemo.Demo;
+import oteldemo.CurrencyServiceGrpc;
+import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -29,34 +29,63 @@ public class CurrencyFilter implements GatewayFilter {
     private final ManagedChannel currencyChannel;
 
     public CurrencyFilter(Config config) {
-
-        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
+        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .build();
     }
 
-    private Demo.GetSupportedCurrenciesResponse DoGetSupportedCurrencies(Demo.Empty request) {
-        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel);
-        return currencyServiceBlockingStub.getSupportedCurrencies(request);
+    private List<Demo.GetSupportedCurrenciesResponse> DoGetSupportedCurrencies() {
+        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币服务
+        
+        try {
+            List<Demo.GetSupportedCurrenciesResponse> currenciesList = new ArrayList<>();
+            currenciesList.add(currencyServiceBlockingStub.getSupportedCurrencies(Demo.Empty.newBuilder().build()));
+            return currenciesList;
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error getting supported currencies, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    List<Demo.GetSupportedCurrenciesResponse> currenciesList = new ArrayList<>();
+                    currenciesList.add(currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS)
+                            .getSupportedCurrencies(Demo.Empty.newBuilder().build()));
+                    return currenciesList;
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw new RuntimeException(retryEx);
+                }
+            }
+            throw e;
+        }
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
-
         return Mono.<String>create(sink -> {
             try {
-                Demo.Empty.Builder builder = Demo.Empty.newBuilder();
-                Demo.GetSupportedCurrenciesResponse currencyCodes = DoGetSupportedCurrencies(builder.build());
-                List<String> currencyList = currencyCodes.getCurrencyCodesList();
-                String result = "[" + currencyList.stream().map(code -> "\"" + code + "\"").collect(Collectors.joining(",")) + "]";                sink.success(result);
+                List<Demo.GetSupportedCurrenciesResponse> currencyCodes = DoGetSupportedCurrencies();
+                List<String> currencyList = currencyCodes.stream()
+                        .flatMap(response -> response.getCurrencyCodesList().stream())
+                        .collect(Collectors.toList());
+                String result = "[" + currencyList.stream().map(code -> "\"" + code + "\"").collect(Collectors.joining(",")) + "]";
+                sink.success(result);
             } catch (Exception e) {
                 log.error("Failed Currency", e);
-                sink.error(e);
+                sink.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -66,7 +95,7 @@ public class CurrencyFilter implements GatewayFilter {
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
                 log.error("Failed Currency", e);
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());

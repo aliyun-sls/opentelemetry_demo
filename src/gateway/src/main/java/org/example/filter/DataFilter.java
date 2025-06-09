@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -27,21 +26,45 @@ import java.util.concurrent.TimeUnit;
 public class DataFilter implements GatewayFilter {
     private static final Logger log = LoggerFactory.getLogger(DataFilter.class);
     public static ObjectMapper objectMapper = new ObjectMapper();
-    private final ManagedChannel dataChannel;
+    private final ManagedChannel channel;
 
     public DataFilter(Config config) {
-        dataChannel = ManagedChannelBuilder.forTarget(config.dataAddr).usePlaintext() // 明文通信（仅限开发环境）
+        channel = ManagedChannelBuilder.forTarget(config.dataAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .build();
     }
 
     private Demo.AdResponse DoGetAds(Demo.AdRequest request) {
-        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(dataChannel);
-        return adServiceStub.getAds(request);
+        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(channel)
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 广告查询
+                
+        try {
+            return adServiceStub.getAds(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error getting ads, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return adServiceStub.withDeadlineAfter(10, TimeUnit.SECONDS).getAds(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw new RuntimeException(retryEx);
+                }
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -73,7 +96,7 @@ public class DataFilter implements GatewayFilter {
                 sink.success(json);
             } catch (Exception e) {
                 log.error("Failed Data", e);
-                sink.error(e);
+                sink.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -83,7 +106,7 @@ public class DataFilter implements GatewayFilter {
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
                 log.error("Failed Data", e);
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());

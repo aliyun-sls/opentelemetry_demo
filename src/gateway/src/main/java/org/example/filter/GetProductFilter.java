@@ -15,7 +15,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.PathContainer;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
@@ -24,7 +23,6 @@ import oteldemo.Demo;
 import oteldemo.ProductCatalogServiceGrpc;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -37,42 +35,80 @@ public class GetProductFilter implements GatewayFilter {
     private ManagedChannel currencyChannel;
 
     public GetProductFilter(Config config) {
-        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
+        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .build();
 
-
-        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
+        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .build();
     }
 
 
     private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
-//        String json = "{ \"id\": \"OLJCESPC7Z\", \"name\": \"National Park Foundation Explorascope\", \"description\": \"The National Park Foundation’s (NPF) Explorascope 60AZ is a manual alt-azimuth, refractor telescope perfect for celestial viewing on the go. The NPF Explorascope 60 can view the planets, moon, star clusters and brighter deep sky objects like the Orion Nebula and Andromeda Galaxy.\", \"picture\": \"NationalParkFoundationExplorascope.jpg\", \"priceUsd\": { \"currencyCode\": \"USD\", \"units\": 101, \"nanos\": 960000000 }, \"categories\": [ \"telescopes\" ] }";
-//
-//        try {
-//            Demo.Product.Builder builder = Demo.Product.newBuilder();
-//            JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
-//            return builder.build();
-//        } catch (InvalidProtocolBufferException e) {
-//            throw new RuntimeException(e);
-//        }
-
-
-        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
-        return productCatalogStub.getProduct(request);
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品查询
+                
+        try {
+            return productCatalogStub.getProduct(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error getting product, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return productCatalogStub.withDeadlineAfter(10, TimeUnit.SECONDS).getProduct(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw new RuntimeException(retryEx);
+                }
+            }
+            throw e;
+        }
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
-        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel);
-        return currencyServiceBlockingStub.convert(request);
+        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币转换
+                
+        try {
+            return currencyServiceBlockingStub.convert(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error converting currency, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS).convert(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw new RuntimeException(retryEx);
+                }
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -125,7 +161,7 @@ public class GetProductFilter implements GatewayFilter {
 
             } catch (Exception e) {
                 log.error("Failed to get product", e);
-                sink.error(e);
+                sink.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -135,7 +171,7 @@ public class GetProductFilter implements GatewayFilter {
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
                 log.error("Failed to get product", e);
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());
