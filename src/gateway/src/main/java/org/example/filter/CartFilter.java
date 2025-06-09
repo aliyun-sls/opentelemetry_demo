@@ -253,21 +253,67 @@ public class CartFilter implements GatewayFilter {
             builder.setUserId(sessionId);
             Demo.Cart cart = DoGetCart(builder.build());
             JsonObject cartJson = new Gson().fromJson(JsonFormat.printer().print(cart), JsonObject.class);
-            for (JsonElement item : cartJson.getAsJsonArray("items")) {
-                JsonObject itemObj = item.getAsJsonObject();
-                String productId = itemObj.getAsJsonObject("product").get("id").getAsString();
-                Demo.GetProductRequest.Builder productRequestBuilder = Demo.GetProductRequest.newBuilder();
-                productRequestBuilder.setId(productId);
-                Demo.Product product = DoGetProductCatalog(productRequestBuilder.build());
-                JsonObject productJson = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
-                itemObj.add("product", productJson);
-                if (currencyCode != null && !currencyCode.isEmpty()) {
-                    Demo.CurrencyConversionRequest.Builder request = Demo.CurrencyConversionRequest.newBuilder();
-                    request.setFrom(product.getPriceUsd());
-                    request.setToCode(currencyCode);
-                    Demo.Money money = DoCurrencyConvert(request.build());
-                    JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-                    productJson.add("priceUsd", moneyJson);
+            
+            // 检查items字段是否存在，如果不存在则添加一个空数组
+            if (!cartJson.has("items") || cartJson.get("items").isJsonNull()) {
+                cartJson.add("items", new JsonArray());
+                log.info("Returning empty cart for sessionId: {}, currencyCode: {}, cartJson: {}", sessionId, currencyCode, cartJson);
+                sink.success(cartJson);
+                return; // 如果没有items，直接返回空购物车
+            }
+            
+            JsonArray itemsArray = cartJson.getAsJsonArray("items");
+            if (itemsArray == null || itemsArray.size() == 0) {
+                sink.success(cartJson);
+                return; // 如果items是空数组，直接返回
+            }
+            
+            for (int i = 0; i < itemsArray.size(); i++) {
+                JsonElement itemElement = itemsArray.get(i);
+                if (itemElement == null || !itemElement.isJsonObject()) {
+                    continue; // 跳过非对象元素
+                }
+                
+                JsonObject itemObj = itemElement.getAsJsonObject();
+                if (!itemObj.has("product") || itemObj.get("product").isJsonNull() || 
+                    !itemObj.get("product").isJsonObject()) {
+                    continue; // 跳过没有product字段或product不是对象的元素
+                }
+                
+                JsonObject productObj = itemObj.getAsJsonObject("product");
+                if (!productObj.has("id") || productObj.get("id").isJsonNull()) {
+                    continue; // 跳过没有id字段的product
+                }
+                
+                String productId = productObj.get("id").getAsString();
+                if (productId == null || productId.isEmpty()) {
+                    continue; // 跳过id为空的product
+                }
+                
+                try {
+                    Demo.GetProductRequest.Builder productRequestBuilder = Demo.GetProductRequest.newBuilder();
+                    productRequestBuilder.setId(productId);
+                    Demo.Product product = DoGetProductCatalog(productRequestBuilder.build());
+                    JsonObject productJson = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
+                    itemObj.add("product", productJson);
+                    
+                    if (currencyCode != null && !currencyCode.isEmpty() && 
+                        product.hasPriceUsd()) { // 确保product有priceUsd字段
+                        try {
+                            Demo.CurrencyConversionRequest.Builder request = Demo.CurrencyConversionRequest.newBuilder();
+                            request.setFrom(product.getPriceUsd());
+                            request.setToCode(currencyCode);
+                            Demo.Money money = DoCurrencyConvert(request.build());
+                            JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                            productJson.add("priceUsd", moneyJson);
+                        } catch (Exception e) {
+                            log.error("Failed to convert currency for product {}: {}", productId, e.getMessage());
+                            // 货币转换失败不应该影响整个购物车的获取
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to get product details for {}: {}", productId, e.getMessage());
+                    // 获取产品详情失败不应该影响整个购物车的获取
                 }
             }
             sink.success(cartJson);
