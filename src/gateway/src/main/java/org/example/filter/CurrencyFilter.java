@@ -17,7 +17,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import oteldemo.Demo;
+import oteldemo.CurrencyServiceGrpc;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -45,10 +47,36 @@ public class CurrencyFilter implements GatewayFilter {
                 .build();
     }
 
-    private Demo.GetSupportedCurrenciesResponse DoGetSupportedCurrencies(Demo.Empty request) {
-        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel)
-                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 获取支持的货币列表
-        return currencyServiceBlockingStub.getSupportedCurrencies(request);
+    private List<Demo.GetSupportedCurrenciesResponse> DoGetSupportedCurrencies() {
+        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+                .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币服务
+        
+        try {
+            List<Demo.GetSupportedCurrenciesResponse> currenciesList = new ArrayList<>();
+            currenciesList.add(currencyServiceBlockingStub.getSupportedCurrencies(Demo.Empty.newBuilder().build()));
+            return currenciesList;
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error getting supported currencies, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    List<Demo.GetSupportedCurrenciesResponse> currenciesList = new ArrayList<>();
+                    currenciesList.add(currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS)
+                            .getSupportedCurrencies(Demo.Empty.newBuilder().build()));
+                    return currenciesList;
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw retryEx;
+                }
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -57,10 +85,12 @@ public class CurrencyFilter implements GatewayFilter {
 
         return Mono.<String>create(sink -> {
             try {
-                Demo.Empty.Builder builder = Demo.Empty.newBuilder();
-                Demo.GetSupportedCurrenciesResponse currencyCodes = DoGetSupportedCurrencies(builder.build());
-                List<String> currencyList = currencyCodes.getCurrencyCodesList();
-                String result = "[" + currencyList.stream().map(code -> "\"" + code + "\"").collect(Collectors.joining(",")) + "]";                sink.success(result);
+                List<Demo.GetSupportedCurrenciesResponse> currencyCodes = DoGetSupportedCurrencies();
+                List<String> currencyList = currencyCodes.stream()
+                        .flatMap(response -> response.getCurrencyCodesList().stream())
+                        .collect(Collectors.toList());
+                String result = "[" + currencyList.stream().map(code -> "\"" + code + "\"").collect(Collectors.joining(",")) + "]";
+                sink.success(result);
             } catch (Exception e) {
                 log.error("Failed Currency", e);
                 sink.error(e);

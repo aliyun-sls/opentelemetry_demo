@@ -90,6 +90,10 @@ public class RecommendationFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return recommendationServiceBlockingStub.withDeadlineAfter(15, TimeUnit.SECONDS).listRecommendations(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
@@ -113,6 +117,10 @@ public class RecommendationFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return productCatalogStub.withDeadlineAfter(10, TimeUnit.SECONDS).getProduct(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
@@ -136,6 +144,10 @@ public class RecommendationFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS).convert(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;

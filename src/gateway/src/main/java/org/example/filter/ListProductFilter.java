@@ -63,16 +63,61 @@ public class ListProductFilter implements GatewayFilter {
     }
 
 
-    private Demo.ListProductsResponse DoListProducts(Demo.Empty request) {
+    private List<Demo.Product> DoListProducts() {
         ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
-                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品列表查询
-        return productCatalogStub.listProducts(request);
+                .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品查询
+                
+        try {
+            Demo.ListProductsResponse response = productCatalogStub.listProducts(Demo.Empty.newBuilder().build());
+            return response.getProductsList();
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error listing products, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    Demo.ListProductsResponse response = productCatalogStub.withDeadlineAfter(10, TimeUnit.SECONDS)
+                            .listProducts(Demo.Empty.newBuilder().build());
+                    return response.getProductsList();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw retryEx;
+                }
+            }
+            throw e;
+        }
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
-        CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel)
+        oteldemo.CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = oteldemo.CurrencyServiceGrpc.newBlockingStub(currencyChannel)
                 .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币转换
-        return currencyServiceBlockingStub.convert(request);
+                
+        try {
+            return currencyServiceBlockingStub.convert(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error converting currency, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS).convert(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw retryEx;
+                }
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -93,8 +138,8 @@ public class ListProductFilter implements GatewayFilter {
 
 
         return Mono.<List<Demo.Product>>create(sink-> {
-            Demo.ListProductsResponse listProductsResponse = DoListProducts(Demo.Empty.newBuilder().build());
-            sink.success(listProductsResponse.getProductsList());
+            List<Demo.Product> products = DoListProducts();
+            sink.success(products);
         }).flatMap(products -> {
 
             try {

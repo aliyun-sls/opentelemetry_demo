@@ -66,26 +66,57 @@ public class GetProductFilter implements GatewayFilter {
 
 
     private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
-//        String json = "{ \"id\": \"OLJCESPC7Z\", \"name\": \"National Park Foundation Explorascope\", \"description\": \"The National Park Foundation's (NPF) Explorascope 60AZ is a manual alt-azimuth, refractor telescope perfect for celestial viewing on the go. The NPF Explorascope 60 can view the planets, moon, star clusters and brighter deep sky objects like the Orion Nebula and Andromeda Galaxy.\", \"picture\": \"NationalParkFoundationExplorascope.jpg\", \"priceUsd\": { \"currencyCode\": \"USD\", \"units\": 101, \"nanos\": 960000000 }, \"categories\": [ \"telescopes\" ] }";
-//
-//        try {
-//            Demo.Product.Builder builder = Demo.Product.newBuilder();
-//            JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
-//            return builder.build();
-//        } catch (InvalidProtocolBufferException e) {
-//            throw new RuntimeException(e);
-//        }
-
-
         ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
                 .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 产品查询
-        return productCatalogStub.getProduct(request);
+                
+        try {
+            return productCatalogStub.getProduct(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error getting product, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return productCatalogStub.withDeadlineAfter(10, TimeUnit.SECONDS).getProduct(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw retryEx;
+                }
+            }
+            throw e;
+        }
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
         CurrencyServiceGrpc.CurrencyServiceBlockingStub currencyServiceBlockingStub = CurrencyServiceGrpc.newBlockingStub(currencyChannel)
                 .withDeadlineAfter(3, TimeUnit.SECONDS); // 添加3秒超时 - 货币转换
-        return currencyServiceBlockingStub.convert(request);
+                
+        try {
+            return currencyServiceBlockingStub.convert(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error converting currency, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS).convert(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw retryEx;
+                }
+            }
+            throw e;
+        }
     }
 
     @Override

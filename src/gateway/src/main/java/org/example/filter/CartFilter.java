@@ -98,6 +98,10 @@ public class CartFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return cartServiceStub.withDeadlineAfter(12, TimeUnit.SECONDS).getCart(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
@@ -121,6 +125,10 @@ public class CartFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return cartServiceStub.withDeadlineAfter(12, TimeUnit.SECONDS).addItem(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
@@ -144,6 +152,10 @@ public class CartFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return cartServiceStub.withDeadlineAfter(12, TimeUnit.SECONDS).emptyCart(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
@@ -167,6 +179,10 @@ public class CartFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return productCatalogStub.withDeadlineAfter(10, TimeUnit.SECONDS).getProduct(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
@@ -190,6 +206,10 @@ public class CartFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return currencyServiceBlockingStub.withDeadlineAfter(6, TimeUnit.SECONDS).convert(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
                     throw retryEx;
