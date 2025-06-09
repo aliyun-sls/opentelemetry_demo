@@ -21,6 +21,23 @@ func (node *NodeLoss) NodeLossFlagd() {
 	}
 }
 
+// NodeLossAPIFlagd 基于阿里云 API 的节点故障注入 flagd 监控
+func (node *NodeLoss) NodeLossAPIFlagd() {
+	// 获取feature flag值
+	node.flagdValue = FlagClient.Int(
+		context.Background(),
+		"NodeLoss",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 NodeLossAPIFlagd feature : %v,last flagd: %v", node.flagdValue, node.nodeLossLastConfig)
+
+	if node.flagdValue != node.nodeLossLastConfig {
+		node.NodeAPILoss()
+		node.nodeLossLastConfig = node.flagdValue
+	}
+}
+
 func (region *RegionLoss) RegionLossFlagd() {
 	// 获取feature flag值
 	region.flagdValue = FlagClient.Int(
@@ -33,6 +50,23 @@ func (region *RegionLoss) RegionLossFlagd() {
 
 	if region.flagdValue != region.regionlossLastConfig {
 		region.RegionNetLoss()
+		region.regionlossLastConfig = region.flagdValue
+	}
+}
+
+// RegionLossAPIFlagd 基于阿里云 API 的区域故障注入 flagd 监控
+func (region *RegionLoss) RegionLossAPIFlagd() {
+	// 获取feature flag值
+	region.flagdValue = FlagClient.Int(
+		context.Background(),
+		"RegionLoss",
+		0,
+		openfeature.EvaluationContext{},
+	)
+	log.Printf("获取 RegionLossAPIFlagd feature : %v,last flagd: %v", region.flagdValue, region.regionlossLastConfig)
+
+	if region.flagdValue != region.regionlossLastConfig {
+		region.RegionAPILoss()
 		region.regionlossLastConfig = region.flagdValue
 	}
 }

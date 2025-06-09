@@ -16,6 +16,15 @@ func (node *NodeLoss) NodeNetLoss() {
 	fmt.Println("创建NodeNetLoss资源:", data)
 }
 
+// NodeAPILoss 基于阿里云 API 的节点故障注入
+func (node *NodeLoss) NodeAPILoss() {
+	AliyunNodeChaosOnce.Do(func() {
+		AliyunNodeChaosInstance = NewAliyunNodeChaos()
+	})
+
+	AliyunNodeChaosInstance.ExecuteChaos(node.flagdValue)
+}
+
 func (region *RegionLoss) RegionNetLoss() {
 	// 生成 yaml 文件
 	nodeNetLoss := region.RegionNetLossYaml()
@@ -24,7 +33,16 @@ func (region *RegionLoss) RegionNetLoss() {
 	}
 	// 根据 yaml 文件创建资源
 	data := createCRD(Dynamic, Gvr, nodeNetLoss)
-	fmt.Println("创建NodeNetLoss资源:", data)
+	fmt.Println("创建RegionNetLoss资源:", data)
+}
+
+// RegionAPILoss 基于阿里云 API 的区域故障注入
+func (region *RegionLoss) RegionAPILoss() {
+	AliyunRegionChaosOnce.Do(func() {
+		AliyunRegionChaosInstance = NewAliyunRegionChaos()
+	})
+
+	AliyunRegionChaosInstance.ExecuteChaos(region.flagdValue)
 }
 
 func (podnetdelay *PodNetDelay) PodNetDelay() {
