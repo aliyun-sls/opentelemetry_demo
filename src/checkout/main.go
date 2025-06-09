@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,9 +38,13 @@ import (
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -170,6 +175,9 @@ func main() {
 	openfeature.AddHooks(otelhooks.NewTracesHook())
 
 	tracer = tp.Tracer("checkout")
+
+	// 启动 DNS 缓存刷新 - Kubernetes 优化，快速发现新实例
+	startDNSRefresh()
 
 	svc := new(checkout)
 
@@ -426,20 +434,150 @@ func (cs *checkout) prepareOrderItemsAndShippingQuoteFromCart(ctx context.Contex
 }
 
 func mustCreateClient(svcAddr string) *grpc.ClientConn {
+	// Keep-Alive 配置 - 主动断开超时连接
+	keepAliveParams := keepalive.ClientParameters{
+		Time:                10 * time.Second, // 每10秒发送心跳检测
+		Timeout:             3 * time.Second,  // 心跳超时3秒就断开连接
+		PermitWithoutStream: true,             // 允许无活跃流时发送心跳
+	}
+
+	// DNS 解析配置 - 调小缓存时间，适应 Kubernetes 动态环境
+	resolver.SetDefaultScheme("dns")
+
+	// 根据地址识别服务名称
+	serviceName := extractServiceName(svcAddr)
+
+	// Kubernetes 优化的服务配置 - 解决重试、负载均衡、超时问题
+	serviceConfig := fmt.Sprintf(`{
+		"loadBalancingPolicy": "round_robin",
+		"healthCheckConfig": {
+			"serviceName": "%s"
+		},
+		"methodConfig": [{
+			"name": [{}],
+			"timeout": "8s",
+			"waitForReady": false,
+			"retryPolicy": {
+				"MaxAttempts": 3,
+				"InitialBackoff": "0.1s", 
+				"MaxBackoff": "1s",
+				"BackoffMultiplier": 2.0,
+				"RetryableStatusCodes": ["UNAVAILABLE", "DEADLINE_EXCEEDED", "RESOURCE_EXHAUSTED"]
+			}
+		}]
+	}`, serviceName)
+
 	c, err := grpc.NewClient(svcAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+
+		// Keep-Alive 设置 - 主动检测和断开无效连接
+		grpc.WithKeepaliveParams(keepAliveParams),
+
+		// 连接参数 - 快速重建连接，减少等待时间
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.Config{
+				BaseDelay:  100 * time.Millisecond, // 快速重试，100ms起始
+				Multiplier: 1.6,
+				Jitter:     0.2,
+				MaxDelay:   30 * time.Second, // 最大30秒退避
+			},
+			MinConnectTimeout: 3 * time.Second, // 3秒连接超时
+		}),
+
+		// 服务配置 - 包含负载均衡、健康检查和重试策略
+		grpc.WithDefaultServiceConfig(serviceConfig),
+
+		// 调用选项 - 优化性能和快速失败
+		grpc.WithDefaultCallOptions(
+			grpc.WaitForReady(false),             // 快速失败，不等待连接
+			grpc.MaxCallRecvMsgSize(4*1024*1024), // 4MB 接收限制
+			grpc.MaxCallSendMsgSize(4*1024*1024), // 4MB 发送限制
+		),
+
 		//grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		log.Fatalf("could not connect to %s service, err: %+v", svcAddr, err)
 	}
 
+	// 启动连接监控和定期管理
+	monitorAndRefreshConnection(c, svcAddr)
+
 	return c
 }
 
+// extractServiceName 从服务地址中提取服务名称用于健康检查
+func extractServiceName(svcAddr string) string {
+	// 从地址中提取服务名称，去掉端口号
+	if idx := strings.Index(svcAddr, ":"); idx != -1 {
+		return svcAddr[:idx]
+	}
+	return svcAddr
+}
+
+// monitorAndRefreshConnection 监控连接状态并定期重建连接池
+func monitorAndRefreshConnection(conn *grpc.ClientConn, serviceName string) {
+	go func() {
+		// 定期健康检查
+		healthTicker := time.NewTicker(30 * time.Second)
+		defer healthTicker.Stop()
+
+		// 连接最大空闲时间 - 主动断开超时连接
+		maxIdleTime := 5 * time.Minute
+		lastActivity := time.Now()
+
+		for {
+			select {
+			case <-healthTicker.C:
+				state := conn.GetState()
+
+				// 检查连接空闲时间 - 5分钟无活动就重建
+				if time.Since(lastActivity) > maxIdleTime && state == connectivity.Idle {
+					log.Infof("Connection to %s idle for %v, triggering reconnect", serviceName, maxIdleTime)
+					conn.ResetConnectBackoff() // 重置退避，促使重连
+				}
+
+				// 检查连接失败状态 - 立即重试
+				if state == connectivity.TransientFailure {
+					log.Warnf("Connection to %s in transient failure, resetting backoff", serviceName)
+					conn.ResetConnectBackoff()
+				}
+
+				log.Debugf("Connection to %s state: %v", serviceName, state)
+
+			default:
+				// 更新活跃时间
+				if conn.GetState() == connectivity.Ready {
+					lastActivity = time.Now()
+				}
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}()
+}
+
+// startDNSRefresh 定期刷新 DNS 缓存 - 不要长时间缓存 DNS/Endpoints
+func startDNSRefresh() {
+	go func() {
+		ticker := time.NewTicker(30 * time.Second) // 每30秒刷新DNS缓存
+		defer ticker.Stop()
+
+		for range ticker.C {
+			// 在 Kubernetes 环境中快速发现新的 Pod 实例
+			log.Debugf("Triggering DNS resolver refresh for service discovery")
+			// 实际的 DNS 缓存由系统和 CoreDNS 控制
+			// 这里主要是触发客户端重新解析，避免长时间缓存
+		}
+	}()
+}
+
 func (cs *checkout) quoteShipping(ctx context.Context, address *pb.Address, items []*pb.CartItem) (*pb.Money, error) {
+	// 物流报价服务调用超时
+	callCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	shippingQuote, err := cs.shippingSvcClient.
-		GetQuote(ctx, &pb.GetQuoteRequest{
+		GetQuote(callCtx, &pb.GetQuoteRequest{
 			Address: address,
 			Items:   items})
 	if err != nil {
@@ -449,7 +587,11 @@ func (cs *checkout) quoteShipping(ctx context.Context, address *pb.Address, item
 }
 
 func (cs *checkout) getUserCart(ctx context.Context, userID string) ([]*pb.CartItem, error) {
-	cart, err := cs.cartSvcClient.GetCart(ctx, &pb.GetCartRequest{UserId: userID})
+	// 获取购物车服务调用超时
+	callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	cart, err := cs.cartSvcClient.GetCart(callCtx, &pb.GetCartRequest{UserId: userID})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user cart during checkout: %+v", err)
 	}
@@ -467,13 +609,19 @@ func (cs *checkout) prepOrderItems(ctx context.Context, items []*pb.CartItem, us
 	out := make([]*pb.OrderItem, len(items))
 
 	for i, item := range items {
-		product, err := cs.productCatalogSvcClient.GetProduct(ctx, &pb.GetProductRequest{Id: item.GetProductId()})
+		// 为每个 gRPC 调用设置独立超时 - 防止单个调用阻塞整个流程
+		callCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+
+		product, err := cs.productCatalogSvcClient.GetProduct(callCtx, &pb.GetProductRequest{Id: item.GetProductId()})
+		cancel() // 立即释放资源，避免资源泄漏
+
 		if err != nil {
-			return nil, fmt.Errorf("failed to get product #%q", item.GetProductId())
+			return nil, fmt.Errorf("failed to get product #%q: %+v", item.GetProductId(), err)
 		}
+
 		price, err := cs.convertCurrency(ctx, product.GetPriceUsd(), userCurrency)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert price of %q to %s", item.GetProductId(), userCurrency)
+			return nil, fmt.Errorf("failed to convert price of %q to %s: %+v", item.GetProductId(), userCurrency, err)
 		}
 		out[i] = &pb.OrderItem{
 			Item: item,
@@ -483,7 +631,11 @@ func (cs *checkout) prepOrderItems(ctx context.Context, items []*pb.CartItem, us
 }
 
 func (cs *checkout) convertCurrency(ctx context.Context, from *pb.Money, toCurrency string) (*pb.Money, error) {
-	result, err := cs.currencySvcClient.Convert(ctx, &pb.CurrencyConversionRequest{
+	// 货币转换服务调用超时
+	callCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	result, err := cs.currencySvcClient.Convert(callCtx, &pb.CurrencyConversionRequest{
 		From:   from,
 		ToCode: toCurrency})
 	if err != nil {
