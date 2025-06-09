@@ -28,10 +28,6 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class CheckFilter implements GatewayFilter {
@@ -86,7 +82,7 @@ public class CheckFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -162,11 +158,11 @@ public class CheckFilter implements GatewayFilter {
                         orderJson.add("items", new JsonParser().parse(new Gson().toJson(orderItems)));
                         return Mono.just(orderJson);
                     } catch (InvalidProtocolBufferException e) {
-                        return Mono.error(e);
+                        return Mono.error(new RuntimeException(e));
                     }
                 });
             } catch (IOException e) {
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -175,7 +171,8 @@ public class CheckFilter implements GatewayFilter {
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
-                return Mono.error(e);
+                log.error("Failed check", e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());

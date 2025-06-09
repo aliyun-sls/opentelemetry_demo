@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -21,9 +20,6 @@ import oteldemo.AdServiceGrpc;
 import oteldemo.Demo;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 
@@ -60,9 +56,13 @@ public class DataFilter implements GatewayFilter {
                 try {
                     Thread.sleep(500); // 短暂延迟后重试
                     return adServiceStub.withDeadlineAfter(10, TimeUnit.SECONDS).getAds(request);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.error("Retry interrupted: {}", ie.getMessage());
+                    throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -98,7 +98,7 @@ public class DataFilter implements GatewayFilter {
                 sink.success(json);
             } catch (Exception e) {
                 log.error("Failed Data", e);
-                sink.error(e);
+                sink.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -108,7 +108,7 @@ public class DataFilter implements GatewayFilter {
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
                 log.error("Failed Data", e);
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());

@@ -23,10 +23,7 @@ import oteldemo.ProductCatalogServiceGrpc;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 
@@ -96,7 +93,7 @@ public class RecommendationFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -123,7 +120,7 @@ public class RecommendationFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -150,7 +147,7 @@ public class RecommendationFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -206,7 +203,7 @@ public class RecommendationFilter implements GatewayFilter {
                 sink.success(new Gson().toJsonTree(productList).getAsJsonArray());
             } catch (Exception e) {
                 log.error("Failed Recommendation", e);
-                sink.error(e);
+                sink.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -216,7 +213,7 @@ public class RecommendationFilter implements GatewayFilter {
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
                 log.error("Failed Recommendation", e);
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());

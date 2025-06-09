@@ -2,8 +2,6 @@ package org.example.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
@@ -15,15 +13,12 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 import oteldemo.Demo;
 import oteldemo.CurrencyServiceGrpc;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -72,7 +67,7 @@ public class CurrencyFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -82,7 +77,6 @@ public class CurrencyFilter implements GatewayFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Filtering request {}", exchange.getRequest().getPath());
-
         return Mono.<String>create(sink -> {
             try {
                 List<Demo.GetSupportedCurrenciesResponse> currencyCodes = DoGetSupportedCurrencies();
@@ -93,7 +87,7 @@ public class CurrencyFilter implements GatewayFilter {
                 sink.success(result);
             } catch (Exception e) {
                 log.error("Failed Currency", e);
-                sink.error(e);
+                sink.error(new RuntimeException(e));
             }
         }).flatMap(responseBody -> {
             try {
@@ -103,7 +97,7 @@ public class CurrencyFilter implements GatewayFilter {
                 return exchange.getResponse().writeWith(Mono.just(buffer));
             } catch (Exception e) {
                 log.error("Failed Currency", e);
-                return Mono.error(e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());

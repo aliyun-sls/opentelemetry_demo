@@ -3,6 +3,7 @@ package org.example.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -12,22 +13,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebExchange;
-import oteldemo.CurrencyServiceGrpc;
 import oteldemo.Demo;
 import oteldemo.ProductCatalogServiceGrpc;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ListProductFilter implements GatewayFilter {
@@ -86,7 +81,7 @@ public class ListProductFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -113,7 +108,7 @@ public class ListProductFilter implements GatewayFilter {
                     throw new RuntimeException(ie);
                 } catch (Exception retryEx) {
                     log.error("Retry failed: {}", retryEx.getMessage());
-                    throw retryEx;
+                    throw new RuntimeException(retryEx);
                 }
             }
             throw e;
@@ -143,39 +138,30 @@ public class ListProductFilter implements GatewayFilter {
         }).flatMap(products -> {
 
             try {
-                List<JsonObject> rst = new ArrayList<>();
-
+                List<JsonObject> productJsonList = new ArrayList<>();
                 for (Demo.Product product : products) {
                     JsonObject productJson = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
 
-                    Demo.CurrencyConversionRequest.Builder request = Demo.CurrencyConversionRequest.newBuilder();
-                    request.setFrom(product.getPriceUsd());
-                    request.setToCode(finalCurrencyCode);
-
-                    Demo.Money money = DoCurrencyConvert(request.build());
-                    JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
-                    if (moneyJson.get("units") != null) {
-                        moneyJson.addProperty("units", Integer.valueOf(moneyJson.get("units").getAsString()));
+                    if (currencyCode != null && !currencyCode.isEmpty()) {
+                        Demo.CurrencyConversionRequest.Builder request = Demo.CurrencyConversionRequest.newBuilder();
+                        request.setFrom(product.getPriceUsd());
+                        request.setToCode(currencyCode);
+                        Demo.Money money = DoCurrencyConvert(request.build());
+                        JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                        productJson.add("priceUsd", moneyJson);
                     }
-                    productJson.add("priceUsd", moneyJson);
 
-                    rst.add(productJson);
+                    productJsonList.add(productJson);
                 }
 
-                return Mono.just(rst);
-            }catch (Exception e) {
-                log.info("ListProductFilter", e);
-                return Mono.error(e);
-            }
-        }).map(f -> new Gson().toJson(f)).flatMap(responseBody -> {
-            try {
                 exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-                byte[] bytes = responseBody.getBytes();
+                JsonArray jsonArray = new Gson().toJsonTree(productJsonList).getAsJsonArray();
+                byte[] bytes = jsonArray.toString().getBytes();
                 DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
                 return exchange.getResponse().writeWith(Mono.just(buffer));
-            } catch (Exception e) {
-                log.info("ListProductFilter", e);
-                return Mono.error(e);
+            }catch (Exception e) {
+                log.error("Failed List Product", e);
+                return Mono.error(new RuntimeException(e));
             }
         }).onErrorResume(ResponseStatusException.class, e -> {
             exchange.getResponse().setStatusCode(e.getStatusCode());
