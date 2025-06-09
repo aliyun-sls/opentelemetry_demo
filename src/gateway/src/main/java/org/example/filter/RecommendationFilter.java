@@ -41,7 +41,6 @@ public class RecommendationFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
         productCatalogChannel = NettyChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
@@ -50,7 +49,6 @@ public class RecommendationFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
         currencyChannel = NettyChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
@@ -59,7 +57,6 @@ public class RecommendationFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
     }
 

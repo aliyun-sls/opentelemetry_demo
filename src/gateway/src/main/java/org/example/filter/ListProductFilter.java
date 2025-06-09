@@ -40,7 +40,6 @@ public class ListProductFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
 
@@ -50,7 +49,6 @@ public class ListProductFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
     }
 
