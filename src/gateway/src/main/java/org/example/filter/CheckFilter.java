@@ -45,9 +45,7 @@ public class CheckFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .disableServiceConfigLookUp() // 禁用服务配置查找，防止缓存
                 .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
-                .idleTimeout(5, TimeUnit.MINUTES) // 空闲5分钟后关闭连接
                 .build();
 
         productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
@@ -56,9 +54,7 @@ public class CheckFilter implements GatewayFilter {
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
-                .disableServiceConfigLookUp() // 禁用服务配置查找，防止缓存
                 .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
-                .idleTimeout(5, TimeUnit.MINUTES) // 空闲5分钟后关闭连接
                 .build();
     }
 
