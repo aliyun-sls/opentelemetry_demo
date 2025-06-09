@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +24,8 @@ import oteldemo.Demo;
 import oteldemo.ProductCatalogServiceGrpc;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -37,21 +39,28 @@ public class GetProductFilter implements GatewayFilter {
     private ManagedChannel currencyChannel;
 
     public GetProductFilter(Config config) {
-        productCatalogChannel = NettyChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
+        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
+                .disableServiceConfigLookUp() // 禁用服务配置查找，防止缓存
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
+                .idleTimeout(5, TimeUnit.MINUTES) // 空闲5分钟后关闭连接
                 .build();
 
-
-        currencyChannel = NettyChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
+        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
+                .disableServiceConfigLookUp() // 禁用服务配置查找，防止缓存
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
+                .idleTimeout(5, TimeUnit.MINUTES) // 空闲5分钟后关闭连接
                 .build();
     }
 

@@ -6,7 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.ManagedChannelBuilder;
 import org.example.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,28 +21,52 @@ import oteldemo.AdServiceGrpc;
 import oteldemo.Demo;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 
 public class DataFilter implements GatewayFilter {
     private static final Logger log = LoggerFactory.getLogger(DataFilter.class);
     public static ObjectMapper objectMapper = new ObjectMapper();
-    private final ManagedChannel dataChannel;
+    private final ManagedChannel channel;
 
     public DataFilter(Config config) {
-        dataChannel = NettyChannelBuilder.forTarget(config.dataAddr).usePlaintext() // 明文通信（仅限开发环境）
+        channel = ManagedChannelBuilder.forTarget(config.dataAddr)
+                .usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
                 .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
+                .disableServiceConfigLookUp() // 禁用服务配置查找，防止缓存
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
+                .idleTimeout(5, TimeUnit.MINUTES) // 空闲5分钟后关闭连接
                 .build();
     }
 
     private Demo.AdResponse DoGetAds(Demo.AdRequest request) {
-        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(dataChannel)
+        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(channel)
                 .withDeadlineAfter(5, TimeUnit.SECONDS); // 添加5秒超时 - 广告查询
-        return adServiceStub.getAds(request);
+                
+        try {
+            return adServiceStub.getAds(request);
+        } catch (io.grpc.StatusRuntimeException e) {
+            log.error("gRPC error getting ads, retrying once: {}", e.getMessage());
+            // 连接错误时重试一次
+            if (e.getStatus().getCode() == io.grpc.Status.Code.INTERNAL || 
+                e.getStatus().getCode() == io.grpc.Status.Code.UNAVAILABLE) {
+                try {
+                    Thread.sleep(500); // 短暂延迟后重试
+                    return adServiceStub.withDeadlineAfter(10, TimeUnit.SECONDS).getAds(request);
+                } catch (Exception retryEx) {
+                    log.error("Retry failed: {}", retryEx.getMessage());
+                    throw retryEx;
+                }
+            }
+            throw e;
+        }
     }
 
     @Override
