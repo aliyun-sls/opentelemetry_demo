@@ -277,20 +277,20 @@ func CreateShipping(c *gin.Context) {
 	ctx := c.Request.Context()
 	var order Order
 	orderId := c.Query("order_id")
+	err := util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", orderId).
+		Find(&order).Updates(Order{OrderStatus: WaitForReceiving, LogisticStatus: Shipping}).Error
+	if err != nil {
+		util.Status500(c, err)
+		return
+	}
 	// 创建物流 通过kafka通知 创建物流信息
-	err := SendKafka(LogisticsMsg{
+	err = SendKafka(LogisticsMsg{
 		OrderId:          order.OrderId,
 		UserId:           order.UserId,
 		Action:           Create,
 		LogisticStatus:   Shipping,
 		LogisticPosition: "",
 	})
-	if err != nil {
-		util.Status500(c, err)
-		return
-	}
-	err = util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", orderId).
-		Find(&order).Updates(Order{OrderStatus: WaitForReceiving, LogisticStatus: Shipping}).Error
 	if err != nil {
 		util.Status500(c, err)
 		return
