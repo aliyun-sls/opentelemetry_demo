@@ -37,6 +37,159 @@ func loadJsonConfig() *KafkaConfig {
 	return config
 }
 
+/*
+// writeByConn 基于Conn发送消息
+func writeByConn(cfg *KafkaConfig, msg LogisticsMsg) {
+
+	var dialer *kafka.Dialer
+
+	switch cfg.SecurityProtocol {
+	case "plaintext":
+	case "sasl_ssl":
+		// 1. 加载 SSL CA 证书（PEM 格式）
+		caCert, err := os.ReadFile("/Users/victor/rfcwork/work/opentelemetry_demo/src/demo/order/config/ca-cert.pem")
+		if err != nil {
+			panic(fmt.Sprintf("读取 CA 证书失败: %v", err))
+		}
+		// 2. 创建 TLS 配置
+		caCertPool := x509.NewCertPool()
+		caCertPool.AppendCertsFromPEM(caCert)
+		tlsConfig := &tls.Config{
+			//NameToCertificate: m,
+			RootCAs:            caCertPool,
+			InsecureSkipVerify: true,
+		}
+		// 3. 创建 SASL 认证器
+		saslMechanism := plain.Mechanism{
+			Username: cfg.SaslUsername, // 阿里云 Kafka SASL 用户名
+			Password: cfg.SaslPassword, // 阿里云 Kafka SASL 密码
+		}
+		// 4. 创建带有 TLS 和 SASL 的 Dialer
+		dialer = &kafka.Dialer{
+			DualStack:     true,
+			SASLMechanism: saslMechanism,
+			TLS:           tlsConfig,
+		}
+	case "sasl_plaintext":
+		// 3. 创建 SASL 认证器
+		saslMechanism := plain.Mechanism{
+			Username: cfg.SaslUsername, // 阿里云 Kafka SASL 用户名
+			Password: cfg.SaslPassword, // 阿里云 Kafka SASL 密码
+		}
+		// 4. 创建带有 TLS 和 SASL 的 Dialer
+		dialer = &kafka.Dialer{
+			DualStack:     true,
+			SASLMechanism: saslMechanism,
+		}
+	default:
+		panic(errors.New("unknown protocol"))
+
+	}
+
+	partition := 0
+
+	// 连接至Kafka集群的Leader节点
+	conn, err := dialer.DialLeader(context.Background(), "tcp", cfg.BootstrapServers, cfg.Topic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader:", err)
+	}
+
+	// 设置发送消息的超时时间
+	conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
+
+	// 发送消息
+	marshal, err := json.Marshal(msg)
+	if err != nil {
+		fmt.Printf("SendKafka[] json.Marshal failed: %v\n", err.Error())
+	}
+	_, err = conn.WriteMessages(
+		kafka.Message{Value: marshal},
+	)
+	if err != nil {
+		log.Fatal("failed to write messages:", err)
+	}
+	time.Sleep(10000)
+	// 关闭连接
+	if err := conn.Close(); err != nil {
+		log.Fatal("failed to close writer:", err)
+	}
+}*/
+/*
+// readByConn 连接至kafka后接收消息
+func readByConn(cfg *KafkaConfig) {
+	switch cfg.SecurityProtocol {
+	case "plaintext":
+	case "sasl_ssl":
+	case "sasl_plaintext":
+	default:
+		panic(errors.New("unknown protocol"))
+
+	}
+	// 1. 加载 SSL CA 证书（PEM 格式）
+	caCert, err := os.ReadFile("/Users/victor/rfcwork/work/opentelemetry_demo/src/demo/order/config/ca-cert.pem")
+	if err != nil {
+		panic(fmt.Sprintf("读取 CA 证书失败: %v", err))
+	}
+	// 2. 创建 TLS 配置
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	clientCert, err := tls.LoadX509KeyPair("client-cert.pem", "client-key.pem")
+	if err != nil {
+		log.Fatalf("Failed to load client certificate and key: %v", err)
+	}
+	tlsConfig := &tls.Config{
+		RootCAs:      caCertPool,
+		MinVersion:   tls.VersionTLS12,
+		Certificates: []tls.Certificate{clientCert}, // 设置客户端证书
+
+	}
+	// 3. 创建 SASL 认证器
+	saslMechanism := plain.Mechanism{
+		Username: cfg.SaslUsername, // 阿里云 Kafka SASL 用户名
+		Password: cfg.SaslPassword, // 阿里云 Kafka SASL 密码
+	}
+
+	partition := 0
+	// 4. 创建带有 TLS 和 SASL 的 Dialer
+	dialer := &kafka.Dialer{
+		DualStack:     true,
+		SASLMechanism: saslMechanism,
+		TLS:           tlsConfig,
+	}
+
+	// 连接至Kafka的leader节点
+	conn, err := dialer.DialLeader(context.Background(), cfg.Topic, cfg.BootstrapServers, cfg.Topic, partition)
+	if err != nil {
+		log.Fatal("failed to dial leader:", err)
+	}
+
+	// 设置读取超时时间
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	// 读取一批消息，得到的batch是一系列消息的迭代器
+	batch := conn.ReadBatch(10e3, 1e6) // fetch 10KB min, 1MB max
+
+	// 遍历读取消息
+	b := make([]byte, 10e3) // 10KB max per message
+	for {
+		n, err := batch.Read(b)
+		if err != nil {
+			break
+		}
+		fmt.Println(string(b[:n]))
+	}
+
+	// 关闭batch
+	if err := batch.Close(); err != nil {
+		log.Fatal("failed to close batch:", err)
+	}
+
+	// 关闭连接
+	if err := conn.Close(); err != nil {
+		log.Fatal("failed to close connection:", err)
+	}
+}*/
+
 func DoInitProducer(cfg *KafkaConfig) *kafka.Producer {
 	fmt.Print("init kafka producer, it may take a few seconds to init the connection\n")
 	//common arguments
@@ -124,10 +277,10 @@ func DoInitConsumer(cfg *KafkaConfig) *kafka.Consumer {
 	return consumer
 }
 
-func SendKafka(msg LogisticsMsg) {
+func SendKafka(msg LogisticsMsg) error {
 	config := loadJsonConfig()
+	//writeByConn(config, msg)
 	producer := DoInitProducer(config)
-
 	defer producer.Close()
 	// Delivery report handler for produced messages
 	go func() {
@@ -145,19 +298,27 @@ func SendKafka(msg LogisticsMsg) {
 
 	marshal, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Printf("SendKafka[] failed: %v\n", err.Error())
+		fmt.Printf("SendKafka[] json.Marshal failed: %v\n", err.Error())
+		return err
 	}
 
 	// Produce messages to topic (asynchronously)
 	topic := config.Topic
-	producer.Produce(&kafka.Message{
+	err = producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          marshal,
 	}, nil)
 
+	if err != nil {
+		fmt.Printf("SendKafka[] failed: %v\n", err.Error())
+		return err
+	}
+
 	// Wait for message deliveries before shutting down
 	producer.Flush(150 * 1000)
+	return nil
 }
+
 func ServiceCallPost(ctx context.Context, host string, path string, data interface{}, res *util.Result) error {
 	client := &util.HttpClient{
 		Host: host,
