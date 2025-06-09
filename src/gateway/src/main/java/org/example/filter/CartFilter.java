@@ -9,7 +9,7 @@ import com.google.gson.JsonParser;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.netty.NettyChannelBuilder;
 import org.example.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,26 +43,29 @@ public class CartFilter implements GatewayFilter {
     private final ManagedChannel currencyChannel;
 
     public CartFilter(Config config) {
-        cartChannel = ManagedChannelBuilder.forTarget(config.cartAddr).usePlaintext() // 明文通信（仅限开发环境）
+        cartChannel = NettyChannelBuilder.forTarget(config.cartAddr).usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
                 .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
-        productCatalogChannel = ManagedChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
+        productCatalogChannel = NettyChannelBuilder.forTarget(config.productAddr).usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
                 .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
 
-        currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
+        currencyChannel = NettyChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
                 .enableRetry() // 启用重试
                 .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
                 .build();
