@@ -38,23 +38,27 @@ public class ListProductFilter implements GatewayFilter {
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .enableRetry() // 启用重试
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
-
 
         currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .enableRetry() // 启用重试
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
     }
 
-
-    private Demo.ListProductsResponse DoListProductCatalog(Demo.Empty request) {
-
-        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
-        return productCatalogStub.listProducts(request);
+    private Demo.ListProductsResponse DoListProducts() {
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
+                .withDeadlineAfter(8, TimeUnit.SECONDS); // 统一8秒超时
+        return productCatalogStub.listProducts(Demo.Empty.newBuilder().build());
     }
 
     private Demo.Money DoCurrencyConvert(Demo.CurrencyConversionRequest request) {
@@ -80,7 +84,7 @@ public class ListProductFilter implements GatewayFilter {
 
 
         return Mono.<List<Demo.Product>>create(sink-> {
-            Demo.ListProductsResponse listProductsResponse = DoListProductCatalog(Demo.Empty.newBuilder().build());
+            Demo.ListProductsResponse listProductsResponse = DoListProducts();
             sink.success(listProductsResponse.getProductsList());
         }).flatMap(products -> {
 

@@ -1,20 +1,18 @@
 spring:
-  redis:
-    host: ${REDIS_ADDR:localhost}
-    port: ${REDIS_PORT:6379}
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 4
-        min-idle: 1
-        max-wait: 2000ms
-    timeout: 5000ms
   cloud:
     gateway:
       httpclient:
+        connect-timeout: 5000
+        response-timeout: 12s
         pool:
           max-idle-time: ${MAX_IDLE_TIME:5s}
       routes:
+        - id: health
+          uri: no://op
+          predicates:
+            - Path=/health
+          filters:
+            - name: HealthCheck
         - id: check
           uri: no://op
           predicates:
@@ -102,10 +100,6 @@ spring:
           uri: http://notification:8080
           predicates:
             - Path=/notification/**
-        - id: user
-          uri: http://user:8080
-          predicates:
-            - Path=/user/api/**
         - id: default
           uri: http://frontend:8080
           predicates:

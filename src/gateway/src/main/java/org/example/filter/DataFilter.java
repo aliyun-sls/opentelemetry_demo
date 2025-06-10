@@ -34,13 +34,16 @@ public class DataFilter implements GatewayFilter {
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .enableRetry() // 启用重试
-                .idleTimeout(5, TimeUnit.MINUTES) // 添加空闲超时
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
     }
 
     private Demo.AdResponse DoGetAds(Demo.AdRequest request) {
-        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(dataChannel);
+        AdServiceGrpc.AdServiceBlockingStub adServiceStub = AdServiceGrpc.newBlockingStub(dataChannel)
+                .withDeadlineAfter(8, TimeUnit.SECONDS); // 统一8秒超时
         return adServiceStub.getAds(request);
     }
 

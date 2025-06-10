@@ -41,32 +41,26 @@ public class GetProductFilter implements GatewayFilter {
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .enableRetry() // 启用重试
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
-
 
         currencyChannel = ManagedChannelBuilder.forTarget(config.currencyAddr).usePlaintext() // 明文通信（仅限开发环境）
                 .maxInboundMessageSize(1024 * 1024 * 20) // 20MB 最大消息
                 .keepAliveTime(30, TimeUnit.SECONDS) // 保活间隔
                 .keepAliveTimeout(10, TimeUnit.SECONDS) // 保活超时
+                .keepAliveWithoutCalls(true) // 即使没有活跃调用也发送keepalive
+                .defaultLoadBalancingPolicy("round_robin") // 使用轮询策略
                 .enableRetry() // 启用重试
+                .maxRetryAttempts(3) // 最大重试次数
                 .build();
     }
 
-
     private Demo.Product DoGetProductCatalog(Demo.GetProductRequest request) {
-//        String json = "{ \"id\": \"OLJCESPC7Z\", \"name\": \"National Park Foundation Explorascope\", \"description\": \"The National Park Foundation’s (NPF) Explorascope 60AZ is a manual alt-azimuth, refractor telescope perfect for celestial viewing on the go. The NPF Explorascope 60 can view the planets, moon, star clusters and brighter deep sky objects like the Orion Nebula and Andromeda Galaxy.\", \"picture\": \"NationalParkFoundationExplorascope.jpg\", \"priceUsd\": { \"currencyCode\": \"USD\", \"units\": 101, \"nanos\": 960000000 }, \"categories\": [ \"telescopes\" ] }";
-//
-//        try {
-//            Demo.Product.Builder builder = Demo.Product.newBuilder();
-//            JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
-//            return builder.build();
-//        } catch (InvalidProtocolBufferException e) {
-//            throw new RuntimeException(e);
-//        }
-
-
-        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel);
+        ProductCatalogServiceGrpc.ProductCatalogServiceBlockingStub productCatalogStub = ProductCatalogServiceGrpc.newBlockingStub(productCatalogChannel)
+                .withDeadlineAfter(8, TimeUnit.SECONDS); // 统一8秒超时
         return productCatalogStub.getProduct(request);
     }
 
