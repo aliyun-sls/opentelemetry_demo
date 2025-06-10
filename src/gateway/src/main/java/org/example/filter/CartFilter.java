@@ -358,12 +358,25 @@ public class CartFilter implements GatewayFilter {
                     
                     // 确保products对象中有priceUsd和price字段
                     productJson.add("priceUsd", validPriceObject);
-                    productJson.add("price", validPriceObject.deepCopy());
+                    
+                    // 创建一个专门用于前端显示的price对象 - 确保使用原始数字类型而非字符串
+                    JsonObject frontendPriceObject = new JsonObject();
+                    // 确保units和nanos是数字而非字符串或其他类型
+                    int units = validPriceObject.get("units").getAsInt();
+                    int nanos = validPriceObject.get("nanos").getAsInt();
+                    frontendPriceObject.addProperty("units", units);
+                    frontendPriceObject.addProperty("nanos", nanos);
+                    frontendPriceObject.addProperty("currencyCode", validPriceObject.get("currencyCode").getAsString());
+                    
+                    // 添加price字段到产品对象
+                    productJson.add("price", frontendPriceObject);
                     
                     // 直接在cart item中也添加一个price字段
-                    itemObj.add("price", validPriceObject.deepCopy());
+                    itemObj.add("price", frontendPriceObject.deepCopy());
                     
-                    log.info("Final price object for product {}: {}", productId, validPriceObject);
+                    log.info("Final price object for product {}: units={}, nanos={}, type={}", 
+                            productId, units, nanos, 
+                            frontendPriceObject.get("units").getClass().getName());
                     
                     itemObj.add("product", productJson);
                     
@@ -390,9 +403,9 @@ public class CartFilter implements GatewayFilter {
                                 // 检查units是否是字符串，如果是则转换为数字
                                 if (moneyJson.get("units").getAsJsonPrimitive().isString()) {
                                     try {
-                                        int units = Integer.parseInt(moneyJson.get("units").getAsString());
-                                        moneyJson.addProperty("units", units);
-                                        log.info("Converted units from string to number: {}", units);
+                                        int convertedUnits = Integer.parseInt(moneyJson.get("units").getAsString());
+                                        moneyJson.addProperty("units", convertedUnits);
+                                        log.info("Converted units from string to number: {}", convertedUnits);
                                     } catch (NumberFormatException e) {
                                         log.warn("Failed to convert units to number: {}", e.getMessage());
                                         moneyJson.addProperty("units", 0);
@@ -407,9 +420,9 @@ public class CartFilter implements GatewayFilter {
                                 // 检查nanos是否是字符串，如果是则转换为数字
                                 if (moneyJson.get("nanos").getAsJsonPrimitive().isString()) {
                                     try {
-                                        int nanos = Integer.parseInt(moneyJson.get("nanos").getAsString());
-                                        moneyJson.addProperty("nanos", nanos);
-                                        log.info("Converted nanos from string to number: {}", nanos);
+                                        int convertedNanos = Integer.parseInt(moneyJson.get("nanos").getAsString());
+                                        moneyJson.addProperty("nanos", convertedNanos);
+                                        log.info("Converted nanos from string to number: {}", convertedNanos);
                                     } catch (NumberFormatException e) {
                                         log.warn("Failed to convert nanos to number: {}", e.getMessage());
                                         moneyJson.addProperty("nanos", 0);
@@ -429,11 +442,25 @@ public class CartFilter implements GatewayFilter {
                             // 记录最终的价格对象
                             log.info("Final money JSON: {}", moneyJson);
                             
-                            productJson.add("priceUsd", moneyJson);
+                            // 确保数值类型正确
+                            JsonObject convertedMoneyJson = new JsonObject();
+                            // 显式转换为int类型，确保是数字
+                            int convertedUnits = moneyJson.has("units") ? moneyJson.get("units").getAsInt() : 0;
+                            int convertedNanos = moneyJson.has("nanos") ? moneyJson.get("nanos").getAsInt() : 0;
+                            convertedMoneyJson.addProperty("units", convertedUnits);
+                            convertedMoneyJson.addProperty("nanos", convertedNanos);
+                            convertedMoneyJson.addProperty("currencyCode", moneyJson.has("currencyCode") ? 
+                                    moneyJson.get("currencyCode").getAsString() : currencyCode);
+                            
+                            productJson.add("priceUsd", convertedMoneyJson);
                             
                             // 同时添加price字段，以适配前端期望
-                            productJson.add("price", moneyJson.deepCopy());
-                            log.info("Added both priceUsd and price fields to product JSON");
+                            productJson.add("price", convertedMoneyJson.deepCopy());
+                            // 更新cart item中的price字段
+                            itemObj.add("price", convertedMoneyJson.deepCopy());
+                            log.info("Added price fields with number types - units={}, nanos={}, type={}", 
+                                    convertedUnits, convertedNanos, 
+                                    convertedMoneyJson.get("units").getClass().getName());
                         } catch (Exception e) {
                             log.error("Failed to convert currency for product {}: {}", productId, e.getMessage());
                             // 货币转换失败不应该影响整个购物车的获取
@@ -503,13 +530,41 @@ public class CartFilter implements GatewayFilter {
                 
                 String userId = requestJson.get("userId").getAsString();
                 String productId = itemObject.get("productId").getAsString();
-                int quantity = itemObject.get("quantity").getAsInt();
+                
+                // 确保quantity是整数
+                int quantity;
+                try {
+                    if (itemObject.get("quantity").isJsonPrimitive() && itemObject.get("quantity").getAsJsonPrimitive().isString()) {
+                        quantity = Integer.parseInt(itemObject.get("quantity").getAsString());
+                        log.info("Converted quantity from string to number: {}", quantity);
+                    } else {
+                        quantity = itemObject.get("quantity").getAsInt();
+                    }
+                } catch (Exception e) {
+                    log.error("Error parsing quantity: {}", e.getMessage());
+                    quantity = 1; // 默认值
+                }
                 
                 log.info("handlePostRequest userId: {} productId: {} quantity: {}", userId, productId, quantity);
+                
+                // 获取商品详情，确保正确设置价格
+                try {
+                    Demo.GetProductRequest.Builder productRequestBuilder = Demo.GetProductRequest.newBuilder();
+                    productRequestBuilder.setId(productId);
+                    Demo.Product product = DoGetProductCatalog(productRequestBuilder.build());
+                    
+                    // 记录产品信息
+                    log.info("Product details for POST - ID: {}, has price: {}", 
+                           productId, product.hasPriceUsd());
+                } catch (Exception e) {
+                    log.warn("Could not fetch product details for POST request: {}", e.getMessage());
+                }
+                
                 Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
                 builder.setUserId(userId);
                 builder.setItem(Demo.CartItem.newBuilder().setProductId(productId).setQuantity(quantity).build());
                 DoAddCartItem(builder.build());
+                
                 exchange.getResponse().setStatusCode(HttpStatus.OK);
                 return exchange.getResponse().setComplete();
             } catch (Exception e) {
