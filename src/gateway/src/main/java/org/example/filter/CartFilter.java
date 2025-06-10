@@ -294,7 +294,15 @@ public class CartFilter implements GatewayFilter {
                     Demo.GetProductRequest.Builder productRequestBuilder = Demo.GetProductRequest.newBuilder();
                     productRequestBuilder.setId(productId);
                     Demo.Product product = DoGetProductCatalog(productRequestBuilder.build());
+                    
+                    // 记录原始产品数据
+                    log.info("Product from catalog service - ID: {}, Raw proto: {}", productId, product);
+                    
                     JsonObject productJson = new Gson().fromJson(JsonFormat.printer().print(product), JsonObject.class);
+                    
+                    // 记录转换后的JSON结构
+                    log.info("Product JSON after conversion - ID: {}, JSON: {}", productId, productJson);
+                    
                     itemObj.add("product", productJson);
                     
                     if (currencyCode != null && !currencyCode.isEmpty() && 
@@ -303,13 +311,74 @@ public class CartFilter implements GatewayFilter {
                             Demo.CurrencyConversionRequest.Builder request = Demo.CurrencyConversionRequest.newBuilder();
                             request.setFrom(product.getPriceUsd());
                             request.setToCode(currencyCode);
+                            
+                            // 记录货币转换请求
+                            log.info("Currency conversion request - From: {}, To: {}", 
+                                    JsonFormat.printer().print(product.getPriceUsd()), currencyCode);
+                            
                             Demo.Money money = DoCurrencyConvert(request.build());
+                            
+                            // 记录货币转换结果
+                            log.info("Currency conversion result - Money: {}", JsonFormat.printer().print(money));
+                            
                             JsonObject moneyJson = new Gson().fromJson(JsonFormat.printer().print(money), JsonObject.class);
+                            
+                            // 确保price字段的数据类型正确
+                            if (moneyJson.has("units") && moneyJson.get("units").isJsonPrimitive()) {
+                                // 检查units是否是字符串，如果是则转换为数字
+                                if (moneyJson.get("units").getAsJsonPrimitive().isString()) {
+                                    try {
+                                        int units = Integer.parseInt(moneyJson.get("units").getAsString());
+                                        moneyJson.addProperty("units", units);
+                                        log.info("Converted units from string to number: {}", units);
+                                    } catch (NumberFormatException e) {
+                                        log.warn("Failed to convert units to number: {}", e.getMessage());
+                                        moneyJson.addProperty("units", 0);
+                                    }
+                                }
+                            } else {
+                                moneyJson.addProperty("units", 0);
+                                log.warn("Added missing units field with default value 0");
+                            }
+                            
+                            if (moneyJson.has("nanos") && moneyJson.get("nanos").isJsonPrimitive()) {
+                                // 检查nanos是否是字符串，如果是则转换为数字
+                                if (moneyJson.get("nanos").getAsJsonPrimitive().isString()) {
+                                    try {
+                                        int nanos = Integer.parseInt(moneyJson.get("nanos").getAsString());
+                                        moneyJson.addProperty("nanos", nanos);
+                                        log.info("Converted nanos from string to number: {}", nanos);
+                                    } catch (NumberFormatException e) {
+                                        log.warn("Failed to convert nanos to number: {}", e.getMessage());
+                                        moneyJson.addProperty("nanos", 0);
+                                    }
+                                }
+                            } else {
+                                moneyJson.addProperty("nanos", 0);
+                                log.warn("Added missing nanos field with default value 0");
+                            }
+                            
+                            // 确保有currencyCode字段
+                            if (!moneyJson.has("currencyCode") || moneyJson.get("currencyCode").isJsonNull()) {
+                                moneyJson.addProperty("currencyCode", currencyCode);
+                                log.info("Added missing currencyCode: {}", currencyCode);
+                            }
+                            
+                            // 记录最终的价格对象
+                            log.info("Final money JSON: {}", moneyJson);
+                            
                             productJson.add("priceUsd", moneyJson);
+                            
+                            // 同时添加price字段，以适配前端期望
+                            productJson.add("price", moneyJson);
+                            log.info("Added both priceUsd and price fields to product JSON");
                         } catch (Exception e) {
                             log.error("Failed to convert currency for product {}: {}", productId, e.getMessage());
                             // 货币转换失败不应该影响整个购物车的获取
                         }
+                    } else {
+                        log.warn("Currency conversion skipped - currencyCode: {}, product has priceUsd: {}", 
+                                currencyCode, product.hasPriceUsd());
                     }
                 } catch (Exception e) {
                     log.error("Failed to get product details for {}: {}", productId, e.getMessage());
