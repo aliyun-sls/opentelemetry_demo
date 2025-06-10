@@ -17,6 +17,9 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: {{ .Values.rebalance.backoffLimit | default 2 }}
+      {{- with .Values.rebalance.ttlSecondsAfterFinished }}
+      ttlSecondsAfterFinished: {{ . }}
+      {{- end }}
       template:
         metadata:
           labels:
@@ -27,7 +30,7 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
         spec:
-          restartPolicy: OnFailure
+          restartPolicy: Never
           {{- if .Values.serviceAccount.create }}
           serviceAccountName: {{ include "otel-demo.serviceAccountName" . }}
           {{- end }}
@@ -60,448 +63,488 @@ spec:
             - -c
             - |
               echo "=================================================="
-              echo "🔄 Pod 分布均匀性检测与重新平衡任务开始"
+              echo "重平衡任务启动 - 包含网络检测"
               echo "时间: $(date)"
               echo "=================================================="
               
-              # 获取当前命名空间
-              echo "🔧 [STEP 1] 初始化配置参数..."
+              # Get current namespace
               NAMESPACE="${NAMESPACE:-{{ .Release.Namespace }}}"
-              echo "📍 操作命名空间: $NAMESPACE"
-              
-              # 配置参数
-              IMBALANCE_THRESHOLD={{ .Values.rebalance.imbalanceThreshold | default 0.3 }}
-              MIN_PODS_PER_COMPONENT={{ .Values.rebalance.minPodsPerComponent | default 2 }}
-              
-              # 将浮点数阈值转换为整数 避免shell算术运算问题
-              THRESHOLD_X100=30  # 0.3 * 100 = 30
-              
-              echo "⚙️  配置参数:"
-              echo "   - 不均匀阈值: ${IMBALANCE_THRESHOLD} 超过此值视为不均匀"
-              echo "   - 最小 Pod 数量: ${MIN_PODS_PER_COMPONENT} 低于此数量跳过检测"
-              
-              # 获取所有需要检查的组件
-              echo "🔧 [STEP 2] 获取待检查组件列表..."
-              COMPONENTS="{{ range $key, $value := .Values.components }}{{- if $value.enabled }}{{ $key }} {{ end }}{{- end }}"
-              echo "📋 需要检查的组件: $COMPONENTS"
-              
-              # 函数：计算分布不均匀度
-              calculate_imbalance() {
-                local component="$1"
-                echo "🔍 [FUNC] calculate_imbalance 开始分析组件: $component"
-                
-                # 获取该组件的所有运行中的 Pod 及其节点信息
-                echo "   🔧 [SUB-STEP] 获取组件 $component 的运行中 Pod 列表..."
-                local pod_nodes
-                pod_nodes=$(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
-                  --field-selector=status.phase=Running \
-                  -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' 2>/dev/null)
-                
-                if [ -z "$pod_nodes" ]; then
-                  echo "   ⚠️  [RESULT] 组件 $component 没有运行中的 Pod"
-                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 跳过"
-                  return 1
-                fi
-                
-                echo "   📊 [SUB-STEP] 统计节点和AZ分布..."
-                # 创建临时文件来存储统计信息
-                local temp_dir="/tmp/rebalance_$$"
-                mkdir -p "$temp_dir"
-                echo "$pod_nodes" > "$temp_dir/pod_nodes"
-                
-                # 获取所有可用节点（用于计算真实的分布不均匀度）
-                echo "   🔧 [SUB-STEP] 获取集群所有可用节点..."
-                kubectl get nodes --no-headers -o custom-columns=NAME:.metadata.name > "$temp_dir/all_nodes" 2>/dev/null
-                local total_nodes
-                total_nodes=$(wc -l < "$temp_dir/all_nodes" 2>/dev/null || echo 0)
-                echo "   📊 [INFO] 集群总节点数: $total_nodes"
-                
-                local total_pods=0
-                local nodes_with_pods=0
-                
-                # 统计每个节点的Pod数量
-                sort "$temp_dir/pod_nodes" | uniq -c > "$temp_dir/node_counts"
-                
-                # 🎯 新增：AZ感知的保守策略检查
-                echo "   🔧 [SUB-STEP] 执行AZ感知的分布检查（保守策略）..."
-                
-                # 获取每个Pod所在节点的AZ信息
-                > "$temp_dir/az_distribution"
-                while read count node; do
-                  if [ -n "$node" ]; then
-                    echo "   🔍 [LOOP] 节点 $node: $count 个Pod"
-                    local az
-                    az=$(kubectl get node "$node" -o jsonpath='{.metadata.labels.topology\.kubernetes.io/zone}' 2>/dev/null || echo "unknown")
-                    echo "   📍 [INFO] 节点 $node 属于 AZ: $az"
-                    total_pods=$((total_pods + count))
-                    nodes_with_pods=$((nodes_with_pods + 1))
-                    
-                    # 记录AZ分布信息
-                    local i=1
-                    while [ "$i" -le "$count" ]; do
-                      echo "$az" >> "$temp_dir/az_distribution"
-                      i=$((i + 1))
-                    done
-                  fi
-                done < "$temp_dir/node_counts"
-                
-                echo "   📊 统计信息:"
-                echo "      - 总 Pod 数: $total_pods"
-                echo "      - 有Pod的节点数: $nodes_with_pods"
-                echo "      - 集群总节点数: $total_nodes"
-                
-                # 如果 Pod 数量太少，跳过检测
-                echo "   🔍 [CHECK] 检查 Pod 数量是否达到最小阈值..."
-                if [ "$total_pods" -lt "$MIN_PODS_PER_COMPONENT" ]; then
-                  echo "   ✅ [RESULT] Pod 数量 $total_pods 少于最小阈值 $MIN_PODS_PER_COMPONENT，跳过检测"
-                  rm -rf "$temp_dir"
-                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 跳过"
-                  return 1
-                fi
-                
-                # 🎯 保守策略：优先检查AZ分布
-                echo "   🔧 [SUB-STEP] 分析AZ分布情况..."
-                
-                # 统计不同AZ的数量
-                sort "$temp_dir/az_distribution" | uniq -c > "$temp_dir/az_counts"
-                local unique_azs
-                unique_azs=$(wc -l < "$temp_dir/az_counts")
-                echo "   📊 [INFO] Pod分布在 $unique_azs 个不同的AZ中"
-                
-                # 显示AZ分布详情
-                echo "   📊 [INFO] AZ分布详情:"
-                while read az_count az_name; do
-                  echo "      AZ $az_name: $az_count 个Pod"
-                done < "$temp_dir/az_counts"
-                
-                # 🎯 保守策略判断逻辑
-                if [ "$unique_azs" -eq 1 ]; then
-                  echo "   🔴 [CRITICAL] 所有Pod都集中在单个AZ中 - 高可用风险！"
-                  echo "   🔄 [DECISION] 保守策略: 单AZ集中必须重新平衡"
-                  rm -rf "$temp_dir"
-                  echo "   ❌ [RESULT] 分布不均匀，需要重新平衡（AZ集中）"
-                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 需要重新平衡"
-                  return 0
-                elif [ "$unique_azs" -ge 2 ]; then
-                  echo "   🟢 [GOOD] Pod已跨多个AZ分布 - 高可用保障OK"
-                  echo "   ✅ [DECISION] 保守策略: 跨AZ分布无需重新平衡"
-                  rm -rf "$temp_dir"
-                  echo "   ✅ [RESULT] AZ分布良好，跳过重新平衡（保守策略）"
-                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 无需重新平衡"
-                  return 1
-                else
-                  echo "   ⚠️  [WARNING] AZ信息异常，回退到传统节点分布检查"
-                fi
-                
-                # 🔄 回退逻辑：如果AZ信息异常，使用原有的节点级检查
-                echo "   🔧 [SUB-STEP] 回退到传统节点分布检查..."
-                
-                # 初始化所有节点的Pod计数为0
-                awk '{print $1 " 0"}' "$temp_dir/all_nodes" > "$temp_dir/all_node_counts"
-                
-                # 更新有Pod的节点计数 - 使用BusyBox兼容的方法
-                while read count node; do
-                  if [ -n "$node" ]; then
-                    # 使用更安全的方法：重新生成文件而不是sed替换
-                    # 转义节点名中的特殊字符
-                    local escaped_node
-                    escaped_node=$(echo "$node" | sed 's/\./\\./g')
-                    # 使用awk进行安全的替换
-                    awk -v target="$node" -v newcount="$count" \
-                      '$1 == target {print $1 " " newcount; next} {print}' \
-                      "$temp_dir/all_node_counts" > "$temp_dir/all_node_counts.tmp"
-                    mv "$temp_dir/all_node_counts.tmp" "$temp_dir/all_node_counts"
-                  fi
-                done < "$temp_dir/node_counts"
-                
-                # 计算理想分布（基于所有节点）
-                echo "   🔧 [SUB-STEP] 计算理想分布..."
-                local ideal_per_node=0
-                local remainder=0
-                if [ "$total_nodes" -gt 0 ]; then
-                  ideal_per_node=$((total_pods / total_nodes))
-                  remainder=$((total_pods % total_nodes))
-                fi
-                
-                echo "   🎯 理想分布: 每节点 $ideal_per_node 个 Pod (基于 $total_nodes 个节点)"
-                if [ "$remainder" -gt 0 ]; then
-                  echo "      有 $remainder 个节点需要额外 1 个 Pod"
-                fi
-                
-                # 计算不均匀度 使用标准差/平均值
-                echo "   🔧 [SUB-STEP] 计算不均匀度..."
-                
-                # 避免除零错误
-                if [ "$total_nodes" -eq 0 ]; then
-                  echo "   ❌ [ERROR] 节点数为0，无法计算"
-                  rm -rf "$temp_dir"
-                  return 1
-                fi
-                
-                # 计算平均值 (×100 避免浮点数)
-                local mean_x100=$((total_pods * 100 / total_nodes))
-                local sum_sq_diff=0
-                
-                echo "   📊 [INFO] 平均每节点Pod数: $mean_x100/100"
-                
-                # 遍历所有节点计算方差
-                while read node count; do
-                  if [ -n "$node" ]; then
-                    echo "   🔍 [LOOP] 处理节点 $node: $count 个Pod"
-                    local count_x100=$((count * 100))
-                    local diff=$((count_x100 - mean_x100))
-                    if [ "$diff" -lt 0 ]; then
-                      diff=$((-diff))
-                    fi
-                    local sq_diff=$((diff * diff))
-                    sum_sq_diff=$((sum_sq_diff + sq_diff))
-                    echo "   📊 [CALC] 节点$node 差值: $diff/100, 平方差: $sq_diff"
-                  fi
-                done < "$temp_dir/all_node_counts"
-                
-                local variance=$((sum_sq_diff / total_nodes))
-                echo "   📊 [CALC] 方差: $variance"
-                
-                # 计算标准差的近似值（避免使用bc和sqrt）
-                local std_dev_x100=0
-                if [ "$variance" -gt 0 ]; then
-                  # 使用整数近似 sqrt(variance)
-                  # 简化计算：如果方差很大，标准差约等于方差的平方根
-                  if [ "$variance" -ge 10000 ]; then
-                    std_dev_x100=$((variance / 100))
-                  elif [ "$variance" -ge 2500 ]; then
-                    std_dev_x100=50
-                  elif [ "$variance" -ge 900 ]; then
-                    std_dev_x100=30
-                  elif [ "$variance" -ge 400 ]; then
-                    std_dev_x100=20
-                  elif [ "$variance" -ge 100 ]; then
-                    std_dev_x100=10
-                  else
-                    std_dev_x100=5
-                  fi
-                fi
-                
-                echo "   📊 [CALC] 标准差近似值: $std_dev_x100/100"
-                
-                # 计算不均匀度比率 (标准差/平均值)
-                local imbalance_x100=0
-                if [ "$mean_x100" -gt 0 ] && [ "$std_dev_x100" -gt 0 ]; then
-                  imbalance_x100=$((std_dev_x100 * 100 / mean_x100))
-                fi
-                local threshold_x100=$((THRESHOLD_X100))
-                
-                echo "   📊 不均匀度: $imbalance_x100/100 阈值: $threshold_x100/100"
-                echo "   ⚠️  [FALLBACK] 使用传统节点级检查（AZ分布异常时的回退机制）"
-                
-                # 比较不均匀度
-                echo "   🔍 [CHECK] 比较不均匀度与阈值..."
-                local needs_rebalance=0
-                if [ "$imbalance_x100" -gt "$threshold_x100" ]; then
-                  needs_rebalance=1
-                fi
-                echo "   📊 [CALC] 需要重新平衡: $needs_rebalance (1=是 0=否)"
-                
-                # 清理临时文件
-                echo "   🔧 [SUB-STEP] 清理临时文件..."
-                rm -rf "$temp_dir"
-                
-                if [ "$needs_rebalance" -eq 1 ]; then
-                  echo "   ❌ [RESULT] 分布不均匀，需要重新平衡（传统算法）"
-                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 需要重新平衡"
-                  return 0
-                else
-                  echo "   ✅ [RESULT] 分布相对均匀，无需重新平衡（传统算法）"
-                  echo "   ✅ [FUNC] calculate_imbalance 结束 - 无需重新平衡"
-                  return 1
-                fi
-              }
-              
-              # 函数：执行重新平衡
-              perform_rebalance() {
-                local component="$1"
-                echo "🔄 [FUNC] perform_rebalance 开始执行组件重新平衡: $component"
-                
-                # 获取该组件的所有运行中的 Pod
-                echo "   🔧 [SUB-STEP] 获取组件 $component 的运行中 Pod 列表..."
-                local pods
-                pods=$(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
-                  --field-selector=status.phase=Running \
-                  -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
-                
-                if [ -z "$pods" ]; then
-                  echo "   ⚠️  [RESULT] 没有找到需要重新平衡的 Pod"
-                  echo "   ✅ [FUNC] perform_rebalance 结束 - 无Pod可操作"
-                  return 0
-                fi
-                
-                # 将pods转换为数组
-                local temp_dir="/tmp/rebalance_$$"
-                mkdir -p "$temp_dir"
-                echo "$pods" | tr ' ' '\n' > "$temp_dir/pod_list"
-                local total_pods
-                total_pods=$(wc -l < "$temp_dir/pod_list")
-                echo "   📊 [INFO] 找到 $total_pods 个运行中的 Pod"
-                
-                # 计算需要删除的 Pod 数量
-                echo "   🔧 [SUB-STEP] 计算删除策略..."
-                local delete_count
-                {{- if eq .Values.rebalance.strategy "conservative" }}
-                delete_count=$((total_pods / 4))
-                echo "   📊 [STRATEGY] 使用保守策略: 删除 1/4"
-                {{- else if eq .Values.rebalance.strategy "aggressive" }}
-                delete_count=$((total_pods / 2))
-                echo "   📊 [STRATEGY] 使用激进策略: 删除 1/2"
-                {{- else }}
-                delete_count=$((total_pods / 3))
-                echo "   📊 [STRATEGY] 使用平衡策略: 删除 1/3"
-                {{- end }}
-                
-                echo "   📊 [CALC] 初始删除数量: $delete_count"
-                
-                # 确保至少删除 1 个，但不超过总数的 80%
-                echo "   🔍 [CHECK] 调整删除数量范围..."
-                if [ "$delete_count" -eq 0 ] && [ "$total_pods" -gt 1 ]; then
-                  delete_count=1
-                  echo "   📊 [ADJUST] 最少删除数量调整为: $delete_count"
-                elif [ "$delete_count" -gt $((total_pods * 4 / 5)) ]; then
-                  delete_count=$((total_pods * 4 / 5))
-                  echo "   📊 [ADJUST] 最大删除数量调整为: $delete_count"
-                fi
-                
-                echo "   📊 重新平衡策略: 删除 $delete_count 个 Pod 总共 $total_pods 个"
-                
-                # 随机选择要删除的 Pod
-                echo "   🔧 [SUB-STEP] 随机选择要删除的 Pod..."
-                # 使用BusyBox兼容的随机排序方法
-                awk 'BEGIN{srand()} {print rand(), $0}' "$temp_dir/pod_list" | sort -n | cut -d' ' -f2- > "$temp_dir/shuffled_pods"
-                
-                local deleted_count=0
-                echo "   🔧 [SUB-STEP] 开始删除 Pod..."
-                local i=1
-                while [ "$i" -le "$delete_count" ] && [ "$i" -le "$total_pods" ]; do
-                  echo "   🔍 [LOOP] 处理删除序号: $i"
-                  local pod_to_delete
-                  pod_to_delete=$(sed -n "${i}p" "$temp_dir/shuffled_pods")
-                  if [ -n "$pod_to_delete" ]; then
-                    echo "   🔧 [SUB-STEP] 获取 Pod $pod_to_delete 的节点和AZ信息..."
-                    local pod_node
-                    pod_node=$(kubectl get pod "$pod_to_delete" -n "$NAMESPACE" -o jsonpath='{.spec.nodeName}' 2>/dev/null)
-                    local pod_az
-                    pod_az=$(kubectl get node "$pod_node" -o jsonpath='{.metadata.labels.topology\.kubernetes.io/zone}' 2>/dev/null || echo "unknown")
-                    echo "   🗑️  删除 Pod: $pod_to_delete Node: $pod_node AZ: $pod_az"
-                    echo "   🔧 [COMMAND] 执行 kubectl delete..."
-                    kubectl delete pod "$pod_to_delete" -n "$NAMESPACE" --wait=false --ignore-not-found=true
-                    deleted_count=$((deleted_count + 1))
-                    echo "   ⏱️  [WAIT] 等待 2s 避免过快删除..."
-                    sleep 2
-                  else
-                    echo "   ⚠️  [SKIP] 跳过序号 $i，Pod名称为空"
-                  fi
-                  i=$((i + 1))
-                done
-                
-                echo "   ✅ [RESULT] 已删除 $deleted_count 个 Pod，等待重新调度..."
-                echo "   ✅ [FUNC] perform_rebalance 结束 - 删除了 $deleted_count 个Pod"
-                rm -rf "$temp_dir"
-                return $deleted_count
-              }
-              
-              # 主要检测和平衡逻辑
-              echo ""
-              echo "🔍 [STEP 3] 开始检测各组件的分布均匀性..."
-              
-              total_rebalanced=0
-              component_index=0
-              
-              for component in $COMPONENTS; do
-                if [ -n "$component" ]; then
-                  component_index=$((component_index + 1))
-                  echo ""
-                  echo "=========================================="
-                  echo "📋 [COMPONENT $component_index] 处理组件: $component"
-                  echo "=========================================="
-                  
-                  if calculate_imbalance "$component"; then
-                    echo "🔄 [ACTION] 组件 $component 需要重新平衡，开始执行..."
-                    perform_rebalance "$component"
-                    rebalanced_pods=$?
-                    total_rebalanced=$((total_rebalanced + rebalanced_pods))
-                    echo "📊 [SUMMARY] 组件 $component 重新平衡完成，删除了 $rebalanced_pods 个Pod"
-                    
-                    echo "   ⏱️  [WAIT] 等待 {{ .Values.rebalance.componentWaitTime | default 10 }}s 后处理下一个组件..."
-                    sleep {{ .Values.rebalance.componentWaitTime | default 10 }}
-                  else
-                    echo "   ✅ [SKIP] 组件 $component 分布均匀，跳过重新平衡"
-                  fi
-                fi
-              done
+              echo "运行命名空间: $NAMESPACE"
               
               echo ""
-              echo "=================================================="
-              echo "🎉 [STEP 4] Pod 分布检测任务完成！"
-              echo "📊 总共重新平衡的 Pod 数量: $total_rebalanced"
-              echo "时间: $(date)"
-              echo "=================================================="
+              echo "[步骤 0] 配置加载和Pod负载检测..."
               
-              # 如果有重新平衡操作，等待一段时间后显示最终状态
-              if [ "$total_rebalanced" -gt 0 ]; then
-                echo ""
-                echo "⏳ [STEP 5] 等待 {{ .Values.rebalance.waitTime | default 30 }}s 后显示最终分布状态..."
-                sleep {{ .Values.rebalance.waitTime | default 30 }}
+              echo "   [阶段 0.0] 加载重平衡阈值配置..."
+              
+              # Default thresholds (fallback values) - 改为Pod数量相关
+              DEFAULT_POD_DENSITY_THRESHOLD=8    # 平均每节点Pod数量阈值
+              DEFAULT_AZ_POD_DIFF_THRESHOLD=5    # AZ间平均Pod数量差异阈值
+              
+              # Try to read thresholds from secret
+              POD_DENSITY_THRESHOLD="$DEFAULT_POD_DENSITY_THRESHOLD"
+              AZ_POD_DIFF_THRESHOLD="$DEFAULT_AZ_POD_DIFF_THRESHOLD"
+              
+              # Check if main secret exists and read rebalance thresholds
+              if kubectl get secret o11y-demo -n "$NAMESPACE" >/dev/null 2>&1; then
+                echo "   [信息] 发现 o11y-demo Secret，加载自定义阈值..."
                 
-                echo ""
-                echo "📈 [STEP 6] 最终分布状态:"
-                component_index=0
-                for component in $COMPONENTS; do
-                  if [ -n "$component" ]; then
-                    component_index=$((component_index + 1))
-                    echo "🔍 [$component_index] 检查组件 $component 的最终状态..."
-                    local pod_count
-                    pod_count=$(kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
-                      --field-selector=status.phase=Running --no-headers 2>/dev/null | wc -l)
-                    if [ "$pod_count" -gt 0 ]; then
-                      echo "组件 $component $pod_count 个 Pod:"
-                      kubectl get pods -n "$NAMESPACE" -l "app.kubernetes.io/component=$component" \
-                        --field-selector=status.phase=Running \
-                        -o custom-columns="POD:.metadata.name,NODE:.spec.nodeName" | head -10
-                      echo ""
-                    else
-                      echo "组件 $component: 无运行中的 Pod"
-                    fi
-                  fi
-                done
+                # Read pod density threshold
+                CUSTOM_POD_DENSITY_THRESHOLD=$(kubectl get secret o11y-demo -n "$NAMESPACE" -o jsonpath='{.data.REBALANCE_POD_DENSITY_THRESHOLD}' 2>/dev/null | base64 -d 2>/dev/null || echo "")
+                if [ -n "$CUSTOM_POD_DENSITY_THRESHOLD" ] && [ "$CUSTOM_POD_DENSITY_THRESHOLD" -eq "$CUSTOM_POD_DENSITY_THRESHOLD" ] 2>/dev/null; then
+                  POD_DENSITY_THRESHOLD="$CUSTOM_POD_DENSITY_THRESHOLD"
+                  echo "   [配置] 使用自定义Pod密度阈值: ${POD_DENSITY_THRESHOLD}个/节点"
+                else
+                  echo "   [警告] Secret中的REBALANCE_POD_DENSITY_THRESHOLD无效，使用默认值: ${POD_DENSITY_THRESHOLD}个/节点"
+                fi
+                
+                # Read AZ pod difference threshold  
+                CUSTOM_AZ_POD_DIFF_THRESHOLD=$(kubectl get secret o11y-demo -n "$NAMESPACE" -o jsonpath='{.data.REBALANCE_AZ_POD_DIFF_THRESHOLD}' 2>/dev/null | base64 -d 2>/dev/null || echo "")
+                if [ -n "$CUSTOM_AZ_POD_DIFF_THRESHOLD" ] && [ "$CUSTOM_AZ_POD_DIFF_THRESHOLD" -eq "$CUSTOM_AZ_POD_DIFF_THRESHOLD" ] 2>/dev/null; then
+                  AZ_POD_DIFF_THRESHOLD="$CUSTOM_AZ_POD_DIFF_THRESHOLD"
+                  echo "   [配置] 使用自定义可用区Pod差异阈值: ${AZ_POD_DIFF_THRESHOLD}个/节点"
+                else
+                  echo "   [警告] Secret中的REBALANCE_AZ_POD_DIFF_THRESHOLD无效，使用默认值: ${AZ_POD_DIFF_THRESHOLD}个/节点"
+                fi
               else
-                echo ""
-                echo "✅ [RESULT] 所有组件分布均匀，无需重新平衡操作"
+                echo "   [信息] 未找到 o11y-demo Secret，使用默认阈值："
+                echo "   [配置] Pod密度阈值: ${POD_DENSITY_THRESHOLD}个/节点"
+                echo "   [配置] 可用区Pod差异阈值: ${AZ_POD_DIFF_THRESHOLD}个/节点"
               fi
               
               echo ""
-              echo "=================================================="
-              echo "🏁 [COMPLETE] 重新平衡任务全部完成！"
-              echo "📊 最终统计: 重新平衡了 $total_rebalanced 个 Pod"
-              echo "结束时间: $(date)"
-              echo "=================================================="
+              
+              # 函数: 获取节点Pod数量
+              get_node_pod_count() {
+                local node="$1"
+                
+                echo >&2 "   [调试] 统计节点 $node 上的Pod数量..."
+                
+                # 获取节点上的总Pod数量
+                local total_pods
+                total_pods=$(kubectl get pods --all-namespaces --field-selector spec.nodeName="$node" --no-headers 2>/dev/null | wc -l || echo "0")
+                
+                if [ "$total_pods" -eq "$total_pods" ] 2>/dev/null && [ "$total_pods" -gt 0 ]; then
+                  # 获取不同类型Pod的详细信息
+                  local running_pods system_pods app_pods
+                  running_pods=$(kubectl get pods --all-namespaces --field-selector spec.nodeName="$node" --no-headers 2>/dev/null | grep -c "Running" || echo "0")
+                  system_pods=$(kubectl get pods --all-namespaces --field-selector spec.nodeName="$node" --no-headers 2>/dev/null | grep -E "(kube-system|kube-public|kube-node-lease)" | wc -l || echo "0")
+                  app_pods=$((total_pods - system_pods))
+                  
+                  echo >&2 "   [Pod统计] 节点 $node: 总计=${total_pods}个, 运行中=${running_pods}个, 系统=${system_pods}个, 应用=${app_pods}个"
+                  echo "$total_pods"
+                  return
+                fi
+                
+                echo >&2 "   [警告] 无法获取节点 $node 的Pod信息，返回0"
+                echo "0"
+              }
+              
+              # 函数: 检查节点健康状态
+              check_node_health() {
+                local node="$1"
+                
+                # 检查节点是否Ready
+                local node_ready
+                node_ready=$(kubectl get node "$node" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "Unknown")
+                
+                if [ "$node_ready" = "True" ]; then
+                  echo "Ready"
+                else
+                  echo "NotReady"
+                fi
+              }
+              
+              # Get all nodes and their AZ info
+              echo "   [阶段 0.1] 获取集群节点和可用区信息..."
+              echo "   [调试] 执行命令: kubectl get nodes -o custom-columns=NAME,AZ,STATUS --no-headers"
+              nodes_az_info=$(kubectl get nodes -o custom-columns="NAME:.metadata.name,AZ:.metadata.labels.topology\.kubernetes\.io/zone,STATUS:.status.conditions[?(@.type==\"Ready\")].status" --no-headers 2>/dev/null)
+              
+              if [ -z "$nodes_az_info" ]; then
+                echo "   [错误] 无法获取节点信息，跳过Pod负载检测，继续执行重平衡"
+                echo "   [信息] Pod负载检测阶段失败，继续部署重启"
+                echo ""
+              else
+                echo "   [成功] 已获取集群节点信息:"
+                echo "$nodes_az_info"
+                echo "   [信息] 集群中发现 $(echo "$nodes_az_info" | wc -l) 个节点"
+                echo ""
+                
+                # Create temp files for AZ stats
+                echo "   [阶段 0.2] 初始化Pod负载统计临时存储..."
+                temp_dir="/tmp/pod_check_$$"
+                mkdir -p "$temp_dir"
+                > "$temp_dir/az_pod_stats"
+                echo "   [调试] 已创建临时目录: $temp_dir"
+                
+                echo "   [阶段 0.3] 从所有节点收集Pod负载信息..."
+                
+                # Use temp file for node processing
+                echo "$nodes_az_info" > "$temp_dir/nodes_info"
+                node_counter=0
+                healthy_node_counter=0
+                while IFS=' ' read -r node_name az_name node_status; do
+                  if [ -n "$node_name" ] && [ -n "$az_name" ] && [ "$az_name" != "<none>" ]; then
+                    node_counter=$((node_counter + 1))
+                    echo "   [信息] 处理节点 $node_counter: $node_name (可用区: $az_name, 状态: $node_status)"
+                    
+                    # 只处理健康的节点
+                    if [ "$node_status" = "True" ]; then
+                      healthy_node_counter=$((healthy_node_counter + 1))
+                      
+                      # Get node pod count
+                      echo "   [调试] 统计节点 $node_name 的Pod数量..."
+                      node_pod_count=$(get_node_pod_count "$node_name")
+                      
+                      echo "   [结果] 节点 $node_name Pod数量: ${node_pod_count}个"
+                      
+                      # Record to file: AZ_name node_pod_count
+                      echo "$az_name $node_pod_count" >> "$temp_dir/az_pod_stats"
+                      echo "   [调试] 已将节点 $node_name 的Pod统计信息记录到文件"
+                    else
+                      echo "   [警告] 节点 $node_name 状态不健康($node_status)，跳过统计"
+                    fi
+                  else
+                    echo "   [警告] 跳过无效的节点条目: '$node_name' '$az_name' '$node_status'"
+                  fi
+                done < "$temp_dir/nodes_info"
+                echo "   [信息] 完成 $healthy_node_counter 个健康节点的Pod收集 (总节点: $node_counter)"
+                
+                echo ""
+                echo "   [阶段 0.4] 可用区Pod负载分析:"
+                
+                # Calculate average pod density per AZ
+                echo "   [调试] 初始化分析变量..."
+                need_rebalance=0
+                az_list=""
+                az_avg_list=""
+                healthy_az_count=0
+                
+                # Get all unique AZs from healthy nodes
+                echo "   [调试] 从健康节点数据中提取唯一可用区列表..."
+                unique_azs=$(cut -d' ' -f1 "$temp_dir/az_pod_stats" | sort | uniq)
+                echo "   [信息] 发现健康节点所在的可用区: $(echo $unique_azs | tr '\n' ' ')"
+                
+                for az in $unique_azs; do
+                  echo "   [调试] 分析可用区: $az"
+                  # Calculate total pods and node count for this AZ
+                  az_data=$(grep "^$az " "$temp_dir/az_pod_stats")
+                  echo "   [调试] 可用区 $az 的健康节点数据: $(echo "$az_data" | wc -l) 条记录"
+                  total_pods=0
+                  node_count=0
+                  
+                  # Use temp file for az data processing
+                  echo "$az_data" > "$temp_dir/current_az_data"
+                  while IFS=' ' read -r az_name pod_count; do
+                    if [ -n "$pod_count" ] && [ "$pod_count" -eq "$pod_count" ] 2>/dev/null; then
+                      total_pods=$((total_pods + pod_count))
+                      node_count=$((node_count + 1))
+                      echo "   [调试] 添加节点: $az_name, Pod数量: ${pod_count}个"
+                    fi
+                  done < "$temp_dir/current_az_data"
+                  
+                  if [ "$node_count" -gt 0 ]; then
+                    avg_pods_per_node=$((total_pods / node_count))
+                    healthy_az_count=$((healthy_az_count + 1))
+                    
+                    echo "   [结果] 可用区 $az: 总Pod=${total_pods}个, 健康节点=$node_count个, 平均=${avg_pods_per_node}个Pod/节点"
+                    
+                    # Check condition 1: Average pod density < threshold
+                    echo "   [检查] 测试条件1: 平均Pod密度 ($avg_pods_per_node 个/节点) < ${POD_DENSITY_THRESHOLD}个/节点？"
+                    if [ "$avg_pods_per_node" -lt "$POD_DENSITY_THRESHOLD" ]; then
+                      echo "   [触发] 可用区 $az 平均Pod密度 ${avg_pods_per_node}个/节点 < ${POD_DENSITY_THRESHOLD}个/节点，需要重平衡"
+                      need_rebalance=1
+                    else
+                      echo "   [通过] 可用区 $az 平均Pod密度 ${avg_pods_per_node}个/节点 >= ${POD_DENSITY_THRESHOLD}个/节点"
+                    fi
+                    
+                    az_list="$az_list $az"
+                    az_avg_list="$az_avg_list $avg_pods_per_node"
+                  else
+                    echo "   [警告] 可用区 $az 没有健康节点"
+                  fi
+                done
+                
+                # Check condition 2: Pod density difference between healthy AZs
+                echo "   [阶段 0.5] 检查健康可用区的Pod密度差异..."
+                echo "   [信息] 发现 $healthy_az_count 个健康可用区进行比较"
+                
+                if [ "$healthy_az_count" -ge 2 ]; then
+                  echo "   [调试] 执行多可用区Pod密度差异检查..."
+                  # Trim spaces and get AZ names and averages
+                  az1=$(echo "$az_list" | awk '{print $1}')
+                  az2=$(echo "$az_list" | awk '{print $2}')
+                  avg1=$(echo "$az_avg_list" | awk '{print $1}')
+                  avg2=$(echo "$az_avg_list" | awk '{print $2}')
+                  
+                  echo "   [调试] 解析的可用区列表: '$az_list'"
+                  echo "   [调试] 解析的平均Pod密度列表: '$az_avg_list'"
+                  
+                  echo "   [调试] 可用区1: $az1 = ${avg1}个Pod/节点, 可用区2: $az2 = ${avg2}个Pod/节点"
+                  
+                  # Calculate absolute difference
+                  diff=$((avg1 - avg2))
+                  if [ "$diff" -lt 0 ]; then
+                    diff=$((0 - diff))
+                  fi
+                  
+                  echo "   [结果] 可用区Pod密度差异: ${diff}个Pod/节点 (${az1}: ${avg1}个/节点 vs ${az2}: ${avg2}个/节点)"
+                  echo "   [检查] 测试条件2: Pod密度差异 ($diff 个/节点) > ${AZ_POD_DIFF_THRESHOLD}个/节点？"
+                  
+                  if [ "$diff" -gt "$AZ_POD_DIFF_THRESHOLD" ]; then
+                    echo "   [触发] 可用区Pod密度差异 ${diff}个/节点 > ${AZ_POD_DIFF_THRESHOLD}个/节点，需要重平衡"
+                    need_rebalance=1
+                  else
+                    echo "   [通过] 可用区Pod密度差异 ${diff}个/节点 <= ${AZ_POD_DIFF_THRESHOLD}个/节点"
+                  fi
+                elif [ "$healthy_az_count" -eq 1 ]; then
+                  echo "   [警告] 只有1个健康可用区，无法进行负载均衡比较"
+                  echo "   [决策] 单可用区模式，跳过重平衡检查"
+                else
+                  echo "   [错误] 没有健康的可用区，无法进行负载分析"
+                  echo "   [决策] 集群可能存在严重问题，强制触发重平衡"
+                  need_rebalance=1
+                fi
+                
+                echo ""
+                echo "   [阶段 0.6] 制定重平衡决策..."
+                if [ "$need_rebalance" -eq 1 ]; then
+                  echo "   [决策] Pod负载检查结果 - 需要重平衡"
+                  echo "   [信息] 至少一个触发条件被满足，继续执行重平衡"
+                  echo ""
+                else
+                  echo "   [决策] Pod负载检查结果 - 无需重平衡"
+                  echo "   [信息] 所有条件都在可接受的阈值范围内"
+                  echo ""
+                  echo "   [总结] Pod负载分析结果："
+                  echo "   - 所有健康可用区平均Pod密度 >= ${POD_DENSITY_THRESHOLD}个/节点: 通过"
+                  echo "   - 可用区Pod密度差异 <= ${AZ_POD_DIFF_THRESHOLD}个/节点: 通过" 
+                  echo "   - Pod负载分布是否平衡: 是"
+                  echo ""
+                  echo "   [完成] 任务完成，无需重平衡"
+                  echo "   [信息] 检测任务完成，直接退出"
+                  
+                  rm -rf "$temp_dir"
+                  exit 0
+                fi
+                
+                # Clean up temp files
+                rm -rf "$temp_dir"
+              fi
               
               echo ""
-              echo "🔧 [DEBUG] 为便于查看日志，Pod 将保持运行 10 分钟后退出..."
-              echo "🔧 [DEBUG] 可以使用以下命令查看日志:"
-              echo "   kubectl logs -f POD_NAME -c rebalance"
-              echo "🔧 [DEBUG] 开始等待..."
+              echo "========================================"
+              echo "[步骤 1] 部署重启阶段"
+              echo "========================================"
+              echo "[阶段 1.1] 在命名空间 $NAMESPACE 中发现部署..."
               
-              # 使用seq替代brace expansion
-              for i in $(seq 1 600); do
-                remainder=$((i % 60))
-                if [ "$remainder" -eq 0 ]; then
-                  minutes=$((i / 60))
-                  remaining=$((10 - minutes))
-                  echo "🔧 [DEBUG] 已等待 $minutes 分钟，还剩 $remaining 分钟..."
+              # First, list deployments
+              deployment_list=$(kubectl get deployments -n "$NAMESPACE" -o name 2>/dev/null)
+              if [ -z "$deployment_list" ]; then
+                echo "[错误] 在命名空间 $NAMESPACE 中未找到部署"
+                exit 1
+              fi
+              
+              deployment_count=$(echo "$deployment_list" | wc -l)
+              echo "[信息] 发现 $deployment_count 个需要重启的部署:"
+              echo "$deployment_list"
+              
+              echo ""
+              echo "[阶段 1.2] 执行重启命令..."
+              echo "[命令] kubectl get deployments -n $NAMESPACE -o name | xargs kubectl rollout restart"
+              
+              # Execute restart command
+              kubectl get deployments -n "$NAMESPACE" -o name | xargs kubectl rollout restart
+              restart_exit_code=$?
+              
+              if [ $restart_exit_code -eq 0 ]; then
+                echo "[成功] 所有部署重启命令已成功发出"
+                echo "[信息] 重启命令完成，退出代码: $restart_exit_code"
+              else
+                echo "[错误] 重启命令失败，退出代码: $restart_exit_code"
+                echo "[终止] 由于重启失败，停止重平衡过程"
+                exit 1
+              fi
+              
+              echo ""
+              echo "========================================"
+              echo "[步骤 2] 重启后监控阶段"
+              echo "========================================"
+              echo "[阶段 2.1] 渐进式等待Pod调度和启动..."
+              echo "[策略] 1分钟 → 2分钟 → 3分钟 → 4分钟，总计最多10分钟"
+              
+              # 渐进式等待函数
+              check_pods_ready() {
+                local ready_pods=$(kubectl get pods -n "$NAMESPACE" --no-headers 2>/dev/null | grep -c "Running" || echo "0")
+                local total_pods=$(kubectl get pods -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l || echo "0")
+                
+                if [ "$total_pods" -gt 0 ]; then
+                  local ready_ratio=$((ready_pods * 100 / total_pods))
+                  echo "   [检查] $ready_pods/$total_pods 个Pod就绪 (${ready_ratio}%)"
+                  
+                  # 如果80%以上Pod就绪，认为可以继续
+                  if [ "$ready_ratio" -ge 80 ]; then
+                    echo "   [满足] Pod就绪率 >= 80%，可以继续执行"
+                    return 0
+                  else
+                    echo "   [等待] Pod就绪率 < 80%，需要继续等待"
+                    return 1
+                  fi
+                else
+                  echo "   [警告] 未找到Pod，继续等待"
+                  return 1
                 fi
-                sleep 1
+              }
+              
+              # 渐进式等待策略
+              total_waited=0
+              wait_stages="60 120 180 240"  # 1分钟, 2分钟, 3分钟, 4分钟
+              stage_num=1
+              
+              for wait_time in $wait_stages; do
+                if [ $total_waited -ge 600 ]; then  # 10分钟 = 600秒
+                  echo "[超时] 总等待时间已达10分钟，停止等待"
+                  break
+                fi
+                
+                echo ""
+                echo "[阶段 2.$stage_num] 等待 $((wait_time / 60)) 分钟..."
+                echo "[时间] 当前累计等待: $((total_waited / 60)) 分钟，本阶段: $((wait_time / 60)) 分钟"
+                
+                # 等待指定时间，每10秒显示一次
+                i=$wait_time
+                while [ $i -gt 0 ]; do
+                  if [ $((i % 10)) -eq 0 ]; then
+                    remaining_minutes=$((i / 60))
+                    remaining_seconds=$((i % 60))
+                    echo "[等待] 本阶段剩余: ${remaining_minutes}分${remaining_seconds}秒 ($(date '+%H:%M:%S'))"
+                  fi
+                  sleep 1
+                  i=$((i - 1))
+                done
+                
+                total_waited=$((total_waited + wait_time))
+                
+                echo "[完成] 阶段 2.$stage_num 等待完成"
+                echo "[检查] 检查Pod就绪状态..."
+                
+                # 检查Pod是否就绪
+                if check_pods_ready; then
+                  echo "[决策] Pod就绪条件满足，提前结束等待"
+                  echo "[信息] 总等待时间: $((total_waited / 60)) 分钟"
+                  break
+                else
+                  if [ $total_waited -ge 600 ]; then
+                    echo "[超时] 已达最大等待时间10分钟，强制继续"
+                    break
+                  else
+                    echo "[决策] 条件未满足，进入下一等待阶段"
+                  fi
+                fi
+                
+                stage_num=$((stage_num + 1))
               done
               
-              echo "🔧 [DEBUG] 等待时间结束，任务即将退出"
-              echo "🏁 [EXIT] Pod 任务完成，正常退出"
+              echo ""
+              echo "[总结] 等待阶段完成，总等待时间: $((total_waited / 60)) 分钟 $((total_waited % 60)) 秒"
+              
+                  echo ""
+              echo "========================================"
+              echo "[步骤 3] Pod分布分析阶段"
+              echo "========================================"
+              echo "[阶段 3.1] 检查Pod在可用区间的分布..."
+              echo "[命令] kubectl get pods -n $NAMESPACE -o wide"
+              
+              echo ""
+              echo "[信息] 当前Pod分布详情:"
+              kubectl get pods -n "$NAMESPACE" -o wide | head -1  # Header line
+              
+              # 检查Pod状态和节点分布
+              all_pods=$(kubectl get pods -n "$NAMESPACE" -o wide --no-headers 2>/dev/null)
+              if [ -n "$all_pods" ]; then
+                total_pods=$(echo "$all_pods" | wc -l)
+                running_pods=$(echo "$all_pods" | grep -c "Running" || echo "0")
+                echo "[信息] 发现 $total_pods 个Pod，其中 $running_pods 个正在运行"
+                
+                # 显示前10个Pod的状态和节点信息
+                echo "[详情] 前10个Pod状态:"
+                echo "$all_pods" | head -10 | while IFS= read -r line; do
+                  pod_name=$(echo "$line" | awk '{print $1}')
+                  status=$(echo "$line" | awk '{print $3}')
+                  node=$(echo "$line" | awk '{print $7}')
+                  echo "   Pod: $pod_name, 状态: $status, 节点: $node"
+                done
+              else
+                echo "[警告] 未找到任何Pod"
+              fi
+              
+              echo ""
+              echo "[阶段 3.2] 按可用区分析Pod分布..."
+              echo "[命令] 基于节点信息分析Pod的可用区分布"
+              
+              # 通过节点信息分析Pod分布
+              if [ -n "$all_pods" ]; then
+                echo "[分析] 根据Pod所在节点分析可用区分布:"
+                
+                # 创建临时文件分析分布
+                temp_pod_file="/tmp/pod_analysis_$$"
+                > "$temp_pod_file"
+                
+                # 获取每个Pod的节点和可用区信息
+                echo "$all_pods" | while IFS= read -r line; do
+                  if [ -n "$line" ]; then
+                    pod_name=$(echo "$line" | awk '{print $1}')
+                    status=$(echo "$line" | awk '{print $3}')
+                    node=$(echo "$line" | awk '{print $7}')
+                    
+                    # 获取节点的可用区
+                    if [ -n "$node" ] && [ "$node" != "<none>" ]; then
+                      node_az=$(kubectl get node "$node" -o jsonpath='{.metadata.labels.topology\.kubernetes\.io/zone}' 2>/dev/null || echo "unknown")
+                      echo "$pod_name $status $node $node_az" >> "$temp_pod_file"
+                    fi
+                  fi
+                done
+                
+                # 等待文件写入完成
+                sleep 2
+                
+                if [ -f "$temp_pod_file" ] && [ -s "$temp_pod_file" ]; then
+                  echo "[结果] Pod可用区分布统计:"
+                  cut -d' ' -f4 "$temp_pod_file" | grep -v "unknown" | sort | uniq -c | while read count az; do
+                    echo "   可用区 $az: $count 个Pod"
+                  done
+                  
+                  running_by_az=$(grep "Running" "$temp_pod_file" | cut -d' ' -f4 | grep -v "unknown" | sort | uniq -c)
+                  if [ -n "$running_by_az" ]; then
+                    echo "[运行中] 各可用区运行中的Pod:"
+                    echo "$running_by_az" | while read count az; do
+                      echo "   可用区 $az: $count 个运行中Pod"
+                    done
+                  fi
+                  
+                  rm -f "$temp_pod_file"
+                else
+                  echo "[警告] 无法创建Pod分析文件"
+                fi
+              else
+                echo "[警告] 没有Pod数据进行分析"
+              fi
+              
+              echo ""
+              echo "========================================"
+              echo "[步骤 4] 任务完成阶段"
+              echo "========================================"
+              echo "[完成] 重平衡任务成功完成！"
+              echo "[时间戳] 结束时间: $(date)"
+              echo "========================================"
+              
+              echo ""
+              echo "========================================"
+              echo "[最终] 任务关闭"
+              echo "========================================"
+              echo "[完成] 重平衡任务成功完成"
+              echo "[时间戳] 最终退出时间: $(date)"
+              echo "[状态] 正常退出 - 所有阶段已完成"
+              echo "========================================"
             env:
             - name: NAMESPACE
               value: {{ .Release.Namespace | quote }}

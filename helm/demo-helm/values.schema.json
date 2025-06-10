@@ -225,6 +225,11 @@
           "minimum": 0,
           "description": "Number of retries before marking job as failed"
         },
+        "ttlSecondsAfterFinished": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "TTL for job cleanup after completion (seconds)"
+        },
         "annotations": {
           "type": "object",
           "additionalProperties": {
@@ -592,6 +597,33 @@
         },
         "podSecurityContext": {
           "type": "object"
+        },
+        "livenessProbe": {
+          "type": "object",
+          "description": "Liveness probe configuration for all components"
+        },
+        "readinessProbe": {
+          "type": "object", 
+          "description": "Readiness probe configuration for all components"
+        },
+        "imagePullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "description": "Image pull policy for all components"
+        },
+        "lifecycle": {
+          "type": "object",
+          "description": "Lifecycle hooks configuration for all components"
+        },
+        "terminationGracePeriodSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Pod termination grace period in seconds for all components"
+        },
+        "restartPolicy": {
+          "type": "string",
+          "enum": ["Always", "OnFailure", "Never"],
+          "description": "Restart policy for all components"
         }
       },
       "required": [
@@ -796,6 +828,11 @@
                     }
                   }
                 }
+              },
+              "minDomains": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Minimum number of domains that should be considered"
               }
             },
             "required": ["maxSkew", "topologyKey", "whenUnsatisfiable"]

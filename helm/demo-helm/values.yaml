@@ -27,7 +27,7 @@ default:
   initContainers: ""
 
   # Default # of replicas for all components
-  replicas: 3
+  replicas: 4
   # default revisionHistoryLimit for all components (number of old ReplicaSets to retain)
   revisionHistoryLimit: 10
   # Default schedulingRules for all components
@@ -37,9 +37,10 @@ default:
     tolerations: []
     # Pod topology spread constraints for high availability across zones
     topologySpreadConstraints:
+      # 严格2:2分布：正常时强制均衡，故障时允许不均衡
       - maxSkew: 1
         topologyKey: topology.kubernetes.io/zone
-        whenUnsatisfiable: DoNotSchedule
+        whenUnsatisfiable: ScheduleAnyway
         labelSelector:
           matchLabels:
             app.kubernetes.io/instance: "{{ .Release.Name }}"
@@ -265,8 +266,8 @@ components:
       nodeSelector:
         topology.kubernetes.io/zone: cn-guangzhou-b
     env:
-      - name: REGION
-        value: "REGION"
+      - name: ZONE
+        value: "ZONE"
       - name: NODEID
         value: "NODEID"
       - name: ALIBABA_CLOUD_ACCESS_KEY_ID
@@ -1279,8 +1280,6 @@ components:
       - name: tmp-dir
         mountPath: /tmp
     resources:
-      limits:
-        memory: 200Mi
       requests:
         cpu: "100m"
         memory: "128Mi"
@@ -1503,115 +1502,54 @@ opensearch:
       memory: 1100Mi
 
 rebalance:
-  # 是否启用重新平衡 CronJob
+  # Enable or disable the rebalance CronJob
   enabled: false
   
-  # Cron 表达式：每30分钟检测一次
+  # Cron schedule expression
   schedule: "*/30 * * * *"
   
-  # 重新平衡策略
-  # - "balanced": 平衡策略，删除 1/3 的 Pod (默认)
-  # - "conservative": 保守策略，删除 1/4 的 Pod
-  # - "aggressive": 激进策略，删除 1/2 的 Pod
-  strategy: "balanced"
-  
-  # 分布均匀性检测配置
-  # 不均匀度阈值 (0.0-1.0)
-  # 使用标准差/平均值计算，超过此值认为分布不均匀
-  imbalanceThreshold: 0.3  # 30% 的不均匀度
-  
-  # 最小 Pod 数量阈值
-  # 低于此数量的组件跳过检测 (避免误判)
-  minPodsPerComponent: 2
-  
-  # Job 历史记录保留数量
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 1
-  backoffLimit: 2
-  
-  # 容器镜像配置
+  # Container image configuration  
   image:
-    repository: registry.cn-hangzhou.aliyuncs.com/google_containers/kubectl  # 阿里云镜像，网络更稳定
-    tag: "v1.31.0"
+    repository: alpine/k8s
+    tag: "1.31.0"
     pullPolicy: IfNotPresent
-    # 备选镜像（根据网络环境选择）：
-    # repository: bitnami/kubectl  # Bitnami 镜像（注意拉取限制）
-    # repository: registry.k8s.io/kubectl  # 官方镜像
   
-  # 镜像拉取密钥（如果需要）
+  # Image pull secrets
   imagePullSecrets: []
   
-  # 环境变量
+  # Environment variables
   env: []
   
-  # 等待时间配置（秒）
-  waitTime: 30              # Pod 删除后等待时间
-  componentWaitTime: 10     # 组件间等待时间
+  # Job history limits
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  backoffLimit: 4
   
-  # Pod 注解
+  # TTL for automatic job cleanup (seconds) - commented out to keep failed jobs for debugging
+  # ttlSecondsAfterFinished: 86400  # 24 hours
+  
+  # Pod annotations
   podAnnotations: {}
   
-  # 调度规则 - 确保 CronJob 在健康 AZ 运行（避免受混沌工程影响）
+  # Node scheduling
   nodeSelector:
-    topology.kubernetes.io/zone: cn-guangzhou-b  # 指定健康的 AZ
+    topology.kubernetes.io/zone: cn-guangzhou-b
   
-  # 容忍度配置
+  # Tolerations
   tolerations: []
-    # 如果需要在控制平面节点运行，取消注释：
-    # - key: "node-role.kubernetes.io/control-plane"
-    #   operator: "Exists"
-    #   effect: "NoSchedule"
-    # 如果需要在有其他污点的节点运行，添加对应配置：
-    # - key: "your-custom-taint"
-    #   operator: "Equal"
-    #   value: "value"
-    #   effect: "NoSchedule"
   
-  # Pod 级别安全上下文
+  # Security contexts
   securityContext: {}
-    # 推荐的安全配置（按需启用）：
-    # runAsNonRoot: true
-    # runAsUser: 1000
-    # runAsGroup: 1000
-    # fsGroup: 1000
-    # seccompProfile:
-    #   type: RuntimeDefault
-  
-  # 容器级别安全上下文  
   containerSecurityContext: {}
-    # 基本安全配置（按需启用）：
-    # allowPrivilegeEscalation: false
-    # readOnlyRootFilesystem: false  # kubectl 需要写临时文件
-    # runAsNonRoot: true
-    # runAsUser: 1000
-    # capabilities:
-    #   drop:
-    #     - ALL
   
-  # 资源限制
+  # Resource limits (conservative settings)
   resources:
     limits:
-      cpu: "200m"
-      memory: "256Mi"
+      cpu: "500m"
+      memory: "512Mi"
     requests:
       cpu: "100m"
       memory: "128Mi"
 
-  # CronJob 注解
-  annotations:
-    description: "自动检测Pod分布均匀性并重新平衡"
-
-# Docker Registry 认证配置
-dockerRegistry:
-  # 是否启用 docker registry secret 创建
-  enabled: true
-  # Secret 名称
-  secretName: "otel-demo"
-  # 镜像仓库地址
-  registry: "o11y-demo-cn-heyuan-registry-vpc.cn-heyuan.cr.aliyuncs.com"
-  # 用户名
-  username: ""
-  # 密码
-  password: ""
-  # 邮箱 (可选)
-  email: ""
+  # CronJob annotations
+  annotations: {}
