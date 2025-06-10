@@ -264,9 +264,12 @@ public class CartFilter implements GatewayFilter {
             
             JsonArray itemsArray = cartJson.getAsJsonArray("items");
             if (itemsArray == null || itemsArray.size() == 0) {
+                log.info("Cart has empty items array for sessionId: {}, currencyCode: {}", sessionId, currencyCode);
                 sink.success(cartJson);
                 return; // 如果items是空数组，直接返回
             }
+            
+            log.info("Processing cart with {} items for sessionId: {}, currencyCode: {}", itemsArray.size(), sessionId, currencyCode);
             
             for (int i = 0; i < itemsArray.size(); i++) {
                 JsonElement itemElement = itemsArray.get(i);
@@ -304,66 +307,63 @@ public class CartFilter implements GatewayFilter {
                     log.info("Product JSON after conversion - ID: {}, JSON: {}", productId, productJson);
                     
                     // 处理priceUsd，确保格式正确
-                    if (productJson.has("priceUsd")) {
+                    JsonObject validPriceObject = new JsonObject();
+                    validPriceObject.addProperty("units", 0);
+                    validPriceObject.addProperty("nanos", 0);
+                    validPriceObject.addProperty("currencyCode", "USD");
+                    
+                    if (productJson.has("priceUsd") && !productJson.get("priceUsd").isJsonNull() && productJson.get("priceUsd").isJsonObject()) {
                         JsonObject priceUsd = productJson.getAsJsonObject("priceUsd");
                         
                         // 确保units字段是数字
-                        if (priceUsd.has("units")) {
+                        if (priceUsd.has("units") && !priceUsd.get("units").isJsonNull()) {
                             try {
                                 if (priceUsd.get("units").isJsonPrimitive() && priceUsd.get("units").getAsJsonPrimitive().isString()) {
                                     int units = Integer.parseInt(priceUsd.get("units").getAsString());
-                                    priceUsd.addProperty("units", units);
+                                    validPriceObject.addProperty("units", units);
                                     log.info("Converted priceUsd.units from string to number: {}", units);
+                                } else if (priceUsd.get("units").isJsonPrimitive() && priceUsd.get("units").getAsJsonPrimitive().isNumber()) {
+                                    validPriceObject.addProperty("units", priceUsd.get("units").getAsInt());
                                 }
                             } catch (Exception e) {
                                 log.warn("Error processing priceUsd.units: {}", e.getMessage());
-                                priceUsd.addProperty("units", 0); // 默认值
+                                // 使用默认值0，已在validPriceObject中设置
                             }
-                        } else {
-                            priceUsd.addProperty("units", 0);
-                            log.info("Added missing priceUsd.units with default value 0");
                         }
                         
                         // 确保nanos字段是数字
-                        if (priceUsd.has("nanos")) {
+                        if (priceUsd.has("nanos") && !priceUsd.get("nanos").isJsonNull()) {
                             try {
                                 if (priceUsd.get("nanos").isJsonPrimitive() && priceUsd.get("nanos").getAsJsonPrimitive().isString()) {
                                     int nanos = Integer.parseInt(priceUsd.get("nanos").getAsString());
-                                    priceUsd.addProperty("nanos", nanos);
+                                    validPriceObject.addProperty("nanos", nanos);
                                     log.info("Converted priceUsd.nanos from string to number: {}", nanos);
+                                } else if (priceUsd.get("nanos").isJsonPrimitive() && priceUsd.get("nanos").getAsJsonPrimitive().isNumber()) {
+                                    validPriceObject.addProperty("nanos", priceUsd.get("nanos").getAsInt());
                                 }
                             } catch (Exception e) {
                                 log.warn("Error processing priceUsd.nanos: {}", e.getMessage());
-                                priceUsd.addProperty("nanos", 0); // 默认值
+                                // 使用默认值0，已在validPriceObject中设置
                             }
-                        } else {
-                            priceUsd.addProperty("nanos", 0);
-                            log.info("Added missing priceUsd.nanos with default value 0");
                         }
                         
                         // 确保currencyCode字段存在
-                        if (!priceUsd.has("currencyCode") || priceUsd.get("currencyCode").isJsonNull()) {
-                            priceUsd.addProperty("currencyCode", "USD");
-                            log.info("Added missing priceUsd.currencyCode with default value USD");
+                        if (priceUsd.has("currencyCode") && !priceUsd.get("currencyCode").isJsonNull() 
+                            && priceUsd.get("currencyCode").isJsonPrimitive() && !priceUsd.get("currencyCode").getAsString().isEmpty()) {
+                            validPriceObject.addProperty("currencyCode", priceUsd.get("currencyCode").getAsString());
                         }
-                        
-                        // 更新priceUsd
-                        productJson.add("priceUsd", priceUsd);
-                        
-                        // 同时添加price字段，复制priceUsd的内容
-                        productJson.add("price", priceUsd.deepCopy());
-                        log.info("Added price field (copy of priceUsd) to product JSON");
                     } else {
-                        // 如果没有priceUsd字段，创建默认的price和priceUsd
-                        JsonObject defaultPrice = new JsonObject();
-                        defaultPrice.addProperty("units", 0);
-                        defaultPrice.addProperty("nanos", 0);
-                        defaultPrice.addProperty("currencyCode", "USD");
-                        
-                        productJson.add("priceUsd", defaultPrice);
-                        productJson.add("price", defaultPrice.deepCopy());
-                        log.info("Created default price and priceUsd fields for product {}", productId);
+                        log.warn("Product {} has no valid priceUsd, using default price object", productId);
                     }
+                    
+                    // 确保products对象中有priceUsd和price字段
+                    productJson.add("priceUsd", validPriceObject);
+                    productJson.add("price", validPriceObject.deepCopy());
+                    
+                    // 直接在cart item中也添加一个price字段
+                    itemObj.add("price", validPriceObject.deepCopy());
+                    
+                    log.info("Final price object for product {}: {}", productId, validPriceObject);
                     
                     itemObj.add("product", productJson);
                     
@@ -447,6 +447,8 @@ public class CartFilter implements GatewayFilter {
                     // 获取产品详情失败不应该影响整个购物车的获取
                 }
             }
+            // 在最终返回前记录完整的购物车JSON，包括所有处理后的产品数据
+            log.info("Final cart JSON being returned: {}", cartJson.toString());
             sink.success(cartJson);
         } catch (Exception e) {
             log.error("Failed to get cart", e);
