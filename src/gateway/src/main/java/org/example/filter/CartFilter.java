@@ -415,21 +415,31 @@ public class CartFilter implements GatewayFilter {
                     return exchange.getResponse().setComplete();
                 }
                 
-                if (!requestJson.has("productId") || requestJson.get("productId").isJsonNull()) {
-                    log.error("Missing or null productId in request: {}", requestJson);
+                // 检查item对象及其内部的字段
+                if (!requestJson.has("item") || requestJson.get("item").isJsonNull() || !requestJson.get("item").isJsonObject()) {
+                    log.error("Missing or null item object in request: {}", requestJson);
                     exchange.getResponse().setStatusCode(HttpStatus.OK);
                     return exchange.getResponse().setComplete();
                 }
                 
-                if (!requestJson.has("quantity") || requestJson.get("quantity").isJsonNull()) {
-                    log.error("Missing or null quantity in request: {}", requestJson);
+                JsonObject itemObject = requestJson.getAsJsonObject("item");
+                
+                // 检查item对象中的productId和quantity
+                if (!itemObject.has("productId") || itemObject.get("productId").isJsonNull()) {
+                    log.error("Missing or null productId in item object: {}", itemObject);
+                    exchange.getResponse().setStatusCode(HttpStatus.OK);
+                    return exchange.getResponse().setComplete();
+                }
+                
+                if (!itemObject.has("quantity") || itemObject.get("quantity").isJsonNull()) {
+                    log.error("Missing or null quantity in item object: {}", itemObject);
                     exchange.getResponse().setStatusCode(HttpStatus.OK);
                     return exchange.getResponse().setComplete();
                 }
                 
                 String userId = requestJson.get("userId").getAsString();
-                String productId = requestJson.get("productId").getAsString();
-                int quantity = requestJson.get("quantity").getAsInt();
+                String productId = itemObject.get("productId").getAsString();
+                int quantity = itemObject.get("quantity").getAsInt();
                 
                 log.info("handlePostRequest userId: {} productId: {} quantity: {}", userId, productId, quantity);
                 Demo.AddItemRequest.Builder builder = Demo.AddItemRequest.newBuilder();
