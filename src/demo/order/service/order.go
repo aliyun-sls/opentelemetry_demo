@@ -131,7 +131,7 @@ type Order struct {
 	State              string          `gorm:"column:state" json:"state"`
 	Country            string          `gorm:"column:country" json:"country"`
 	ZipCode            string          `gorm:"column:zip_code" json:"zip_code"`
-	OrderStatus        OrderStatus     `gorm:"column:order_status" json:"status"`
+	OrderStatus        OrderStatus     `gorm:"column:order_status" json:"order_status"`
 	LogisticStatus     LogisticsStatus `gorm:"column:logistic_status" form:"logistic_status" json:"logistic_status"`
 	OrderDetails       []OrderDetail   `json:"order_details" gorm:"foreignKey:OrderId;references:OrderId"`
 	TotalPrice         float64         `gorm:"column:total_price" json:"total_price"`
