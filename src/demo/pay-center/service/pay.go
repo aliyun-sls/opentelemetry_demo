@@ -2,12 +2,17 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 	flagd "github.com/open-feature/go-sdk-contrib/providers/flagd/pkg"
 	"github.com/open-feature/go-sdk/openfeature"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"log"
 	"sls-mall-go/common/model"
 	"sls-mall-go/common/util"
+	"strconv"
 )
 
 var flagClient *openfeature.Client
@@ -94,7 +99,26 @@ func PayOrder(c *gin.Context) {
 		return
 	}
 
-	//todo 故障注入
+	isFail := flagClient.Boolean(
+		context.Background(),
+		"PayServiceAbnormal",
+		false,
+		openfeature.EvaluationContext{},
+	)
+	if isFail {
+		span := trace.SpanFromContext(ctx)
+		span.SetAttributes(
+			attribute.String("app.user.id", strconv.FormatInt(order.UserId, 10)),
+			attribute.String("app.order.id", order.OrderId),
+		)
+		err := errors.New("支付失败")
+		// 标记Span为错误状态，并记录错误信息
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		util.Status500(c, err)
+		return
+	}
+
 	tx := util.MDB.WithContext(ctx).Model(&order).
 		Where("user_id = ? AND order_id = ?", order.UserId, order.OrderId).Update("order_status", WaitForSending)
 
