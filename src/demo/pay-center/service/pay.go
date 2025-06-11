@@ -107,6 +107,7 @@ func PayOrder(c *gin.Context) {
 	)
 	if isFail {
 		span := trace.SpanFromContext(ctx)
+		span.AddEvent("pay.center -> fail")
 		span.SetAttributes(
 			attribute.String("app.user.id", strconv.FormatInt(order.UserId, 10)),
 			attribute.String("app.order.id", order.OrderId),
