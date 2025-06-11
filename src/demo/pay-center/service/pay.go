@@ -123,6 +123,7 @@ func PayOrder(c *gin.Context) {
 		))
 		span.SetStatus(codes.Error, err.Error())
 		util.Status500(c, err)
+		span.End()
 		return
 	}
 
