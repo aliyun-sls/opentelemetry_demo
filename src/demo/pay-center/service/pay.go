@@ -111,9 +111,15 @@ func PayOrder(c *gin.Context) {
 			attribute.String("app.user.id", strconv.FormatInt(order.UserId, 10)),
 			attribute.String("app.order.id", order.OrderId),
 		)
+
 		err := errors.New("支付失败")
 		// 标记Span为错误状态，并记录错误信息
-		span.RecordError(err)
+		span.RecordError(err, trace.WithAttributes(
+			attribute.String("app.user.id", strconv.FormatInt(order.UserId, 10)),
+			attribute.String("app.order.id", order.OrderId),
+			attribute.String("error.type", "pay.center -> create"),
+			attribute.String("error.stack", "pay.center -> fail"),
+		))
 		span.SetStatus(codes.Error, err.Error())
 		util.Status500(c, err)
 		return
