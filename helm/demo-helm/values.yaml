@@ -1018,9 +1018,6 @@ components:
         value: "8013"
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://$$(OTEL_COLLECTOR_NAME):4317
-    resources:
-      limits:
-        memory: 1500Mi
 
   payment:
     enabled: true
@@ -1222,9 +1219,6 @@ components:
         value: http://$$(OTEL_COLLECTOR_NAME):4318
       - name: KAFKA_HEAP_OPTS
         value: "-Xmx400M -Xms400M"
-    resources:
-      limits:
-        memory: 600Mi
     securityContext:
       runAsUser: 1000  # appuser
       runAsGroup: 1000
@@ -1469,9 +1463,6 @@ jaeger:
         value: 0.0.0.0:4317
       - name: COLLECTOR_OTLP_HTTP_HOST_PORT
         value: 0.0.0.0:4318
-    resources:
-      limits:
-        memory: 400Mi
   storage:
     type: memory
   agent:
