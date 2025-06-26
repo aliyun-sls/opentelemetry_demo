@@ -157,15 +157,54 @@ func ListLogistics(c *gin.Context) {
 		util.Status400(c, err)
 		return
 	}
+
 	var orders []Order
 	if listLogisticsRequest.Limit == 0 {
 		listLogisticsRequest.Limit = 10
 	}
-	err = util.MDB.WithContext(ctx).Model(Order{}).Preload("Logistics").
+
+	// Step 1: 查询订单主表
+	err = util.MDB.WithContext(ctx).Model(Order{}).
 		Where(&listLogisticsRequest.Parms).
-		Limit(listLogisticsRequest.Limit).Offset(listLogisticsRequest.Offset).Find(&orders).Error
+		Limit(listLogisticsRequest.Limit).
+		Offset(listLogisticsRequest.Offset).
+		Find(&orders).Error
 	if err != nil {
 		util.Status500(c, err)
+		return
+	}
+
+	// Step 2: 获取所有订单 ID
+	orderIDs := make([]string, 0, len(orders))
+	for _, order := range orders {
+		orderIDs = append(orderIDs, order.OrderId)
+	}
+
+	// Step 3: 查询物流信息
+	var logistics []Logistic
+	if len(orderIDs) > 0 {
+		err = util.MDB.WithContext(ctx).
+			Where("order_id IN (?)", orderIDs).
+			Find(&logistics).Error
+		if err != nil {
+			util.Status500(c, err)
+			return
+		}
+	}
+
+	// Step 4: 构建物流信息映射
+	logisticsMap := make(map[string][]Logistic)
+	for _, log := range logistics {
+		logisticsMap[log.OrderId] = append(logisticsMap[log.OrderId], log)
+	}
+
+	// Step 5: 关联到每个订单
+	for i := range orders {
+		if logs, ok := logisticsMap[orders[i].OrderId]; ok {
+			orders[i].Logistics = logs
+		} else {
+			orders[i].Logistics = []Logistic{}
+		}
 	}
 	util.Status200(c, orders)
 }
