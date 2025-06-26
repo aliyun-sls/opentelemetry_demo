@@ -291,21 +291,15 @@ func CreateShipping(c *gin.Context) {
 		return
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
 	go func(order *Order) {
 		// 创建物流 通过kafka通知 创建物流信息
-		err = SendKafka(LogisticsMsg{
+		_ = SendKafka(LogisticsMsg{
 			OrderId:          order.OrderId,
 			UserId:           order.UserId,
 			Action:           Create,
 			LogisticStatus:   Shipping,
 			LogisticPosition: "",
 		})
-		if err != nil {
-			log.Printf("SendKafka is fail: %v", err)
-		}
-		defer wg.Done()
 	}(&order)
 
 	util.Status200(c, true)
