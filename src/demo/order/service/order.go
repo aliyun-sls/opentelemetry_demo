@@ -10,7 +10,6 @@ import (
 	"github.com/open-feature/go-sdk/openfeature"
 	"github.com/rs/xid"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -235,11 +234,15 @@ func CreateOrder(c *gin.Context) {
 	wg.Add(1)
 	go func(o *Order) {
 		defer wg.Done()
-		ServiceCallPost(background, os.Getenv("PayHost"), "/pay/Create", o, &util.Result{})
+		if err := ServiceCallPost(background, os.Getenv("PayHost"), "/pay/Create", o, &util.Result{}); err != nil {
+			log.Printf("Failed to call payment service: %v", err)
+		}
 	}(&order)
 	urlShelve := "http://product:8080/api/v1/products/put_products"
 
-	PutProducts(urlShelve)
+	if err := PutProducts(urlShelve); err != nil {
+		log.Printf("Failed to put products: %v", err)
+	}
 	isSwitch := flagClient.String(
 		context.Background(),
 		"ServiceAbnormal",
@@ -277,8 +280,12 @@ func CreateShipping(c *gin.Context) {
 	ctx := c.Request.Context()
 	var order Order
 	orderId := c.Query("order_id")
-	err := util.MDB.WithContext(ctx).Model(&order).Where("order_id =?", orderId).
-		Find(&order).Updates(Order{OrderStatus: WaitForReceiving, LogisticStatus: Shipping}).Error
+	err := util.MDB.WithContext(ctx).Model(&order).
+		Where("order_id = ?", orderId).
+		Updates(Order{
+			OrderStatus:    WaitForReceiving,
+			LogisticStatus: Shipping,
+		}).Error
 	if err != nil {
 		util.Status500(c, err)
 		return
@@ -376,14 +383,14 @@ func Service() {
 	if err != nil {
 		log.Printf("Error calling shelve endpoint: %v", err)
 	}
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("Error reading shelve response body: %v", err)
 	}
 	log.Printf("service Response: %s", body)
 }
 
-func PutProducts(urlShelve string) {
+func PutProducts(urlShelve string) error {
 	// GET 请求到 shelve 接口，添加查询参数
 	path, _ := os.Getwd()
 	path = path + "/tupian/"
@@ -404,16 +411,36 @@ func PutProducts(urlShelve string) {
 		}
 	}
 
-	defer data.Close()
+	if data == nil {
+		log.Printf("未找到文件")
+		return fmt.Errorf("未找到文件")
+	}
+	defer func() {
+		if err := data.Close(); err != nil {
+			log.Printf("关闭文件时发生错误: %v", err)
+		}
+	}()
 	//创建multipart writer
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	//创建文件表单字段
-	writer.WriteField("inventory_num", "10")
-	writer.WriteField("brand_id", "apple")
-	writer.WriteField("seller_id", "1")
-	writer.WriteField("products_status", "1")
+	// 创建文件表单字段
+	if err := writer.WriteField("inventory_num", "10"); err != nil {
+		log.Printf("写入inventory_num字段失败: %v", err)
+		return err
+	}
+	if err := writer.WriteField("brand_id", "apple"); err != nil {
+		log.Printf("写入brand_id字段失败: %v", err)
+		return err
+	}
+	if err := writer.WriteField("seller_id", "1"); err != nil {
+		log.Printf("写入seller_id字段失败: %v", err)
+		return err
+	}
+	if err := writer.WriteField("products_status", "1"); err != nil {
+		log.Printf("写入products_status字段失败: %v", err)
+		return err
+	}
 	part, err := writer.CreateFormFile("products_pic", filepath.Base(data.Name()))
 	if err != nil {
 		fmt.Println(err)
@@ -434,15 +461,24 @@ func PutProducts(urlShelve string) {
 	respShelve, err := http.Post(urlShelve, writer.FormDataContentType(), body)
 	if err != nil {
 		log.Printf("Error calling shelve endpoint: %v", err)
-		return // 直接返回，避免后续操作
+		return err // 返回错误信息以便调用者处理
 	}
-	if respShelve != nil {
-		defer respShelve.Body.Close()
+	// 检查 respShelve 是否为 nil
+	if respShelve == nil {
+		log.Printf("响应为空，无法读取响应体")
+		return fmt.Errorf("响应为空")
+	} else {
+		defer func() {
+			if err := respShelve.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v", err)
+			}
+		}()
 	}
-
-	bodyShelve, err := ioutil.ReadAll(respShelve.Body)
+	bodyShelve, err := io.ReadAll(respShelve.Body)
 	if err != nil {
 		log.Printf("Error reading shelve response body: %v", err)
 	}
 	log.Printf("Shelve Response: %s", bodyShelve)
+
+	return nil
 }

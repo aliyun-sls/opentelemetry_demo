@@ -133,6 +133,20 @@
       },
       "defaultVariant": "off"
     },
+    "PayServiceAbnormal": {
+      "displayName": "pay-center服务请求失败",
+      "description": "pay-center服务请求失败。Pay-center service is unavailable",
+      "category": "支付相关",
+      "tags": [
+        "Trace"
+      ],
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
     "loadGeneratorFloodHomepage": {
       "displayName": "用大量请求淹没前端",
       "description": "用大量请求淹没前端。Flood the frontend with a large amount of requests.",
